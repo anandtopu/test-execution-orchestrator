@@ -196,13 +196,23 @@ CREATE TRIGGER api_keys_set_updated_at BEFORE UPDATE ON teo.api_keys
     FOR EACH ROW EXECUTE FUNCTION teo.set_updated_at();
 
 -- ---------------------------------------------------------------- user_roles
+-- A user can hold a role globally (repo_id NULL) or scoped to a specific repo.
+-- Postgres rejects function calls in PRIMARY KEY (so the original
+-- COALESCE-based PK was invalid SQL); two partial unique indexes enforce the
+-- same semantics: (user, role) is unique among global rows, and
+-- (user, role, repo) is unique among per-repo rows.
 CREATE TABLE teo.user_roles (
     user_id UUID NOT NULL REFERENCES teo.users(id) ON DELETE CASCADE,
     role TEXT NOT NULL CHECK (role IN ('admin','engineer','read_only')),
     repo_id UUID REFERENCES teo.repos(id) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    PRIMARY KEY(user_id, role, COALESCE(repo_id, '00000000-0000-0000-0000-000000000000'::uuid))
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+CREATE UNIQUE INDEX user_roles_global_idx
+    ON teo.user_roles (user_id, role)
+    WHERE repo_id IS NULL;
+CREATE UNIQUE INDEX user_roles_per_repo_idx
+    ON teo.user_roles (user_id, role, repo_id)
+    WHERE repo_id IS NOT NULL;
 
 -- ---------------------------------------------------------------- audit_log
 CREATE TABLE teo.audit_log (

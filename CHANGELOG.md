@@ -8,6 +8,24 @@ For a finer-grained per-FR / per-epic implementation status, see [`progress.md`]
 
 ## [Unreleased]
 
+### Fixed — CI run-4 failure: invalid `user_roles` PRIMARY KEY
+With the splitter now reporting the offending statement number, CI pinpointed `001_initial.up.sql` statement 33 (the `teo.user_roles` CREATE TABLE) as the source of the persistent `syntax error at or near "("`. Root cause: the table used `PRIMARY KEY(user_id, role, COALESCE(repo_id, '00000000-...'::uuid))` — Postgres rejects function calls inside PRIMARY KEY constraints (only plain column references are allowed). The COALESCE was a workaround to enforce uniqueness across nullable `repo_id`, but it was never valid SQL.
+
+Replaced with two partial unique indexes — idiomatic Postgres for the "either global or per-repo unique" pattern:
+
+```sql
+CREATE UNIQUE INDEX user_roles_global_idx
+    ON teo.user_roles (user_id, role)
+    WHERE repo_id IS NULL;
+CREATE UNIQUE INDEX user_roles_per_repo_idx
+    ON teo.user_roles (user_id, role, repo_id)
+    WHERE repo_id IS NOT NULL;
+```
+
+Same uniqueness semantics, valid SQL. No Go code or downstream migration referenced `user_roles` as a foreign-key target, so dropping the PK is safe.
+
+Added `TestSplitSQL_RealMigrationFile` — loads the live 001_initial.up.sql, runs it through the splitter, and asserts ≥30 statements + each ends with `;` (with a documented exception for the plpgsql function body whose statement-terminating `;` precedes the LANGUAGE clause). Catches future schema-shape drift at the unit-test layer instead of waiting for the testcontainers Postgres in CI.
+
 ### Fixed — CI run-3 failures (release-blocking)
 - **Vitest — "ReferenceError: React is not defined" in 18 component tests.** `web/tsconfig.json` sets `"jsx": "preserve"` (lets Next.js handle the transform in dev/build), so Vitest's esbuild loader fell back to the *classic* JSX transform — which expects `React` to be in scope on every `.tsx` file. The component tests omit `import React from 'react'` because Next.js handles that with the automatic runtime. Fix: add `esbuild: { jsx: 'automatic' }` to `web/vitest.config.ts` so Vitest uses the same automatic runtime in tests. Verified locally: 42 / 42 tests now pass.
 - **Vitest — DOM cleanup not running between tests.** With the JSX fix landed, three `StatusBadge` tests then failed with "Found multiple elements by: [data-testid=status-badge]" because `@testing-library/react`'s automatic after-each cleanup only registers when Vitest globals are enabled (we run with `globals: false`). Wired it manually in `web/src/test-setup.ts`: `afterEach(cleanup)`. Without this fix the JSX repair would have surfaced a fresh failure on the next CI run.
