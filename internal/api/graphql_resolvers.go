@@ -179,10 +179,15 @@ func rerunFailed(ctx context.Context, pool *pgxpool.Pool, parentRunID string) (m
 	manifestJSON, _ := json.Marshal(manifest)
 
 	newID := uuid.New().String()
+	// Postgres can't infer parameter types inside jsonb_build_object (declared
+	// as `(VARIADIC any)`), so explicit casts are required on $6/$7 — without
+	// them the prepare step fails with "could not determine data type of
+	// parameter $6" (SQLSTATE 42P18).
 	if _, err := tx.Exec(ctx, `
         INSERT INTO teo.runs
             (id, repo_id, commit_sha, branch, triggered_by, status, parent_run_id, meta)
-        VALUES ($1, $2, $3, $4, 'rerun', 'pending', $5, jsonb_build_object('test_count', $6, 'runner', $7))
+        VALUES ($1, $2, $3, $4, 'rerun', 'pending', $5,
+                jsonb_build_object('test_count', $6::int, 'runner', $7::text))
     `, newID, repoID, commit, branch, parentRunID, len(tests), runner); err != nil {
 		return nil, err
 	}

@@ -8,6 +8,18 @@ For a finer-grained per-FR / per-epic implementation status, see [`progress.md`]
 
 ## [Unreleased]
 
+### Fixed — CI run-6: integration tests reaching the API for the first time
+
+The migration runner finally healed enough to let the API integration tests execute their HTTP/SQL paths end-to-end — and three latent bugs surfaced in that first complete run:
+
+- **6× export integration tests fail with 401.** `internal/api/export_integration_test.go` constructed every request via `httptest.NewRequest(...)` with no auth header. The export handler enforces auth (`auth.PrincipalFrom(r.Context()) == nil → 401`) so anonymous requests bounce. Fix: route every test request through `signedRequest(t, ...)` from the same package's `runs_integration_test.go` — it issues a real Bearer JWT against the same secret `newTestServer` configures. Replaced six call sites with `replace_all`. (These tests had only ever been compile-checked locally because Docker wasn't available; the auth oversight didn't surface until CI's testcontainers run.)
+
+- **2× rerunFailed tests fail with `could not determine data type of parameter $6`.** The rerunFailed INSERT used `jsonb_build_object('test_count', $6, 'runner', $7)`. `jsonb_build_object` is declared `(VARIADIC any)` so Postgres can't infer types during prepare and gives up with SQLSTATE 42P18. Fix in `internal/api/graphql_resolvers.go`: added explicit casts `$6::int, $7::text` plus an inline comment so this doesn't regress.
+
+- **Docker build job fails with `go.mod requires go >= 1.25.0 (running go 1.23.12)`.** The Dockerfile's `ARG GO_VERSION=1.23` predated the toolchain bump in `go.mod`. Same root cause as the run-1 ci.yml drift, just a third place that hadn't been swept yet. Bumped to 1.25.
+
+Verification: `go test ./...` 20 packages green, `go vet -tags=integration ./...` clean, `golangci-lint run` reports 0 issues.
+
 ### Fixed — CI run-5: golangci-lint vs Go 1.25 + 11 latent issues
 - **Lint job — `could not load export data: internal error in importing "sync/atomic" (unsupported version: 2)`** — golangci-lint v1.61.0 (Sep 2024) can't read Go 1.25's stdlib export-data format. Every typecheck-based linter then reported phantom "undefined: pgx/chi/jwt/nats/clickhouse" for code that compiles fine. Fixed by:
   - `.github/workflows/ci.yml`: bumped `GOLANGCI_LINT_VERSION` v1.61.0 → v2.5.0 and `golangci/golangci-lint-action` v6 → v7 (v6 only supports v1.x linter).

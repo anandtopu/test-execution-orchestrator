@@ -13,6 +13,12 @@ import (
 	"github.com/teo-dev/teo/internal/testpg"
 )
 
+// All export endpoints require an authenticated principal — anonymous
+// requests get 401 from the handler, and httptest.NewRequest doesn't carry
+// auth. Tests in this file build their request via signedRequest from
+// runs_integration_test.go (same package, same build tag) which attaches
+// a Bearer JWT issued with the same secret newTestServer uses.
+
 // TestExportJUnitHappyPath seeds the standard fixture (which has one failed
 // execution attached to a failure cluster), hits GET .../export?format=junit,
 // and asserts the XML structure.
@@ -27,7 +33,7 @@ func TestExportJUnitHappyPath(t *testing.T) {
 	}, pool)
 
 	rr := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet,
+	req := signedRequest(t, http.MethodGet,
 		"/api/v1/runs/"+ids.run1ID+"/export?format=junit", nil)
 	srv.Handler().ServeHTTP(rr, req)
 
@@ -110,7 +116,7 @@ func TestExportJUnitWithMixedOutcomes(t *testing.T) {
 		JWTTTL:    time.Hour,
 	}, pool)
 	rr := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet,
+	req := signedRequest(t, http.MethodGet,
 		"/api/v1/runs/"+ids.run1ID+"/export?format=junit", nil)
 	srv.Handler().ServeHTTP(rr, req)
 	if rr.Code != http.StatusOK {
@@ -159,7 +165,7 @@ func TestExportRejectsUnknownFormat(t *testing.T) {
 		JWTTTL:    time.Hour,
 	}, pool)
 	rr := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet,
+	req := signedRequest(t, http.MethodGet,
 		"/api/v1/runs/"+ids.run1ID+"/export?format=csv", nil)
 	srv.Handler().ServeHTTP(rr, req)
 	if rr.Code != http.StatusBadRequest {
@@ -178,7 +184,7 @@ func TestExportNotFoundForUnknownRun(t *testing.T) {
 	}, pool)
 	rr := httptest.NewRecorder()
 	// A valid UUID that isn't present in the runs table.
-	req := httptest.NewRequest(http.MethodGet,
+	req := signedRequest(t, http.MethodGet,
 		"/api/v1/runs/00000000-0000-0000-0000-000000000000/export?format=junit", nil)
 	srv.Handler().ServeHTTP(rr, req)
 	if rr.Code != http.StatusNotFound {
@@ -197,7 +203,7 @@ func TestExportOTLPReturns501WithoutClickHouse(t *testing.T) {
 		JWTTTL:    time.Hour,
 	}, pool)
 	rr := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet,
+	req := signedRequest(t, http.MethodGet,
 		"/api/v1/runs/"+ids.run1ID+"/export?format=otlp", nil)
 	srv.Handler().ServeHTTP(rr, req)
 	if rr.Code != http.StatusNotImplemented {
@@ -229,7 +235,7 @@ func TestExportOTLPHappyPath_StubbedSpanQuerier(t *testing.T) {
 	}, pool, WithSpanQuerier(stub))
 
 	rr := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet,
+	req := signedRequest(t, http.MethodGet,
 		"/api/v1/runs/"+ids.run1ID+"/export?format=otlp&as=json", nil)
 	srv.Handler().ServeHTTP(rr, req)
 	if rr.Code != http.StatusOK {

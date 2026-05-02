@@ -1,7 +1,7 @@
 # Multi-stage Dockerfile that builds any TEO Go service.
 #   docker build --build-arg SERVICE=api -t teo/api .
 
-ARG GO_VERSION=1.23
+ARG GO_VERSION=1.25
 
 FROM golang:${GO_VERSION}-alpine AS builder
 ARG SERVICE
