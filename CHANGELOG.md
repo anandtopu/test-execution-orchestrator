@@ -8,6 +8,12 @@ For a finer-grained per-FR / per-epic implementation status, see [`progress.md`]
 
 ## [Unreleased]
 
+### Fixed — CI run-2 failures (release-blocking)
+The first CI fix (simple-protocol on the migration driver) didn't help — pgx still rewrote the SQL and Postgres kept rejecting `001_initial.up.sql` at the first `(`. Two fixes here:
+
+- **Migration runner — Postgres-aware SQL splitter.** Replaced the naive line-based `splitStatements` with `splitSQL` in `internal/migrate/migrate.go`: tracks `$$ ... $$` and `$tag$ ... $tag$` dollar-quoted strings (so the plpgsql trigger-function body in migration 001 stays intact), `'...'` literals with the SQL-standard `''` escape, `"..."` quoted identifiers, `--` line comments, and `/* */` block comments. Splits on top-level `;` and Execs each statement individually — sidesteps the entire pgx parameter-rewrite path that broke us in CI even with `QueryExecModeSimpleProtocol`. Per-statement error messages now point at the offending statement number + first line. Eight unit tests cover the regression (dollar-quoted function), tagged dollar quotes (`$func$ ... $func$`), escaped single quotes with embedded `;`, line/block comments containing `;`, and quoted identifiers — all locking in the corner cases.
+- **`web/src/app/page.tsx` line 11**: `{' — see what's running and why builds are red.'}` — the apostrophe in `what's` closed the JS string literal mid-expression, so `tsc --noEmit` failed with TS1005 + TS1381. Pre-existing bug; never surfaced because Vitest doesn't typecheck. Switched the outer string from single to double quotes.
+
 ### Fixed — CI run-1 failures (release-blocking)
 First CI run on the published GitHub repo surfaced three failures, all now resolved:
 

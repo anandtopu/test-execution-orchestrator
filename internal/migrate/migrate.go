@@ -194,20 +194,17 @@ func currentVersion(db *sql.DB) (int, error) {
 	return int(v.Int64), nil
 }
 
-func applyMigration(b Backend, db *sql.DB, f File) error {
-	if b == ClickHouse {
-		for _, stmt := range splitStatements(f.Contents) {
-			if strings.TrimSpace(stmt) == "" {
-				continue
-			}
-			if _, err := db.Exec(stmt); err != nil {
-				return fmt.Errorf("statement %q: %w", firstLine(stmt), err)
-			}
+func applyMigration(_ Backend, db *sql.DB, f File) error {
+	stmts := splitSQL(f.Contents)
+	for i, stmt := range stmts {
+		if strings.TrimSpace(stmt) == "" {
+			continue
 		}
-		return nil
+		if _, err := db.Exec(stmt); err != nil {
+			return fmt.Errorf("statement %d %q: %w", i+1, firstLine(stmt), err)
+		}
 	}
-	_, err := db.Exec(f.Contents)
-	return err
+	return nil
 }
 
 func recordVersion(b Backend, db *sql.DB, v int, name string) error {
@@ -222,22 +219,141 @@ func recordVersion(b Backend, db *sql.DB, v int, name string) error {
 	return errors.New("unsupported backend")
 }
 
-func splitStatements(sql string) []string {
+// splitSQL breaks a multi-statement SQL script into individual statements,
+// respecting Postgres-flavour syntax that the naive line-based split can't
+// handle:
+//
+//   - $$ ... $$ and $tag$ ... $tag$ dollar-quoted strings (plpgsql function
+//     bodies live in these; their internal `;`s must NOT split the function)
+//   - '...' single-quoted literals with the SQL standard '' escape
+//   - "..." double-quoted identifiers
+//   - -- ... \n line comments
+//   - /* ... */ block comments
+//
+// Splits on top-level ';'. Empty / whitespace-only statements are dropped.
+//
+// Why this exists at all: pgx/v5's stdlib Exec rewrites SQL client-side
+// (parameter sanitization) and that has corrupted dollar-quoted blocks for
+// us in CI even with QueryExecModeSimpleProtocol. Statement-by-statement
+// Exec sidesteps the entire pgx rewrite path and gives per-statement error
+// messages when something does break.
+func splitSQL(sql string) []string {
 	var out []string
 	var cur strings.Builder
-	for _, line := range strings.Split(sql, "\n") {
-		cur.WriteString(line)
-		cur.WriteString("\n")
-		if strings.HasSuffix(strings.TrimSpace(line), ";") {
-			out = append(out, cur.String())
-			cur.Reset()
+	flush := func() {
+		s := strings.TrimSpace(cur.String())
+		if s != "" {
+			out = append(out, s)
+		}
+		cur.Reset()
+	}
+	i, n := 0, len(sql)
+	for i < n {
+		c := sql[i]
+		switch {
+		case c == '-' && i+1 < n && sql[i+1] == '-':
+			// line comment to end of line
+			for i < n && sql[i] != '\n' {
+				cur.WriteByte(sql[i])
+				i++
+			}
+		case c == '/' && i+1 < n && sql[i+1] == '*':
+			cur.WriteByte('/')
+			cur.WriteByte('*')
+			i += 2
+			for i+1 < n && !(sql[i] == '*' && sql[i+1] == '/') {
+				cur.WriteByte(sql[i])
+				i++
+			}
+			if i+1 < n {
+				cur.WriteByte('*')
+				cur.WriteByte('/')
+				i += 2
+			}
+		case c == '\'':
+			cur.WriteByte('\'')
+			i++
+			for i < n {
+				if sql[i] == '\'' {
+					cur.WriteByte('\'')
+					i++
+					if i < n && sql[i] == '\'' {
+						cur.WriteByte('\'')
+						i++
+						continue
+					}
+					break
+				}
+				cur.WriteByte(sql[i])
+				i++
+			}
+		case c == '"':
+			cur.WriteByte('"')
+			i++
+			for i < n && sql[i] != '"' {
+				cur.WriteByte(sql[i])
+				i++
+			}
+			if i < n {
+				cur.WriteByte('"')
+				i++
+			}
+		case c == '$':
+			// Look for a $tag$ open (tag may be empty, giving $$)
+			tagEnd := -1
+			for j := i + 1; j < n; j++ {
+				b := sql[j]
+				if b == '$' {
+					tagEnd = j
+					break
+				}
+				if !isDollarTagByte(b) {
+					break
+				}
+			}
+			if tagEnd < 0 {
+				cur.WriteByte('$')
+				i++
+				continue
+			}
+			tag := sql[i : tagEnd+1] // includes leading + trailing $
+			cur.WriteString(tag)
+			i = tagEnd + 1
+			// Read until the same tag closes the block.
+			closeIdx := strings.Index(sql[i:], tag)
+			if closeIdx < 0 {
+				// Unterminated dollar quote — copy the rest verbatim.
+				cur.WriteString(sql[i:])
+				i = n
+			} else {
+				cur.WriteString(sql[i : i+closeIdx])
+				cur.WriteString(tag)
+				i += closeIdx + len(tag)
+			}
+		case c == ';':
+			cur.WriteByte(';')
+			i++
+			flush()
+		default:
+			cur.WriteByte(c)
+			i++
 		}
 	}
-	if strings.TrimSpace(cur.String()) != "" {
-		out = append(out, cur.String())
-	}
+	flush()
 	return out
 }
+
+// isDollarTagByte reports whether b is a legal character inside a Postgres
+// dollar-quote tag. Per the manual: the tag may consist of letters, digits,
+// and underscores; it must not start with a digit (we don't enforce that —
+// the leading dollar already constrains where this is called).
+func isDollarTagByte(b byte) bool {
+	return (b >= 'a' && b <= 'z') ||
+		(b >= 'A' && b <= 'Z') ||
+		(b >= '0' && b <= '9') ||
+		b == '_'
+}
+
 
 func firstLine(s string) string {
 	if i := strings.IndexByte(s, '\n'); i > 0 {

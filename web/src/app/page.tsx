@@ -8,7 +8,7 @@ export default function HomePage() {
       <ul className="mt-6 space-y-2 text-sm">
         <li>
           <a className="text-blue-600 underline" href="/runs">Recent runs</a>
-          {' — see what's running and why builds are red.'}
+          {" — see what's running and why builds are red."}
         </li>
         <li>
           <a className="text-blue-600 underline" href="/clusters">Failure clusters</a>

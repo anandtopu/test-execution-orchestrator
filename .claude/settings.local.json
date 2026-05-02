@@ -30,7 +30,8 @@
       "Bash(git -C C:/Users/anand/Downloads/Projects/TestExecutionOrchestrator remote -v)",
       "Bash(npm --version)",
       "Bash(npm install *)",
-      "Bash(npm ci *)"
+      "Bash(npm ci *)",
+      "Bash(npx tsc *)"
     ]
   }
 }
