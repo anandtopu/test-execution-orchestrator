@@ -1,4 +1,5 @@
 # Binaries
+.claude
 /bin/
 /dist/
 *.exe
