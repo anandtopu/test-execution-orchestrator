@@ -1,0 +1,39 @@
+[project]
+name = "teo-predictor-ml"
+version = "0.1.0"
+description = "TEO LightGBM-based ML predictor (per ADR-0019)."
+requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+dependencies = [
+    "fastapi==0.118.*",
+    "uvicorn[standard]==0.34.*",
+    "lightgbm==4.6.*",
+    "numpy==2.2.*",
+    "pandas==2.3.*",
+    "scikit-learn==1.6.*",
+    "boto3==1.39.*",
+    "psycopg[binary]==3.2.*",
+    "clickhouse-driver==0.2.*",
+    "prometheus-client==0.23.*",
+    "pydantic==2.11.*",
+    "structlog==24.5.*",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.4.*",
+    "pytest-asyncio==1.0.*",
+    "ruff==0.13.*",
+    "mypy==1.13.*",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"

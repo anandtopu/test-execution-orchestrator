@@ -1,0 +1,99 @@
+{{- if .Values.api.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-api
+  labels:
+    {{- include "teo.componentLabels" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" "api") | nindent 4 }}
+spec:
+  replicas: {{ .Values.api.replicas }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: teo
+      app.kubernetes.io/component: api
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        {{- include "teo.componentLabels" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" "api") | nindent 8 }}
+    spec:
+      serviceAccountName: {{ .Release.Name }}-api
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: api
+          image: {{ include "teo.image" (dict "Values" .Values "Chart" .Chart "repo" .Values.api.image.repository "imageTag" "") }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.api.service.httpPort }}
+            - name: grpc
+              containerPort: {{ .Values.api.service.grpcPort }}
+          env:
+            - name: TEO_HTTP_LISTEN
+              value: ":{{ .Values.api.service.httpPort }}"
+            - name: TEO_GRPC_LISTEN
+              value: ":{{ .Values.api.service.grpcPort }}"
+            - name: TEO_POSTGRES_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-postgres-creds
+                  key: dsn
+            - name: TEO_CLICKHOUSE_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-clickhouse-creds
+                  key: dsn
+            - name: TEO_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.auth.jwt.secretName }}
+                  key: {{ .Values.auth.jwt.secretKey }}
+            - name: TEO_JWT_TTL
+              value: {{ .Values.auth.jwt.ttl | quote }}
+          readinessProbe:
+            httpGet: { path: /readyz, port: http }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.api.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-api
+  labels:
+    {{- include "teo.componentLabels" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" "api") | nindent 4 }}
+spec:
+  type: {{ .Values.api.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.api.service.httpPort }}
+      targetPort: http
+    - name: grpc
+      port: {{ .Values.api.service.grpcPort }}
+      targetPort: grpc
+  selector:
+    app.kubernetes.io/name: teo
+    app.kubernetes.io/component: api
+    app.kubernetes.io/instance: {{ .Release.Name }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Release.Name }}-api
+  labels:
+    {{- include "teo.componentLabels" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" "api") | nindent 4 }}
+{{- end }}

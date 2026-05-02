@@ -1,0 +1,27 @@
+version: v2
+modules:
+  - path: .
+lint:
+  use:
+    - STANDARD
+  except:
+    # Our package is teo.v1; the file lives at teov1/*.proto so paths=source_relative
+    # produces the matching Go output dir. PACKAGE_DIRECTORY_MATCH expects the
+    # path teo/v1/ which conflicts with that layout.
+    - PACKAGE_DIRECTORY_MATCH
+    # Service names are Workers/Runs (no "Service" suffix). They're already
+    # cemented in the generated registrar + downstream callers; renaming
+    # would be a wire-breaking change for no functional gain.
+    - SERVICE_SUFFIX
+    # Several RPCs share Run / Ack / HeartbeatResponse / Assignment. The
+    # alternative — RunsCreateRunResponse, etc. — adds verbosity without
+    # disambiguating anything in our single-package surface.
+    - RPC_REQUEST_RESPONSE_UNIQUE
+    - RPC_RESPONSE_STANDARD_NAME
+    # Worker→manager events use domain names (TestFinished, ShardFinished)
+    # that read more naturally than the verbose Workers* prefixes the lint
+    # rule prescribes.
+    - RPC_REQUEST_STANDARD_NAME
+breaking:
+  use:
+    - FILE

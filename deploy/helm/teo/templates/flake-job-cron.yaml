@@ -1,0 +1,187 @@
+{{- if .Values.flakeJob.enabled -}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Release.Name }}-flake-job
+spec:
+  schedule: {{ .Values.flakeJob.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: flake-job
+              image: {{ include "teo.image" (dict "Values" .Values "Chart" .Chart "repo" "result-pipeline" "imageTag" "") }}
+              args: ["flake-recompute"]
+              env:
+                - name: TEO_POSTGRES_DSN
+                  valueFrom: { secretKeyRef: { name: {{ .Release.Name }}-postgres-creds, key: dsn } }
+{{- end }}
+{{- if .Values.quarantine.enabled }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Release.Name }}-quarantine-sweeper
+spec:
+  schedule: {{ .Values.quarantine.schedule | quote }}
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: quarantine
+              image: {{ include "teo.image" (dict "Values" .Values "Chart" .Chart "repo" "result-pipeline" "imageTag" "") }}
+              args: ["quarantine-sweep"]
+              env:
+                - name: TEO_POSTGRES_DSN
+                  valueFrom: { secretKeyRef: { name: {{ .Release.Name }}-postgres-creds, key: dsn } }
+                {{- if .Values.quarantine.githubTokenSecretName }}
+                - name: TEO_GITHUB_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.quarantine.githubTokenSecretName }}
+                      key: {{ .Values.quarantine.githubTokenSecretKey | default "token" }}
+                {{- end }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Release.Name }}-quarantine-sla-sweeper
+spec:
+  # SLA nudge runs daily; the in-job idempotency on last_nudged_at means
+  # comments are still spaced by SLADays.
+  schedule: "0 10 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: sla-sweeper
+              image: {{ include "teo.image" (dict "Values" .Values "Chart" .Chart "repo" "result-pipeline" "imageTag" "") }}
+              args: ["quarantine-sla-sweep"]
+              env:
+                - name: TEO_POSTGRES_DSN
+                  valueFrom: { secretKeyRef: { name: {{ .Release.Name }}-postgres-creds, key: dsn } }
+                - name: TEO_QUARANTINE_SLA_DAYS
+                  value: {{ .Values.quarantine.slaDays | quote }}
+                {{- if .Values.quarantine.githubTokenSecretName }}
+                - name: TEO_GITHUB_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.quarantine.githubTokenSecretName }}
+                      key: {{ .Values.quarantine.githubTokenSecretKey | default "token" }}
+                {{- end }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Release.Name }}-unquarantine-proposals
+spec:
+  schedule: "0 11 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: proposer
+              image: {{ include "teo.image" (dict "Values" .Values "Chart" .Chart "repo" "result-pipeline" "imageTag" "") }}
+              args: ["unquarantine-proposals"]
+              env:
+                - name: TEO_POSTGRES_DSN
+                  valueFrom: { secretKeyRef: { name: {{ .Release.Name }}-postgres-creds, key: dsn } }
+                - name: TEO_UNQUARANTINE_WINDOW
+                  value: {{ .Values.quarantine.unquarantineWindow | default 30 | quote }}
+                - name: TEO_BASE_URL
+                  value: "https://{{ .Values.api.ingress.host }}"
+                {{- if .Values.quarantine.githubTokenSecretName }}
+                - name: TEO_GITHUB_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.quarantine.githubTokenSecretName }}
+                      key: {{ .Values.quarantine.githubTokenSecretKey | default "token" }}
+                {{- end }}
+{{- end }}
+{{- if .Values.ownerDigest.enabled }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Release.Name }}-owner-digest
+spec:
+  schedule: {{ .Values.ownerDigest.schedule | quote }}
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: digest
+              image: {{ include "teo.image" (dict "Values" .Values "Chart" .Chart "repo" "result-pipeline" "imageTag" "") }}
+              args: ["owner-digest"]
+              env:
+                - name: TEO_POSTGRES_DSN
+                  valueFrom: { secretKeyRef: { name: {{ .Release.Name }}-postgres-creds, key: dsn } }
+                {{- if .Values.ownerDigest.delivery.smtp.enabled }}
+                - name: TEO_SMTP_HOST
+                  value: {{ .Values.ownerDigest.delivery.smtp.host | quote }}
+                - name: TEO_SMTP_PORT
+                  value: {{ .Values.ownerDigest.delivery.smtp.port | quote }}
+                - name: TEO_SMTP_FROM
+                  value: {{ .Values.ownerDigest.delivery.smtp.from | quote }}
+                {{- if .Values.ownerDigest.delivery.smtp.credentialsSecretName }}
+                - name: TEO_SMTP_USERNAME
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.ownerDigest.delivery.smtp.credentialsSecretName }}
+                      key: username
+                - name: TEO_SMTP_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.ownerDigest.delivery.smtp.credentialsSecretName }}
+                      key: password
+                {{- end }}
+                {{- end }}
+                {{- if .Values.ownerDigest.delivery.slack.enabled }}
+                - name: TEO_SLACK_WEBHOOK_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.ownerDigest.delivery.slack.webhookSecretName }}
+                      key: {{ .Values.ownerDigest.delivery.slack.webhookSecretKey | default "webhook-url" }}
+                {{- end }}
+{{- end }}
+{{- if and .Values.predictor.ml.enabled .Values.predictor.ml.training }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Release.Name }}-predictor-train
+spec:
+  schedule: {{ .Values.predictor.ml.training.schedule | quote }}
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: train
+              image: {{ include "teo.image" (dict "Values" .Values "Chart" .Chart "repo" "predictor-ml" "imageTag" .Values.predictor.ml.image.tag) }}
+              command: ["python", "-m", "teo_predictor_ml.train"]
+              env:
+                - name: TEO_CLICKHOUSE_DSN
+                  valueFrom: { secretKeyRef: { name: {{ .Release.Name }}-clickhouse-creds, key: dsn } }
+                - name: TEO_MODEL_BUCKET
+                  value: "teo-artifacts"
+{{- end }}

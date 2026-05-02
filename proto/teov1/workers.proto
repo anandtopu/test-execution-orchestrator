@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package teo.v1;
+
+option go_package = "github.com/teo-dev/teo/internal/proto/teov1;teov1";
+
+service Workers {
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+  rpc PullAssignment(PullAssignmentRequest) returns (Assignment);
+  rpc ReportTestFinished(TestFinished) returns (Ack);
+  rpc ReportShardFinished(ShardFinished) returns (Ack);
+}
+
+message RegisterRequest {
+  string worker_id = 1;
+  string runner = 2;
+  string agent_version = 3;
+  string capacity_type = 4;  // spot | on_demand | unknown
+}
+message RegisterResponse { string ack = 1; }
+
+message HeartbeatRequest { string worker_id = 1; }
+message HeartbeatResponse {}
+
+message PullAssignmentRequest { string worker_id = 1; string runner = 2; }
+
+message Assignment {
+  string shard_id = 1;
+  string run_id = 2;
+  string repo_full_name = 3;
+  repeated TestEntryRef tests = 4;
+  int32 predicted_duration_ms = 5;
+}
+
+message TestEntryRef {
+  string path = 1;
+  string name = 2;
+  string params_hash = 3;
+}
+
+message TestFinished {
+  string shard_id = 1;
+  string run_id = 2;
+  string test_path = 3;
+  string test_name = 4;
+  string params_hash = 5;
+  int32 attempt = 6;
+  string outcome = 7;
+  int32 duration_ms = 8;
+  string failure_message = 9;
+  string failure_stack = 10;
+}
+
+message ShardFinished {
+  string shard_id = 1;
+  string run_id = 2;
+  string status = 3;  // succeeded | failed | preempted
+}
+
+message Ack { bool ok = 1; }

@@ -1,0 +1,91 @@
+# golangci-lint configuration for TEO.
+# Pinned to v1.60+. Update with care; CI enforces.
+run:
+  timeout: 5m
+  go: "1.23"
+  tests: true
+  modules-download-mode: readonly
+
+linters:
+  disable-all: true
+  enable:
+    - errcheck
+    - gosec
+    - revive
+    - staticcheck
+    - unused
+    - govet
+    - ineffassign
+    - gofmt
+    - goimports
+    - misspell
+    - unconvert
+    - unparam
+    - bodyclose
+    - prealloc
+    - copyloopvar
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+    exclude-functions:
+      - (io.Closer).Close
+      - (io.ReadCloser).Close
+      - (*os.File).Close
+
+  gosec:
+    excludes:
+      # G104: errors not checked — already covered by errcheck
+      - G104
+      # G304: file inclusion via variable — re-enable selectively
+    config:
+      G306: "0644"
+
+  revive:
+    severity: warning
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+      - name: superfluous-else
+      - name: unused-parameter
+      - name: unreachable-code
+      - name: redefines-builtin-id
+
+  goimports:
+    local-prefixes: github.com/teo-dev/teo
+
+  misspell:
+    locale: US
+
+issues:
+  exclude-dirs:
+    - vendor
+    - bin
+    - dist
+    - deploy
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gosec
+        - errcheck
+        - unparam
+  max-issues-per-linter: 0
+  max-same-issues: 0

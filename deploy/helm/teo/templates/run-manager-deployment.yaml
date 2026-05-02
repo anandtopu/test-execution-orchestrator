@@ -1,0 +1,40 @@
+{{- if .Values.runManager.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-run-manager
+  labels:
+    {{- include "teo.componentLabels" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" "run-manager") | nindent 4 }}
+spec:
+  replicas: {{ .Values.runManager.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: teo
+      app.kubernetes.io/component: run-manager
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        {{- include "teo.componentLabels" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" "run-manager") | nindent 8 }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: run-manager
+          image: {{ include "teo.image" (dict "Values" .Values "Chart" .Chart "repo" .Values.runManager.image.repository "imageTag" "") }}
+          env:
+            - name: TEO_POSTGRES_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-postgres-creds
+                  key: dsn
+            - name: TEO_NATS_URL
+              value: "nats://{{ .Release.Name }}-nats:4222"
+          resources:
+            {{- toYaml .Values.runManager.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+{{- end }}

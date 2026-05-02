@@ -1,0 +1,287 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write   # for GHCR pushes on main
+
+env:
+  GO_VERSION: "1.25"
+  GOLANGCI_LINT_VERSION: "v1.61.0"
+  REGISTRY: ghcr.io
+  IMAGE_NAMESPACE: ${{ github.repository_owner }}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Lint
+  # ---------------------------------------------------------------------------
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: ${{ env.GOLANGCI_LINT_VERSION }}
+          args: --timeout=5m
+
+      - name: gofmt
+        run: |
+          out=$(gofmt -l .)
+          if [ -n "$out" ]; then
+            echo "gofmt issues:"
+            echo "$out"
+            exit 1
+          fi
+
+  # ---------------------------------------------------------------------------
+  # Unit tests
+  # ---------------------------------------------------------------------------
+  unit-test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: go test -short
+        run: go test -short -race -count=1 -coverprofile=coverage.out -covermode=atomic ./...
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.out
+
+  # ---------------------------------------------------------------------------
+  # Integration tests — testcontainers-go spins up real Postgres per test.
+  # Linux runners only (Docker required). Behind the `integration` build tag
+  # so the unit job above stays fast.
+  # ---------------------------------------------------------------------------
+  integration-test:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    needs: [unit-test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: Verify Docker is available
+        run: docker info
+      - name: go test -tags=integration
+        run: go test -tags=integration -race -count=1 -timeout 15m ./...
+      - name: Upload integration logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-logs
+          path: /tmp/teo-*.log
+          if-no-files-found: ignore
+
+  # ---------------------------------------------------------------------------
+  # License compliance — fail on AGPL / GPL transitively
+  # ---------------------------------------------------------------------------
+  licenses:
+    name: License compliance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: Install go-licenses
+        run: go install github.com/google/go-licenses@latest
+      - name: Check transitive licenses
+        run: |
+          go-licenses check ./... \
+            --disallowed_types=forbidden,restricted
+
+  # ---------------------------------------------------------------------------
+  # Web UI — vitest + typecheck
+  # ---------------------------------------------------------------------------
+  web:
+    name: Web UI
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: web } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+      - name: Install
+        run: npm ci || npm install
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Test
+        run: npm test
+
+  # ---------------------------------------------------------------------------
+  # Docker build matrix — produces images per service, multi-arch
+  # ---------------------------------------------------------------------------
+  docker-build:
+    name: Docker build (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    needs: [lint, unit-test]
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [teo, api, run-manager, scheduler, result-pipeline, predictor, worker]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.service }}
+          tags: |
+            type=sha,prefix=,format=short
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+
+      - name: Build (and push on main)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            SERVICE=${{ matrix.service }}
+            VERSION=${{ github.ref_name }}
+            COMMIT=${{ github.sha }}
+            DATE=${{ github.event.head_commit.timestamp || github.event.pull_request.updated_at }}
+          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+  # ---------------------------------------------------------------------------
+  # Helm chart lint & template
+  # ---------------------------------------------------------------------------
+  helm:
+    name: Helm chart-testing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.14.4
+      - name: Add subchart repos
+        run: |
+          helm repo add cloudnative-pg     https://cloudnative-pg.github.io/charts
+          helm repo add clickhouse-operator https://docs.altinity.com/clickhouse-operator
+          helm repo add nats               https://nats-io.github.io/k8s/helm/charts
+          helm repo add minio              https://charts.min.io/
+          helm repo add dex                https://charts.dexidp.io
+          helm repo update
+      - name: Build chart deps
+        run: helm dependency build deploy/helm/teo
+      - name: Lint
+        run: helm lint deploy/helm/teo
+      - name: Template (render every documented subchart on/off matrix)
+        run: |
+          for postgres in true false; do
+            for clickhouse in true false; do
+              echo "=== postgres=$postgres clickhouse=$clickhouse ==="
+              helm template teo deploy/helm/teo \
+                --set postgres.enabled=$postgres \
+                --set clickhouse.enabled=$clickhouse \
+                --set auth.jwt.secretName=stub --set auth.jwt.secretKey=stub \
+                > /tmp/rendered.yaml
+              wc -l /tmp/rendered.yaml
+            done
+          done
+      - name: Install chart-testing
+        uses: helm/chart-testing-action@v2.6.1
+      - name: chart-testing lint (changed charts)
+        run: ct lint --config .github/ct.yaml --target-branch ${{ github.event.repository.default_branch }} || true
+
+  # ---------------------------------------------------------------------------
+  # Vulnerability scan (Trivy)
+  # ---------------------------------------------------------------------------
+  trivy:
+    name: Trivy scan
+    runs-on: ubuntu-latest
+    needs: [docker-build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [teo, api, run-manager, scheduler, result-pipeline, predictor, worker]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Trivy
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.service }}:${{ github.sha }}
+          format: sarif
+          output: trivy-${{ matrix.service }}.sarif
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          ignore-unfixed: true
+      - name: Upload Trivy SARIF
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-${{ matrix.service }}
+          path: trivy-${{ matrix.service }}.sarif
+
+  # ---------------------------------------------------------------------------
+  # SBOM generation (Syft → CycloneDX)
+  # ---------------------------------------------------------------------------
+  sbom:
+    name: SBOM (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    needs: [docker-build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [teo, api, run-manager, scheduler, result-pipeline, predictor, worker]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.service }}:${{ github.sha }}
+          format: cyclonedx-json
+          output-file: sbom-${{ matrix.service }}.cdx.json
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ matrix.service }}
+          path: sbom-${{ matrix.service }}.cdx.json

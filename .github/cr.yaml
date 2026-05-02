@@ -1,0 +1,7 @@
+# chart-releaser config: publishes packaged Helm charts to the gh-pages
+# branch as a static index.yaml + .tgz pairs. The release workflow consumes
+# this to keep `helm repo add teo https://teo-dev.github.io/teo` working.
+release-name-template: "chart-{{ .Version }}"
+pages-branch: gh-pages
+release-notes-file: NOTES.md
+skip-existing: true

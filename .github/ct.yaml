@@ -1,0 +1,17 @@
+# chart-testing config. Used by the helm CI job to lint + install the
+# umbrella chart against a kind cluster, validating the full templating
+# pipeline including subchart dependency resolution.
+
+remote: origin
+target-branch: main
+chart-dirs: [deploy/helm]
+chart-repos:
+  - cloudnative-pg=https://cloudnative-pg.github.io/charts
+  - clickhouse-operator=https://docs.altinity.com/clickhouse-operator
+  - nats=https://nats-io.github.io/k8s/helm/charts
+  - minio=https://charts.min.io/
+  - dex=https://charts.dexidp.io
+helm-extra-args: --timeout 600s
+validate-maintainers: false
+check-version-increment: true
+debug: false

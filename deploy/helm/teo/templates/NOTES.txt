@@ -1,0 +1,25 @@
+TEO is installed.
+
+  helm release: {{ .Release.Name }}
+  namespace:    {{ .Release.Namespace }}
+  chart:        {{ .Chart.Name }}-{{ .Chart.Version }}
+
+Next steps:
+  1. Verify all pods are Ready:
+       kubectl -n {{ .Release.Namespace }} get pods
+
+  2. Check the API health:
+       kubectl -n {{ .Release.Namespace }} port-forward svc/{{ .Release.Name }}-api 8080:8080
+       curl http://localhost:8080/healthz
+
+  3. Configure your CI to point at:
+       https://{{ .Values.api.ingress.host }}
+
+  4. Visit the Web UI:
+       https://{{ .Values.api.ingress.host }}/
+
+Documentation: https://github.com/teo-dev/teo/tree/main/docs
+
+Auth: this chart bundles Dex with a no-op default IdP. Operators MUST replace
+this with a real OIDC provider before production use. See:
+  docs/architecture/deployment.md §10  (hardening checklist)

@@ -1,0 +1,109 @@
+{{- if .Values.observability.alerts.enabled -}}
+{{/*
+  TEO ships PrometheusRules covering the five signals from NFR-OBS-705.
+  Each alert carries a `runbook_url` annotation so the on-call link stays
+  inside the doc tree.
+*/}}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ .Release.Name }}-alerts
+  labels:
+    {{- include "teo.componentLabels" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" "alerts") | nindent 4 }}
+    {{- with .Values.observability.alerts.extraLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  groups:
+    - name: teo.api
+      interval: 30s
+      rules:
+        - alert: TeoApiHighLatency
+          expr: |
+            histogram_quantile(0.95,
+              sum by (le, handler) (rate(http_server_requests_seconds_bucket{job=~".*teo-api.*"}[5m]))
+            ) > {{ .Values.observability.alerts.thresholds.apiP95Seconds }}
+          for: 5m
+          labels:
+            severity: warning
+            component: api
+          annotations:
+            summary: "TEO API p95 latency above {{ .Values.observability.alerts.thresholds.apiP95Seconds }}s for 5m"
+            description: "Endpoint {{`{{ $labels.handler }}`}} p95 = {{`{{ $value | humanizeDuration }}`}}"
+            runbook_url: "{{ .Values.observability.alerts.runbookBase }}/api-latency"
+
+        - alert: TeoApiErrorRateHigh
+          expr: |
+            (sum(rate(http_server_requests_seconds_count{job=~".*teo-api.*",status=~"5.."}[5m]))
+             / sum(rate(http_server_requests_seconds_count{job=~".*teo-api.*"}[5m]))) > 0.05
+          for: 10m
+          labels:
+            severity: critical
+            component: api
+          annotations:
+            summary: "TEO API 5xx rate > 5% for 10m"
+            runbook_url: "{{ .Values.observability.alerts.runbookBase }}/api-errors"
+
+    - name: teo.runs
+      interval: 30s
+      rules:
+        - alert: TeoRunStuck
+          expr: teo_runs_stuck_total > 0
+          for: 5m
+          labels:
+            severity: warning
+            component: run-manager
+          annotations:
+            summary: "{{`{{ $value }}`}} TEO run(s) stuck past budget × 2"
+            description: "These runs have been in a non-terminal state longer than 2x their declared budget. Investigate worker availability or scheduler backpressure."
+            runbook_url: "{{ .Values.observability.alerts.runbookBase }}/run-stuck"
+
+    - name: teo.clickhouse
+      interval: 1m
+      rules:
+        - alert: TeoClickHouseInsertLag
+          expr: |
+            histogram_quantile(0.95,
+              sum by (le) (rate(teo_clickhouse_insert_seconds_bucket[5m]))
+            ) > {{ .Values.observability.alerts.thresholds.clickhouseLagSeconds }}
+          for: 5m
+          labels:
+            severity: warning
+            component: result-pipeline
+          annotations:
+            summary: "ClickHouse insert lag p95 > {{ .Values.observability.alerts.thresholds.clickhouseLagSeconds }}s"
+            runbook_url: "{{ .Values.observability.alerts.runbookBase }}/clickhouse-lag"
+
+    - name: teo.nats
+      interval: 1m
+      rules:
+        - alert: TeoNatsConsumerLag
+          expr: max by (consumer) (jetstream_consumer_num_pending) > {{ .Values.observability.alerts.thresholds.natsPendingMax }}
+          for: 5m
+          labels:
+            severity: warning
+            component: nats
+          annotations:
+            summary: "NATS consumer {{`{{ $labels.consumer }}`}} backlog > {{ .Values.observability.alerts.thresholds.natsPendingMax }} messages"
+            runbook_url: "{{ .Values.observability.alerts.runbookBase }}/nats-lag"
+
+    - name: teo.replicas
+      interval: 30s
+      rules:
+        - alert: TeoControlPlaneReplicaDown
+          expr: |
+            kube_deployment_status_replicas_ready{
+              namespace="{{ .Release.Namespace }}",
+              deployment=~"{{ .Release.Name }}-(api|run-manager|result-pipeline|web)"
+            } < kube_deployment_spec_replicas{
+              namespace="{{ .Release.Namespace }}",
+              deployment=~"{{ .Release.Name }}-(api|run-manager|result-pipeline|web)"
+            }
+          for: 5m
+          labels:
+            severity: warning
+            component: platform
+          annotations:
+            summary: "{{`{{ $labels.deployment }}`}} has fewer ready replicas than desired"
+            runbook_url: "{{ .Values.observability.alerts.runbookBase }}/replica-down"
+{{- end }}

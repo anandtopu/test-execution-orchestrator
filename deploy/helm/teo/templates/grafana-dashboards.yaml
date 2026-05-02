@@ -1,0 +1,21 @@
+{{- if .Values.observability.grafanaDashboards.enabled -}}
+{{/*
+  TEO ships five Grafana dashboards as ConfigMaps. The standard
+  `grafana_dashboard: "1"` label is what the Grafana sidecar scans for.
+  Operators using Grafana Operator can swap to GrafanaDashboard CRs.
+*/}}
+{{- range $name, $body := .Values.observability.grafanaDashboards.bundled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $.Release.Name }}-dashboard-{{ $name }}
+  labels:
+    grafana_dashboard: "1"
+    app.kubernetes.io/part-of: teo
+    app.kubernetes.io/component: dashboards
+data:
+  {{ $name }}.json: |-
+{{ $body | indent 4 }}
+{{- end }}
+{{- end }}

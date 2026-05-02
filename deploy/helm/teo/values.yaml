@@ -1,0 +1,388 @@
+# TEO umbrella chart values. Every component is toggleable so operators can
+# point at managed services (RDS, MSK, S3) instead of in-cluster bundled ones.
+
+global:
+  image:
+    registry: ghcr.io
+    namespace: teo-dev
+    tag: ""              # defaults to .Chart.AppVersion
+    pullPolicy: IfNotPresent
+  storageClassName: ""   # uses default if empty
+
+# --- Auth -------------------------------------------------------------------
+auth:
+  jwt:
+    # Provide via Helm value or pre-create the secret externally.
+    secretName: "teo-jwt"
+    secretKey: "jwt-secret"
+    ttl: "1h"
+  oidc:
+    enabled: true
+    issuerURL: ""        # operator-supplied
+    clientID: ""
+    clientSecret: ""
+
+# --- API gateway -----------------------------------------------------------
+api:
+  enabled: true
+  replicas: 2
+  image:
+    repository: api
+  service:
+    type: ClusterIP
+    httpPort: 8080
+    grpcPort: 9090
+  resources:
+    requests: { cpu: "100m", memory: "256Mi" }
+    limits:   { cpu: "1000m", memory: "1Gi" }
+  ingress:
+    enabled: true
+    className: alb
+    host: teo.example.com
+    tls: true
+
+# --- Run Manager (HA via Postgres advisory locks) --------------------------
+runManager:
+  enabled: true
+  replicas: 2
+  image:
+    repository: run-manager
+  resources:
+    requests: { cpu: "100m", memory: "256Mi" }
+    limits:   { cpu: "500m", memory: "512Mi" }
+
+# --- Result pipeline -------------------------------------------------------
+resultPipeline:
+  enabled: true
+  replicas: 2
+  image:
+    repository: result-pipeline
+  resources:
+    requests: { cpu: "200m", memory: "512Mi" }
+    limits:   { cpu: "2000m", memory: "2Gi" }
+
+# --- Predictor (Go heuristic + Python ML) ----------------------------------
+predictor:
+  heuristic:
+    enabled: true
+    replicas: 1
+    image: { repository: predictor }
+    resources:
+      requests: { cpu: "100m", memory: "256Mi" }
+      limits:   { cpu: "500m", memory: "512Mi" }
+  ml:
+    enabled: true
+    replicas: 1
+    image:
+      repository: predictor-ml
+      tag: ""
+    resources:
+      requests: { cpu: "500m", memory: "1Gi" }
+      limits:   { cpu: "2000m", memory: "4Gi" }
+    training:
+      schedule: "0 2 * * *"  # nightly at 02:00 UTC
+      historySource: clickhouse
+
+# --- Worker pool (Karpenter; ADR-0006, ADR-0020) ---------------------------
+workers:
+  enabled: true
+  defaultRunner: pytest
+  runners:
+    pytest:
+      image: { repository: worker-pytest, tag: "" }
+    go:
+      image: { repository: worker-go, tag: "" }
+    jest:
+      image: { repository: worker-jest, tag: "" }
+  resources:
+    requests: { cpu: "200m", memory: "512Mi" }
+    limits:   { cpu: "1000m", memory: "2Gi" }
+  redactor:
+    extraPatterns: []
+  karpenter:
+    enabled: true
+    spot:
+      instanceCategory: ["c", "m", "r"]
+      instanceSize: ["xlarge", "2xlarge", "4xlarge"]
+    onDemand:
+      instanceCategory: ["c", "m"]
+      instanceSize: ["xlarge", "2xlarge"]
+
+# --- Web UI ----------------------------------------------------------------
+web:
+  enabled: true
+  replicas: 2
+  image:
+    repository: web
+  resources:
+    requests: { cpu: "100m", memory: "256Mi" }
+    limits:   { cpu: "500m", memory: "512Mi" }
+
+# --- Bundled stateful subcharts --------------------------------------------
+# Each block below becomes the values document for the matching dependency
+# in Chart.yaml (alias used where the upstream chart name doesn't match).
+# Set `<dep>.enabled: false` to disable the subchart entirely — TEO's own
+# Deployments still read from <dep>.dsn / <dep>.url envs you supply elsewhere.
+
+postgres:
+  enabled: true
+  # CloudNativePG operator chart values (alias: postgres → cloudnative-pg).
+  cluster:
+    instances: 2
+    storage:
+      size: 50Gi
+      storageClass: ""  # uses cluster default if empty
+    postgresql:
+      parameters:
+        max_connections: "200"
+        shared_buffers: "256MB"
+    monitoring:
+      enablePodMonitor: true
+
+clickhouse:
+  enabled: true
+  # Altinity ClickHouse Operator values (alias: clickhouse → clickhouse-operator).
+  cluster:
+    name: teo
+    image: clickhouse/clickhouse-server:24.8
+    storage:
+      size: 200Gi
+      storageClass: ""
+    replicasCount: 1   # single shard / single replica is acceptable for v1.0 (ADR-0017)
+  serviceMonitor:
+    enabled: true
+
+nats:
+  enabled: true
+  # nats-io/k8s helm chart values.
+  config:
+    cluster:
+      enabled: true
+      replicas: 3
+    jetstream:
+      enabled: true
+      fileStore:
+        enabled: true
+        pvc:
+          enabled: true
+          size: 50Gi
+  promExporter:
+    enabled: true
+
+minio:
+  enabled: true
+  # min.io/minio chart values.
+  mode: standalone
+  persistence:
+    enabled: true
+    size: 100Gi
+  resources:
+    requests: { cpu: "200m", memory: "512Mi" }
+  metrics:
+    serviceMonitor:
+      enabled: true
+
+dex:
+  enabled: true
+  # dexidp/dex chart values. Operators MUST replace `connectors` with their IdP.
+  config:
+    issuer: "https://teo.example.com/dex"
+    storage: { type: kubernetes }
+    enablePasswordDB: false
+    connectors: []
+  https:
+    enabled: false  # terminate at the ingress
+
+# Toggle whole groups of subcharts at once via Helm's --set tags.
+tags:
+  stateful: true
+  auth: true
+
+# --- Auto-quarantine + Owner digest ----------------------------------------
+flakeJob:
+  enabled: true
+  schedule: "0 1 * * *"
+quarantine:
+  enabled: true
+  schedule: "*/15 * * * *"
+  slaDays: 14
+  unquarantineWindow: 30   # K consecutive passes before proposing un-quarantine
+  # Operator pre-creates this Secret with key 'token' = a GitHub installation
+  # token (or fine-grained PAT for testing). When unset, sweeps run but skip
+  # any GitHub-side effects.
+  githubTokenSecretName: ""
+  githubTokenSecretKey: "token"
+ownerDigest:
+  enabled: true
+  schedule: "0 9 * * 1"   # Mondays 09:00 UTC
+  # Delivery channels. Both can be enabled simultaneously; the runner fans out
+  # to every configured Sender (internal/digest/sender.go). When neither is
+  # enabled, the cron job runs in render-only mode and logs intended sends.
+  delivery:
+    smtp:
+      enabled: false
+      host: ""
+      port: 587
+      from: "teo@example.com"
+      # Operator pre-creates this Secret with keys: username, password
+      credentialsSecretName: ""
+    slack:
+      enabled: false
+      # Operator pre-creates this Secret with key: webhook-url
+      webhookSecretName: ""
+      webhookSecretKey: "webhook-url"
+
+# --- Observability ---------------------------------------------------------
+observability:
+  serviceMonitor:
+    enabled: true
+  alerts:
+    enabled: true
+    # Operator-overridable thresholds for the bundled PrometheusRules.
+    thresholds:
+      apiP95Seconds: 0.5
+      clickhouseLagSeconds: 30
+      natsPendingMax: 10000
+    # Where the on-call link in each alert points. Defaults to this repo's
+    # operations runbook tree; operators using a private wiki can override.
+    runbookBase: "https://github.com/teo-dev/teo/blob/main/docs/operations/runbooks"
+    extraLabels: {}
+  grafanaDashboards:
+    enabled: true
+    # Bundled dashboards. Each value is a Grafana JSON document. Operators can
+    # override any single one or pass `bundled: {}` to disable them all.
+    bundled:
+      api-latency: |
+        {
+          "title": "TEO — API latency",
+          "uid": "teo-api-latency",
+          "schemaVersion": 39,
+          "timezone": "browser",
+          "panels": [
+            {
+              "type": "timeseries",
+              "title": "Request rate (req/s) by endpoint",
+              "targets": [{"expr": "sum by (handler) (rate(http_server_requests_seconds_count{job=~\".*teo-api.*\"}[1m]))"}],
+              "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+            },
+            {
+              "type": "timeseries",
+              "title": "p95 latency by endpoint (ms)",
+              "targets": [{"expr": "histogram_quantile(0.95, sum by (le, handler) (rate(http_server_requests_seconds_bucket{job=~\".*teo-api.*\"}[5m]))) * 1000"}],
+              "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+            },
+            {
+              "type": "timeseries",
+              "title": "5xx error rate (%)",
+              "targets": [{"expr": "sum(rate(http_server_requests_seconds_count{job=~\".*teo-api.*\",status=~\"5..\"}[5m])) / sum(rate(http_server_requests_seconds_count{job=~\".*teo-api.*\"}[5m])) * 100"}],
+              "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8}
+            }
+          ]
+        }
+      scheduler-decision: |
+        {
+          "title": "TEO — Scheduler decision time",
+          "uid": "teo-scheduler",
+          "schemaVersion": 39,
+          "panels": [
+            {
+              "type": "timeseries",
+              "title": "Plan duration p50 / p95 (ms)",
+              "targets": [
+                {"expr": "histogram_quantile(0.5,  sum by (le) (rate(teo_scheduler_plan_seconds_bucket[5m]))) * 1000", "legendFormat": "p50"},
+                {"expr": "histogram_quantile(0.95, sum by (le) (rate(teo_scheduler_plan_seconds_bucket[5m]))) * 1000", "legendFormat": "p95"}
+              ],
+              "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+            },
+            {
+              "type": "timeseries",
+              "title": "Plans per minute",
+              "targets": [{"expr": "sum(rate(teo_scheduler_plan_total[1m])) * 60"}],
+              "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+            },
+            {
+              "type": "stat",
+              "title": "Cold-start fraction (last 1h)",
+              "targets": [{"expr": "sum(rate(teo_predictor_cold_start_total[1h])) / sum(rate(teo_predictor_predict_total[1h]))"}],
+              "gridPos": {"h": 6, "w": 8, "x": 0, "y": 8}
+            }
+          ]
+        }
+      run-state-machine: |
+        {
+          "title": "TEO — Run state machine",
+          "uid": "teo-run-states",
+          "schemaVersion": 39,
+          "panels": [
+            {
+              "type": "timeseries",
+              "title": "Runs by status (current)",
+              "targets": [{"expr": "sum by (status) (teo_runs_active)"}],
+              "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0}
+            },
+            {
+              "type": "timeseries",
+              "title": "State transitions per minute",
+              "targets": [{"expr": "sum by (to_status) (rate(teo_run_transitions_total[1m])) * 60"}],
+              "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+            },
+            {
+              "type": "stat",
+              "title": "Runs stuck > budget × 2",
+              "targets": [{"expr": "teo_runs_stuck_total"}],
+              "gridPos": {"h": 6, "w": 6, "x": 12, "y": 8}
+            }
+          ]
+        }
+      clickhouse-lag: |
+        {
+          "title": "TEO — ClickHouse insert lag",
+          "uid": "teo-ch-lag",
+          "schemaVersion": 39,
+          "panels": [
+            {
+              "type": "timeseries",
+              "title": "Insert lag p95 (s)",
+              "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (rate(teo_clickhouse_insert_seconds_bucket[5m])))"}],
+              "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+            },
+            {
+              "type": "timeseries",
+              "title": "Inserts per second",
+              "targets": [{"expr": "sum(rate(teo_clickhouse_inserts_total[1m]))"}],
+              "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+            },
+            {
+              "type": "stat",
+              "title": "Failed inserts (last 5m)",
+              "targets": [{"expr": "sum(increase(teo_clickhouse_insert_failures_total[5m]))"}],
+              "gridPos": {"h": 6, "w": 6, "x": 0, "y": 8}
+            }
+          ]
+        }
+      nats-consumer-lag: |
+        {
+          "title": "TEO — NATS JetStream consumer lag",
+          "uid": "teo-nats-lag",
+          "schemaVersion": 39,
+          "panels": [
+            {
+              "type": "timeseries",
+              "title": "Pending messages by stream",
+              "targets": [{"expr": "sum by (stream) (jetstream_consumer_num_pending)"}],
+              "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+            },
+            {
+              "type": "timeseries",
+              "title": "Ack lag p95 (s)",
+              "targets": [{"expr": "histogram_quantile(0.95, sum by (le, consumer) (rate(jetstream_consumer_ack_lag_seconds_bucket[5m])))"}],
+              "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+            },
+            {
+              "type": "stat",
+              "title": "Redeliveries (last 5m)",
+              "targets": [{"expr": "sum(increase(jetstream_consumer_redelivered_total[5m]))"}],
+              "gridPos": {"h": 6, "w": 6, "x": 0, "y": 8}
+            }
+          ]
+        }

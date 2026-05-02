@@ -1,0 +1,1 @@
+ALTER TABLE teo.shards DROP COLUMN IF EXISTS meta;

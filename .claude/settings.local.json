@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(go version *)",
+      "Bash(go build *)",
+      "Bash(go test *)",
+      "Bash(go vet *)",
+      "Bash(./bin/api.exe)",
+      "Bash(./bin/teo.exe version *)",
+      "Bash(go get *)",
+      "Bash(./bin/teo.exe help *)",
+      "Bash(go tool *)",
+      "Bash(go mod *)",
+      "Bash(./bin/teo.exe doctor *)",
+      "Bash(GOFLAGS=-mod=mod go list -m github.com/aws/aws-sdk-go-v2)",
+      "Bash(go env *)",
+      "Bash(npm test *)",
+      "Bash(goreleaser --version)",
+      "Bash(go install *)",
+      "Bash(\"C:/Users/anand/go/bin/goreleaser.exe\" --version)",
+      "Bash(\"C:/Users/anand/go/bin/goreleaser.exe\" check *)",
+      "Bash(\"C:/Users/anand/go/bin/goreleaser.exe\" release *)",
+      "Bash(\"C:/Users/anand/go/bin/buf.exe\" --version)",
+      "Bash(protoc --version)",
+      "Bash(\"C:/Users/anand/go/bin/buf.exe\" generate *)",
+      "Bash(\"C:/Users/anand/go/bin/buf.exe\" lint *)"
+    ]
+  }
+}

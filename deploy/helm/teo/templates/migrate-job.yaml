@@ -1,0 +1,38 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-migrate-{{ .Chart.AppVersion | replace "." "-" }}
+  labels:
+    {{- include "teo.componentLabels" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" "migrate") | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+spec:
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        {{- include "teo.componentLabels" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" "migrate") | nindent 8 }}
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: migrate
+          image: {{ include "teo.image" (dict "Values" .Values "Chart" .Chart "repo" "teo" "imageTag" "") }}
+          args: ["migrate", "up", "--dir", "/opt/teo/migrations"]
+          env:
+            - name: TEO_POSTGRES_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-postgres-creds
+                  key: dsn
+            - name: TEO_CLICKHOUSE_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-clickhouse-creds
+                  key: dsn
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true

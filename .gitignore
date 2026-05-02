@@ -1,0 +1,49 @@
+# Binaries
+/bin/
+/dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test
+*.test
+*.out
+coverage.out
+coverage.html
+
+# Go
+vendor/
+go.work
+go.work.sum
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+
+# Build artifacts
+/build/
+
+# Helm
+*.tgz
+
+# Local development
+.venv/
+__pycache__/
+*.pyc
+
+# Secrets
+*.pem
+*.key
+!*.pub.pem

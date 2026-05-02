@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write   # cosign keyless
+
+jobs:
+  goreleaser:
+    name: GoReleaser (binaries + SBOMs + signatures)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: true
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+      - name: Install syft
+        uses: anchore/sbom-action/download-syft@v0
+      - name: GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  helm-publish:
+    name: Helm chart publish
+    runs-on: ubuntu-latest
+    needs: [goreleaser]
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.14.4
+      - name: Add subchart repos
+        run: |
+          helm repo add cloudnative-pg     https://cloudnative-pg.github.io/charts
+          helm repo add nats               https://nats-io.github.io/k8s/helm/charts
+          helm repo add minio              https://charts.min.io/
+          helm repo add dex                https://charts.dexidp.io
+          helm repo add clickhouse-operator https://docs.altinity.com/clickhouse-operator
+          helm repo update
+      - name: Build chart deps
+        run: helm dependency build deploy/helm/teo
+      - name: Package chart
+        run: |
+          mkdir -p .chartpkg
+          helm package deploy/helm/teo --destination .chartpkg
+      - name: Update gh-pages index
+        uses: helm/chart-releaser-action@v1.6.0
+        with:
+          charts_dir: deploy/helm
+          config: .github/cr.yaml
+        env:
+          CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}

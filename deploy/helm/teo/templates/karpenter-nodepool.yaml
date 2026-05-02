@@ -1,0 +1,91 @@
+{{- if and .Values.workers.enabled .Values.workers.karpenter.enabled }}
+# ADR-0006 (revised) + ADR-0020. Two NodePools: spot (preferred) + on-demand (fallback).
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: {{ .Release.Name }}-workers-spot
+  labels:
+    app.kubernetes.io/component: worker-pool
+    teo.io/capacity-type: spot
+spec:
+  template:
+    metadata:
+      labels:
+        teo.io/role: worker
+        teo.io/capacity-type: spot
+    spec:
+      requirements:
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["spot"]
+        - key: karpenter.k8s.aws/instance-category
+          operator: In
+          values: {{ toJson .Values.workers.karpenter.spot.instanceCategory }}
+        - key: karpenter.k8s.aws/instance-size
+          operator: In
+          values: {{ toJson .Values.workers.karpenter.spot.instanceSize }}
+        - key: kubernetes.io/arch
+          operator: In
+          values: ["amd64"]
+      nodeClassRef:
+        group: karpenter.k8s.aws
+        kind: EC2NodeClass
+        name: {{ .Release.Name }}-workers
+      taints:
+        - key: teo.io/worker
+          effect: NoSchedule
+  weight: 100
+  disruption:
+    consolidationPolicy: WhenEmpty
+    consolidateAfter: 30s
+---
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: {{ .Release.Name }}-workers-on-demand
+  labels:
+    app.kubernetes.io/component: worker-pool
+    teo.io/capacity-type: on-demand
+spec:
+  template:
+    metadata:
+      labels:
+        teo.io/role: worker
+        teo.io/capacity-type: on-demand
+    spec:
+      requirements:
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["on-demand"]
+        - key: karpenter.k8s.aws/instance-category
+          operator: In
+          values: {{ toJson .Values.workers.karpenter.onDemand.instanceCategory }}
+        - key: karpenter.k8s.aws/instance-size
+          operator: In
+          values: {{ toJson .Values.workers.karpenter.onDemand.instanceSize }}
+      nodeClassRef:
+        group: karpenter.k8s.aws
+        kind: EC2NodeClass
+        name: {{ .Release.Name }}-workers
+      taints:
+        - key: teo.io/worker
+          effect: NoSchedule
+  weight: 50
+  disruption:
+    consolidationPolicy: WhenEmpty
+    consolidateAfter: 60s
+---
+apiVersion: karpenter.k8s.aws/v1
+kind: EC2NodeClass
+metadata:
+  name: {{ .Release.Name }}-workers
+spec:
+  amiFamily: AL2023
+  role: "KarpenterNodeRole-{{ .Release.Name }}"
+  subnetSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: "{{ .Release.Name }}"
+  securityGroupSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: "{{ .Release.Name }}"
+{{- end }}

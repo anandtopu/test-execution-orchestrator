@@ -1,0 +1,127 @@
+# goreleaser config for TEO. Tagged releases produce signed binaries for
+# every cmd/<svc>, signed multi-arch container images, an SBOM per artifact,
+# and a Helm chart pushed to the gh-pages index.
+version: 2
+
+project_name: teo
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: teo
+    main: ./cmd/teo
+    binary: teo
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w
+      - -X github.com/teo-dev/teo/internal/version.Version={{.Version}}
+      - -X github.com/teo-dev/teo/internal/version.Commit={{.ShortCommit}}
+      - -X github.com/teo-dev/teo/internal/version.Date={{.Date}}
+  - id: api
+    main: ./cmd/api
+    binary: api
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w
+      - -X github.com/teo-dev/teo/internal/version.Version={{.Version}}
+      - -X github.com/teo-dev/teo/internal/version.Commit={{.ShortCommit}}
+      - -X github.com/teo-dev/teo/internal/version.Date={{.Date}}
+  - id: run-manager
+    main: ./cmd/run-manager
+    binary: run-manager
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+  - id: scheduler
+    main: ./cmd/scheduler
+    binary: scheduler
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+  - id: result-pipeline
+    main: ./cmd/result-pipeline
+    binary: result-pipeline
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+  - id: predictor
+    main: ./cmd/predictor
+    binary: predictor
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+  - id: worker
+    main: ./cmd/worker
+    binary: worker
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+
+archives:
+  - id: teo-cli
+    ids: [teo]
+    name_template: "teo_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files: [LICENSE, NOTICE, README.md, CHANGELOG.md]
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+# SBOMs per archive via syft (the same provider as our Trivy/Syft CI step).
+sboms:
+  - id: cyclonedx
+    artifacts: archive
+    documents:
+      - "{{ .ArtifactName }}.cdx.json"
+    cmd: syft
+    args: ["{{ .ArtifactPath }}", "-o", "cyclonedx-json={{ .Document }}"]
+
+# Cosign keyless signing for archives + checksums (the chart workflow signs
+# its own artifacts separately).
+signs:
+  - cmd: cosign
+    artifacts: checksum
+    args:
+      - "--yes"
+      - "sign-blob"
+      - "--output-signature=${artifact}.sig"
+      - "--output-certificate=${artifact}.cert"
+      - "${artifact}"
+    output: true
+
+changelog:
+  use: github
+  sort: asc
+  groups:
+    - title: Features
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 0
+    - title: Fixes
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 1
+    - title: Other
+      order: 999
+
+release:
+  github:
+    owner: teo-dev
+    name: teo
+  draft: false
+  prerelease: auto
+  name_template: "v{{ .Version }}"
+  header: |
+    See [`progress.md`](https://github.com/teo-dev/teo/blob/main/progress.md) for
+    the implementation status of this release.

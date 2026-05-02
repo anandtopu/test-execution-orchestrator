@@ -1,0 +1,52 @@
+apiVersion: v2
+name: teo
+description: Test Execution Orchestrator — self-hosted control plane
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+home: https://github.com/teo-dev/teo
+sources:
+  - https://github.com/teo-dev/teo
+maintainers:
+  - name: TEO maintainers
+    email: maintainers@teo.dev
+keywords:
+  - testing
+  - ci
+  - orchestrator
+  - flaky-tests
+icon: https://raw.githubusercontent.com/teo-dev/teo/main/.github/teo-icon.png
+kubeVersion: ">=1.29.0-0"
+annotations:
+  artifacthub.io/license: Apache-2.0
+
+# Each stateful dependency is optional and toggleable from values.yaml so an
+# operator can plug in their own managed service (RDS, MSK-via-NATS, S3, ...).
+dependencies:
+  - name: cloudnative-pg
+    version: "0.22.1"
+    repository: https://cloudnative-pg.github.io/charts
+    condition: postgres.enabled
+    alias: postgres
+    tags: [stateful]
+  - name: clickhouse-operator
+    version: "0.24.5"
+    repository: https://docs.altinity.com/clickhouse-operator
+    condition: clickhouse.enabled
+    alias: clickhouse
+    tags: [stateful]
+  - name: nats
+    version: "1.2.8"
+    repository: https://nats-io.github.io/k8s/helm/charts
+    condition: nats.enabled
+    tags: [stateful]
+  - name: minio
+    version: "5.4.0"
+    repository: https://charts.min.io/
+    condition: minio.enabled
+    tags: [stateful]
+  - name: dex
+    version: "0.19.1"
+    repository: https://charts.dexidp.io
+    condition: dex.enabled
+    tags: [auth]
