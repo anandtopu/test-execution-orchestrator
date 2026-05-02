@@ -2,6 +2,13 @@ import { defineConfig } from 'vitest/config';
 import path from 'node:path';
 
 export default defineConfig({
+  // Use the automatic JSX runtime (React 17+). The component test files use
+  // JSX without `import React from 'react'` because Next.js does the same in
+  // production. Without this, esbuild falls back to the classic transform
+  // and tests fail with "React is not defined".
+  esbuild: {
+    jsx: 'automatic',
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),

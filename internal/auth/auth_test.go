@@ -41,8 +41,11 @@ func TestAPIKeyHashAndVerify(t *testing.T) {
 	if gotPrefix != prefix {
 		t.Fatalf("prefix mismatch: %s != %s", gotPrefix, prefix)
 	}
-	// Tampering should fail
-	bad := display[:len(display)-1] + "X"
+	// Tampering should fail. Appending a sentinel byte (rather than replacing
+	// the last char) guarantees a different string regardless of which random
+	// base64 character the generator happened to roll — replacing previously
+	// produced a 1-in-64 flake when the original last char already was 'X'.
+	bad := display + "X"
 	if _, ok := VerifyAPIKey(bad, hash); ok {
 		t.Fatal("tampered key verified")
 	}

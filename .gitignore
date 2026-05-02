@@ -1,5 +1,6 @@
 # Binaries
 .claude
+web/node_modules/
 /bin/
 /dist/
 *.exe

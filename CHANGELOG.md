@@ -8,6 +8,11 @@ For a finer-grained per-FR / per-epic implementation status, see [`progress.md`]
 
 ## [Unreleased]
 
+### Fixed — CI run-3 failures (release-blocking)
+- **Vitest — "ReferenceError: React is not defined" in 18 component tests.** `web/tsconfig.json` sets `"jsx": "preserve"` (lets Next.js handle the transform in dev/build), so Vitest's esbuild loader fell back to the *classic* JSX transform — which expects `React` to be in scope on every `.tsx` file. The component tests omit `import React from 'react'` because Next.js handles that with the automatic runtime. Fix: add `esbuild: { jsx: 'automatic' }` to `web/vitest.config.ts` so Vitest uses the same automatic runtime in tests. Verified locally: 42 / 42 tests now pass.
+- **Vitest — DOM cleanup not running between tests.** With the JSX fix landed, three `StatusBadge` tests then failed with "Found multiple elements by: [data-testid=status-badge]" because `@testing-library/react`'s automatic after-each cleanup only registers when Vitest globals are enabled (we run with `globals: false`). Wired it manually in `web/src/test-setup.ts`: `afterEach(cleanup)`. Without this fix the JSX repair would have surfaced a fresh failure on the next CI run.
+- **Go — `TestAPIKeyHashAndVerify` flaked 1-in-64 on CI.** The test tampered with the API key by replacing the last character: `bad := display[:len(display)-1] + "X"`. When the random base64 secret already ended with `X` (1/64 ≈ 1.5% per run), the replacement yielded the *same* string — argon2id verified successfully and the test reported "tampered key verified". CI rolled an X. Fix: append the sentinel instead of replacing it (`bad := display + "X"`) — the modified string is now guaranteed to differ from the original regardless of which random byte the generator produced. Stress-tested 200 iterations locally: green.
+
 ### Fixed — CI run-2 failures (release-blocking)
 The first CI fix (simple-protocol on the migration driver) didn't help — pgx still rewrote the SQL and Postgres kept rejecting `001_initial.up.sql` at the first `(`. Two fixes here:
 
