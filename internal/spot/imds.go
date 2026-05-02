@@ -37,7 +37,7 @@ func NewWatcher() *Watcher {
 	}
 }
 
-// Watch polls IMDS until ctx is cancelled or an interruption is detected.
+// Watch polls IMDS until ctx is canceled or an interruption is detected.
 // The channel receives at most one Interruption.
 func (w *Watcher) Watch(ctx context.Context) <-chan Interruption {
 	out := make(chan Interruption, 1)

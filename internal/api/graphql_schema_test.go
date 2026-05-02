@@ -104,15 +104,15 @@ func TestRunTypeResolvesFromMapSource(t *testing.T) {
 				Type: tmpRun,
 				Resolve: func(_ graphql.ResolveParams) (any, error) {
 					return map[string]any{
-						"id":                 "abc",
-						"repo_full_name":     "owner/repo",
-						"commit_sha":         "deadbeef",
-						"branch":             "main",
-						"status":             "succeeded",
-						"total_duration_ms":  12345,
-						"preemption_count":   2,
-						"started_at":         "2026-04-30T00:00:00Z",
-						"finished_at":        "2026-04-30T00:01:00Z",
+						"id":                "abc",
+						"repo_full_name":    "owner/repo",
+						"commit_sha":        "deadbeef",
+						"branch":            "main",
+						"status":            "succeeded",
+						"total_duration_ms": 12345,
+						"preemption_count":  2,
+						"started_at":        "2026-04-30T00:00:00Z",
+						"finished_at":       "2026-04-30T00:01:00Z",
 					}, nil
 				},
 			},
@@ -146,7 +146,7 @@ func TestRunTypeResolvesFromMapSource(t *testing.T) {
 }
 
 // TestRerunFailedRequiresRunID verifies the mutation rejects empty IDs at the
-// resolver layer (defence in depth — graphql.NonNull also catches it).
+// resolver layer (defense in depth — graphql.NonNull also catches it).
 func TestRerunFailedRequiresRunID(t *testing.T) {
 	schema := buildSchema(nil)
 	res := graphql.Do(graphql.Params{

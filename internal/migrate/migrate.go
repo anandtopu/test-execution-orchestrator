@@ -13,6 +13,8 @@ import (
 	"sort"
 	"strings"
 
+	// Side-effect import: registers the "clickhouse" database/sql driver
+	// used by openDriver for the ClickHouse migration path.
 	_ "github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -39,7 +41,7 @@ func loadFiles(dir string) ([]File, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read migration dir %s: %w", dir, err)
 	}
-	var files []File
+	files := make([]File, 0, len(entries))
 	for _, e := range entries {
 		if e.IsDir() {
 			continue
@@ -220,12 +222,12 @@ func recordVersion(b Backend, db *sql.DB, v int, name string) error {
 }
 
 // splitSQL breaks a multi-statement SQL script into individual statements,
-// respecting Postgres-flavour syntax that the naive line-based split can't
+// respecting Postgres-flavor syntax that the naive line-based split can't
 // handle:
 //
 //   - $$ ... $$ and $tag$ ... $tag$ dollar-quoted strings (plpgsql function
 //     bodies live in these; their internal `;`s must NOT split the function)
-//   - '...' single-quoted literals with the SQL standard '' escape
+//   - '...' single-quoted literals with the SQL standard ” escape
 //   - "..." double-quoted identifiers
 //   - -- ... \n line comments
 //   - /* ... */ block comments
@@ -261,7 +263,7 @@ func splitSQL(sql string) []string {
 			cur.WriteByte('/')
 			cur.WriteByte('*')
 			i += 2
-			for i+1 < n && !(sql[i] == '*' && sql[i+1] == '/') {
+			for i+1 < n && (sql[i] != '*' || sql[i+1] != '/') {
 				cur.WriteByte(sql[i])
 				i++
 			}
@@ -353,7 +355,6 @@ func isDollarTagByte(b byte) bool {
 		(b >= '0' && b <= '9') ||
 		b == '_'
 }
-
 
 func firstLine(s string) string {
 	if i := strings.IndexByte(s, '\n'); i > 0 {

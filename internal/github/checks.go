@@ -13,10 +13,10 @@ import (
 // Auth uses an installation token (acquired via JWT signed with the App private key);
 // for the MVP this is the operator-provided token.
 type CheckClient struct {
-	HTTP        *http.Client
-	BaseURL     string // e.g., https://api.github.com
-	Token       string // installation token
-	UserAgent   string
+	HTTP      *http.Client
+	BaseURL   string // e.g., https://api.github.com
+	Token     string // installation token
+	UserAgent string
 }
 
 // NewCheckClient returns a configured client.
@@ -34,7 +34,7 @@ type CheckRun struct {
 	Name        string     `json:"name"`
 	HeadSHA     string     `json:"head_sha"`
 	Status      string     `json:"status,omitempty"`     // queued | in_progress | completed
-	Conclusion  string     `json:"conclusion,omitempty"` // success | failure | neutral | cancelled | skipped
+	Conclusion  string     `json:"conclusion,omitempty"` // success | failure | neutral | canceled | skipped
 	StartedAt   *time.Time `json:"started_at,omitempty"`
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
 	DetailsURL  string     `json:"details_url,omitempty"`

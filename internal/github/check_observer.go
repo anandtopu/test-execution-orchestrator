@@ -16,15 +16,15 @@ import (
 // CheckObserver implements runmanager.RunObserver. It maintains a GitHub
 // Check Run in lockstep with each TEO run.
 type CheckObserver struct {
-	Pool      *pgxpool.Pool
-	Logger    *slog.Logger
-	Client    *CheckClient
-	BaseURL   string // for deep links: "https://teo.example.com"
-	AppName   string // shown as the Check Run name; default "TEO"
+	Pool    *pgxpool.Pool
+	Logger  *slog.Logger
+	Client  *CheckClient
+	BaseURL string // for deep links: "https://teo.example.com"
+	AppName string // shown as the Check Run name; default "TEO"
 }
 
 // OnRunStateChanged implements runmanager.RunObserver.
-func (o *CheckObserver) OnRunStateChanged(ctx context.Context, snap runmanager.RunSnapshot, prev model.RunStatus) error {
+func (o *CheckObserver) OnRunStateChanged(ctx context.Context, snap runmanager.RunSnapshot, _ model.RunStatus) error {
 	if o == nil || o.Client == nil {
 		return nil
 	}
@@ -69,10 +69,10 @@ func (o *CheckObserver) OnRunStateChanged(ctx context.Context, snap runmanager.R
 	// In-flight progress update — best-effort.
 	now := time.Now()
 	return o.Client.Update(ctx, snap.RepoFullName, *snap.GitHubCheckRunID, CheckRun{
-		Name:      name,
-		HeadSHA:   snap.CommitSHA,
-		Status:    "in_progress",
-		StartedAt: snap.StartedAt,
+		Name:       name,
+		HeadSHA:    snap.CommitSHA,
+		Status:     "in_progress",
+		StartedAt:  snap.StartedAt,
 		DetailsURL: deepURL,
 		Output: &Output{
 			Title:   fmt.Sprintf("TEO: %s", snap.Status),
@@ -85,12 +85,13 @@ func (o *CheckObserver) OnRunStateChanged(ctx context.Context, snap runmanager.R
 func (o *CheckObserver) finalize(ctx context.Context, snap runmanager.RunSnapshot, deepURL, name string) error {
 	conclusion := "success"
 	title := "TEO: all tests passed"
-	if snap.Status == model.RunFailed {
+	switch snap.Status {
+	case model.RunFailed:
 		conclusion = "failure"
 		title = "TEO: tests failed"
-	} else if snap.Status == model.RunCancelled {
-		conclusion = "cancelled"
-		title = "TEO: run cancelled"
+	case model.RunCancelled:
+		conclusion = "canceled"
+		title = "TEO: run canceled"
 	}
 	body := o.finalSummary(ctx, snap)
 	return o.Client.Update(ctx, snap.RepoFullName, *snap.GitHubCheckRunID, CheckRun{
@@ -158,7 +159,7 @@ func conclusionLabel(s model.RunStatus) string {
 	case model.RunFailed:
 		return "failed"
 	case model.RunCancelled:
-		return "cancelled"
+		return "canceled"
 	}
 	return string(s)
 }

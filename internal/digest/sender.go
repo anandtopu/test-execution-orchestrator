@@ -20,11 +20,11 @@ type Sender interface {
 
 // Message is a fully-rendered digest payload, format-agnostic.
 type Message struct {
-	Owner    string // CODEOWNERS team or @user identifier (used by Slack)
-	Email    string // empty if no email destination
-	Subject  string
-	HTML     string
-	Text     string
+	Owner   string // CODEOWNERS team or @user identifier (used by Slack)
+	Email   string // empty if no email destination
+	Subject string
+	HTML    string
+	Text    string
 }
 
 // --- SMTP ------------------------------------------------------------------
@@ -136,7 +136,7 @@ type slackPayload struct {
 // Send implements Sender.
 func (s *SlackSender) Send(ctx context.Context, m Message) error {
 	if s.WebhookURL == "" {
-		return errors.New("Slack webhook not configured")
+		return errors.New("slack webhook not configured")
 	}
 	payload := slackPayload{Text: buildSlackText(m)}
 	body, err := json.Marshal(payload)

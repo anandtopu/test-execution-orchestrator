@@ -9,10 +9,10 @@ import (
 
 // Problem is an RFC 7807 error body.
 type Problem struct {
-	Type   string `json:"type"`
-	Title  string `json:"title"`
-	Status int    `json:"status"`
-	Detail string `json:"detail,omitempty"`
+	Type   string       `json:"type"`
+	Title  string       `json:"title"`
+	Status int          `json:"status"`
+	Detail string       `json:"detail,omitempty"`
 	Errors []FieldError `json:"errors,omitempty"`
 }
 

@@ -30,13 +30,13 @@ type ExecOptions struct {
 
 // Result is one test's outcome.
 type Result struct {
-	Test       model.TestEntry
-	Outcome    model.TestOutcome
-	Started    time.Time
-	Finished   time.Time
-	DurationMS int
-	Stdout     []byte
-	Stderr     []byte
+	Test           model.TestEntry
+	Outcome        model.TestOutcome
+	Started        time.Time
+	Finished       time.Time
+	DurationMS     int
+	Stdout         []byte
+	Stderr         []byte
 	FailureMessage string
 	FailureStack   string
 }

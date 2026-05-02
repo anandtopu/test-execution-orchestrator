@@ -96,7 +96,7 @@ func emitTable(results []doctor.Result) {
 
 // statusGlyph turns a Status into a short, terminal-friendly tag. Operators
 // reading the doctor output expect to skim the rightmost FAIL — so failures
-// stand out without ANSI colour (which gets eaten by CI log viewers).
+// stand out without ANSI color (which gets eaten by CI log viewers).
 func statusGlyph(s doctor.Status) string {
 	switch s {
 	case doctor.StatusOK:

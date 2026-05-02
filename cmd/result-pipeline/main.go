@@ -2,10 +2,11 @@
 // to Postgres + ClickHouse + S3.
 //
 // Subcommands (CronJob entry points):
-//   result-pipeline                  default: run the OTLP gRPC receiver
-//   result-pipeline owner-digest     send the weekly per-author digest
-//   result-pipeline flake-recompute  run the nightly Wilson-interval flake job
-//   result-pipeline quarantine-sweep run the auto-quarantine sweeper
+//
+//	result-pipeline                  default: run the OTLP gRPC receiver
+//	result-pipeline owner-digest     send the weekly per-author digest
+//	result-pipeline flake-recompute  run the nightly Wilson-interval flake job
+//	result-pipeline quarantine-sweep run the auto-quarantine sweeper
 package main
 
 import (

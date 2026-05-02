@@ -54,13 +54,13 @@ func (a *Adapter) Discover(ctx context.Context, workdir string) ([]model.TestEnt
 // jestReport models the parts of `jest --json` we read.
 type jestReport struct {
 	TestResults []struct {
-		Name             string  `json:"name"` // file path
+		Name             string `json:"name"` // file path
 		AssertionResults []struct {
-			AncestorTitles []string `json:"ancestorTitles"`
-			Title          string   `json:"title"`
-			FullName       string   `json:"fullName"`
-			Status         string   `json:"status"` // passed | failed | skipped | pending | todo
-			Duration       float64  `json:"duration"`
+			AncestorTitles  []string `json:"ancestorTitles"`
+			Title           string   `json:"title"`
+			FullName        string   `json:"fullName"`
+			Status          string   `json:"status"` // passed | failed | skipped | pending | todo
+			Duration        float64  `json:"duration"`
 			FailureMessages []string `json:"failureMessages"`
 		} `json:"assertionResults"`
 	} `json:"testResults"`

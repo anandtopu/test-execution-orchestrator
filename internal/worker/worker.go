@@ -64,7 +64,7 @@ type SpotInterruptionSource interface {
 // IsDraining reports whether the agent has received an interruption notice.
 func (a *Agent) IsDraining() bool { return a.draining.Load() }
 
-// Run claims and executes assignments until ctx is cancelled.
+// Run claims and executes assignments until ctx is canceled.
 func (a *Agent) Run(ctx context.Context) error {
 	if a.PollInterval == 0 {
 		a.PollInterval = 2 * time.Second

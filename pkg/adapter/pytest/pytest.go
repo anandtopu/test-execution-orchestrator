@@ -85,10 +85,10 @@ type jsonReport struct {
 }
 
 type jsonTest struct {
-	NodeID  string  `json:"nodeid"`
-	Outcome string  `json:"outcome"`
+	NodeID   string  `json:"nodeid"`
+	Outcome  string  `json:"outcome"`
 	Duration float64 `json:"duration"`
-	Call struct {
+	Call     struct {
 		Longrepr string `json:"longrepr"`
 		Crash    struct {
 			Message string `json:"message"`
@@ -120,15 +120,19 @@ func (a *Adapter) Execute(ctx context.Context, workdir string, tests []model.Tes
 		args = append(args, nodeID)
 	}
 
-	cmd := exec.CommandContext(ctx, a.bin(), args...)
-	cmd.Dir = workdir
-	cmd.Env = mergeEnv(os.Environ(), opts.Env)
-
+	// Wrap with timeout BEFORE constructing the command so cancellation
+	// actually propagates to the subprocess. (Pre-fix the timeout context
+	// was created after exec.CommandContext, which silently bound the cmd
+	// to the original ctx.)
 	if opts.Timeout > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, opts.Timeout)
 		defer cancel()
 	}
+
+	cmd := exec.CommandContext(ctx, a.bin(), args...)
+	cmd.Dir = workdir
+	cmd.Env = mergeEnv(os.Environ(), opts.Env)
 
 	started := time.Now()
 	var stderr bytes.Buffer

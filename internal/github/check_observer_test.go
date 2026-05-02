@@ -11,7 +11,7 @@ func TestConclusionLabel(t *testing.T) {
 	cases := map[model.RunStatus]string{
 		model.RunSucceeded: "passed",
 		model.RunFailed:    "failed",
-		model.RunCancelled: "cancelled",
+		model.RunCancelled: "canceled",
 		model.RunRunning:   "running", // passthrough for unknown
 	}
 	for in, want := range cases {

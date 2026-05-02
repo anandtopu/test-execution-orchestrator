@@ -11,8 +11,8 @@ import (
 // MinSamples attempts in the rolling window, computes the Wilson interval,
 // and updates teo.flake_records.
 type Job struct {
-	Pool   *pgxpool.Pool
-	Logger *slog.Logger
+	Pool      *pgxpool.Pool
+	Logger    *slog.Logger
 	Threshold Threshold
 }
 
@@ -41,7 +41,7 @@ func (j *Job) Run(ctx context.Context) error {
 	defer rows.Close()
 
 	type rec struct {
-		testID string
+		testID   string
 		failures int
 		attempts int
 	}

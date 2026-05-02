@@ -203,7 +203,7 @@ func rerunFailed(ctx context.Context, pool *pgxpool.Pool, parentRunID string) (m
 //
 // Cost is computed in Go (not SQL) so the rate config stays in one place
 // (internal/cost) and the SQL stays portable. The query bucket is bounded
-// to runs whose started_at falls in the last N weeks; cancelled runs with
+// to runs whose started_at falls in the last N weeks; canceled runs with
 // no started_at are excluded.
 func queryCostSummary(ctx context.Context, pool *pgxpool.Pool, p cost.Pricer, weeks int) ([]map[string]any, error) {
 	if weeks <= 0 || weeks > 52 {
@@ -242,13 +242,13 @@ func queryCostSummary(ctx context.Context, pool *pgxpool.Pool, p cost.Pricer, we
 			spotShare = spotMin / denom
 		}
 		out = append(out, map[string]any{
-			"week_start":        wk.UTC().Format("2006-01-02"),
-			"runs":              runsCount,
-			"spot_minutes":      spotMin,
-			"ondemand_minutes":  ondemandMin,
-			"total_cost":        total,
-			"cost_per_build":    perBuild,
-			"spot_share":        spotShare,
+			"week_start":       wk.UTC().Format("2006-01-02"),
+			"runs":             runsCount,
+			"spot_minutes":     spotMin,
+			"ondemand_minutes": ondemandMin,
+			"total_cost":       total,
+			"cost_per_build":   perBuild,
+			"spot_share":       spotShare,
 		})
 	}
 	return out, rows.Err()

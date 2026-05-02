@@ -16,10 +16,10 @@ import (
 
 // Daemon scans for newly-confirmed flakes and quarantines them.
 type Daemon struct {
-	Pool         *pgxpool.Pool
-	Logger       *slog.Logger
-	GHClient     *github.CheckClient
-	IssueOpener  IssueOpener
+	Pool           *pgxpool.Pool
+	Logger         *slog.Logger
+	GHClient       *github.CheckClient
+	IssueOpener    IssueOpener
 	IssueCommenter IssueCommenter
 }
 

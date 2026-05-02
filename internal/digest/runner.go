@@ -22,15 +22,15 @@ type Runner struct {
 
 // Result describes one Run pass for telemetry / dry-run output.
 type Result struct {
-	Repo        string
-	Owner       string
-	Email       string
-	Skipped     bool
-	SkipReason  string
-	SendError   string
-	OwnedTests  int
-	FlakyTests  int
-	CIMinutes   float64
+	Repo       string
+	Owner      string
+	Email      string
+	Skipped    bool
+	SkipReason string
+	SendError  string
+	OwnedTests int
+	FlakyTests int
+	CIMinutes  float64
 }
 
 // Run performs one digest pass for every digest-enabled repo.
@@ -61,13 +61,7 @@ func (r *Runner) Run(ctx context.Context) ([]Result, error) {
 				FlakyTests: s.FlakyTests,
 				CIMinutes:  s.CIMinutes,
 			}
-			email, optOut, err := r.resolveOwner(ctx, s.Owner)
-			if err != nil {
-				res.Skipped = true
-				res.SkipReason = "owner resolution failed: " + err.Error()
-				out = append(out, res)
-				continue
-			}
+			email, optOut := r.resolveOwner(ctx, s.Owner)
 			if optOut {
 				res.Skipped = true
 				res.SkipReason = "user opted out"
@@ -183,10 +177,14 @@ type userRow struct {
 // or "@alice") into an email address; returns optOut=true when the user has
 // asked to be silenced. An owner that doesn't map to a known user is returned
 // with empty email + optOut=false; the SMTP sender will skip silently.
-func (r *Runner) resolveOwner(ctx context.Context, owner string) (email string, optOut bool, err error) {
+//
+// "Not found" is intentionally not an error — owners can move on/off teams,
+// and the digest path treats unknown owners as "skip with empty email" rather
+// than aborting the whole run. The signature returns (email, optOut) only.
+func (r *Runner) resolveOwner(ctx context.Context, owner string) (email string, optOut bool) {
 	owner = strings.TrimSpace(owner)
 	if owner == "" {
-		return "", false, nil
+		return "", false
 	}
 	// Direct user match: @alice → alice
 	if strings.HasPrefix(owner, "@") && !strings.Contains(owner, "/") {
@@ -200,12 +198,12 @@ func (r *Runner) resolveOwner(ctx context.Context, owner string) (email string, 
         `, handle).Scan(&u.id, &u.email, &u.optOut)
 		if err != nil {
 			// not found is not an error
-			return "", false, nil
+			return "", false
 		}
-		return u.email, u.optOut, nil
+		return u.email, u.optOut
 	}
 	// Team match @org/team-* → no concrete user, leave email empty
-	return "", false, nil
+	return "", false
 }
 
 func (r *Runner) userByEmail(ctx context.Context, email string) (userRow, error) {

@@ -31,6 +31,6 @@ func TestNoopUploaderTolerableNilBody(t *testing.T) {
 // Compile-time check that S3 satisfies Uploader. NewS3 needs AWS config to
 // actually run, so we only assert the type-conformance here. The integration
 // path is exercised in CI/MinIO, not in this unit test.
-func TestS3SatisfiesUploaderInterface(t *testing.T) {
+func TestS3SatisfiesUploaderInterface(_ *testing.T) {
 	var _ Uploader = (*S3)(nil)
 }

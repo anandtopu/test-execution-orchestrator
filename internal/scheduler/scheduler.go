@@ -15,22 +15,22 @@ import (
 
 // Test bundles a manifest entry with its prediction.
 type Test struct {
-	Entry          model.TestEntry
-	PredictedMS    int
-	IsColdStart    bool
-	FlakeProb      float32
-	IsQuarantined  bool
+	Entry         model.TestEntry
+	PredictedMS   int
+	IsColdStart   bool
+	FlakeProb     float32
+	IsQuarantined bool
 }
 
 // FleetSnapshot describes available capacity at planning time.
 type FleetSnapshot struct {
-	MaxShards int      // hard cap
+	MaxShards  int      // hard cap
 	WorkerTags []string // capability tags advertised by workers
 }
 
 // Constraints is config knobs the operator can turn.
 type Constraints struct {
-	TargetShardSeconds int   // ideal per-shard wall-clock; if 0, defaults to 5 minutes
+	TargetShardSeconds int // ideal per-shard wall-clock; if 0, defaults to 5 minutes
 	MinShards          int
 	MaxShards          int
 }
@@ -44,9 +44,9 @@ type Assignment struct {
 
 // Plan is the result of scheduling.
 type Plan struct {
-	Assignments        []Assignment
-	QuarantineLane     []Test // run non-blocking
-	TotalPredictedMS   int
+	Assignments         []Assignment
+	QuarantineLane      []Test // run non-blocking
+	TotalPredictedMS    int
 	MakespanPredictedMS int    // longest assignment's duration
 	Version             string // plan format version, useful for replay
 }
@@ -202,4 +202,3 @@ func stableHash(e model.TestEntry) uint64 {
 	sum := h.Sum(nil)
 	return binary.BigEndian.Uint64(sum[:8])
 }
-

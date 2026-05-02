@@ -9,19 +9,19 @@ import (
 
 // Common holds settings shared by every service.
 type Common struct {
-	Env             string        // dev | staging | prod
-	LogLevel        string        // debug | info | warn | error
-	OTLPEndpoint    string        // for self-emitted spans (dogfood)
-	HTTPListenAddr  string
-	GRPCListenAddr  string
-	PostgresDSN     string
-	ClickHouseDSN   string
-	NATSURL         string
-	S3Endpoint      string
-	S3Bucket        string
-	S3Region        string
-	JWTSecret       string
-	JWTTTL          time.Duration
+	Env            string // dev | staging | prod
+	LogLevel       string // debug | info | warn | error
+	OTLPEndpoint   string // for self-emitted spans (dogfood)
+	HTTPListenAddr string
+	GRPCListenAddr string
+	PostgresDSN    string
+	ClickHouseDSN  string
+	NATSURL        string
+	S3Endpoint     string
+	S3Bucket       string
+	S3Region       string
+	JWTSecret      string
+	JWTTTL         time.Duration
 }
 
 // LoadCommon reads the common env vars.
@@ -49,7 +49,6 @@ func getEnv(k, def string) string {
 	}
 	return def
 }
-
 
 func getDuration(k string, def time.Duration) time.Duration {
 	if v := os.Getenv(k); v != "" {

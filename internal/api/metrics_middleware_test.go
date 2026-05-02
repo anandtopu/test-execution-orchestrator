@@ -28,7 +28,7 @@ func TestMetricsMiddlewareRecordsRequestAndDuration(t *testing.T) {
 		t.Fatalf("status = %d", rr.Code)
 	}
 
-	// Scrape the registry and assert the labelled count.
+	// Scrape the registry and assert the labeled count.
 	srv := httptest.NewServer(reg.Handler())
 	t.Cleanup(srv.Close)
 	resp, err := http.Get(srv.URL)

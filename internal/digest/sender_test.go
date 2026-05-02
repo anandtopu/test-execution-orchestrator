@@ -15,12 +15,12 @@ import (
 // --- SMTP ------------------------------------------------------------------
 
 type captureDialer struct {
-	mu    sync.Mutex
-	addr  string
-	from  string
-	to    []string
-	body  []byte
-	err   error
+	mu   sync.Mutex
+	addr string
+	from string
+	to   []string
+	body []byte
+	err  error
 }
 
 func (c *captureDialer) Send(addr string, _ smtp.Auth, from string, to []string, msg []byte) error {
@@ -182,4 +182,4 @@ func TestMultiplexCallsAllEvenOnFailure(t *testing.T) {
 var _ Sender = (*SMTPSender)(nil)
 var _ Sender = (*SlackSender)(nil)
 var _ Sender = (*Multiplex)(nil)
-var _ time.Duration  // keep "time" import meaningful even if other tests change
+var _ time.Duration // keep "time" import meaningful even if other tests change

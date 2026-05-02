@@ -31,7 +31,7 @@ func TestSLABodyContainsKeyFacts(t *testing.T) {
 	c := &captureCommenter{}
 	// Build a minimal SLASweeper that only invokes Commenter via direct method
 	// — simulate the body builder by calling Comment with the same template.
-	body := buildSlaBody("path/to/test.py", "test_x", 14, 21)
+	body := buildSLABody("path/to/test.py", "test_x", 14, 21)
 	if err := c.Comment(context.Background(), "owner/repo", 7, body); err != nil {
 		t.Fatal(err)
 	}
@@ -54,8 +54,8 @@ func TestCommenterErrorIsReported(t *testing.T) {
 	}
 }
 
-// buildSlaBody mirrors the template used by SLASweeper.Run; extracted for unit testing.
-func buildSlaBody(path, name string, slaDays, days int) string {
+// buildSLABody mirrors the template used by SLASweeper.Run; extracted for unit testing.
+func buildSLABody(path, name string, slaDays, days int) string {
 	return "This test has been quarantined for **" +
 		itoa(days) + " days**. The SLA on flaky-test triage is " + itoa(slaDays) + " days.\n\n" +
 		"`" + path + "::" + name + "` is still failing intermittently in the non-blocking lane.\n\n" +

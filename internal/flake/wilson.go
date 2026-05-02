@@ -34,9 +34,9 @@ type Decision struct {
 
 // Threshold tunes the classifier.
 type Threshold struct {
-	MinSamples         int     // need at least this many runs
-	WilsonLowerCutoff  float64 // promote to flaky when wilson_lower exceeds this
-	BrokenLowerCutoff  float64 // wilson_lower > this means "broken", not flaky
+	MinSamples        int     // need at least this many runs
+	WilsonLowerCutoff float64 // promote to flaky when wilson_lower exceeds this
+	BrokenLowerCutoff float64 // wilson_lower > this means "broken", not flaky
 }
 
 // Default returns sensible defaults: 20 samples, 0.05 flaky cutoff, 0.90 broken cutoff.

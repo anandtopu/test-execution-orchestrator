@@ -29,12 +29,12 @@ const (
 
 // Principal is the authenticated identity attached to a request context.
 type Principal struct {
-	UserID    string
-	Email     string
-	APIKeyID  string
-	Roles     []Role
-	Scopes    []string
-	IsAPIKey  bool
+	UserID   string
+	Email    string
+	APIKeyID string
+	Roles    []Role
+	Scopes   []string
+	IsAPIKey bool
 }
 
 // HasRole returns true if any of want is held by p.

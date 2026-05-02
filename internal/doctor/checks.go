@@ -99,7 +99,7 @@ type NATSCheck struct {
 func (NATSCheck) Name() string { return "nats" }
 
 // Run implements Check.
-func (c NATSCheck) Run(ctx context.Context) Result {
+func (c NATSCheck) Run(_ context.Context) Result {
 	if c.URL == "" {
 		return Result{Name: c.Name(), Status: StatusSkipped, Message: "TEO_NATS_URL not set"}
 	}

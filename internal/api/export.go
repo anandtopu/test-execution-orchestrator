@@ -192,12 +192,12 @@ type junitTestSuite struct {
 }
 
 type junitTestCase struct {
-	Classname string         `xml:"classname,attr"`
-	Name      string         `xml:"name,attr"`
-	Time      string         `xml:"time,attr"`
-	Failure   *junitFailure  `xml:"failure,omitempty"`
-	Error     *junitFailure  `xml:"error,omitempty"`
-	Skipped   *junitElement  `xml:"skipped,omitempty"`
+	Classname string        `xml:"classname,attr"`
+	Name      string        `xml:"name,attr"`
+	Time      string        `xml:"time,attr"`
+	Failure   *junitFailure `xml:"failure,omitempty"`
+	Error     *junitFailure `xml:"error,omitempty"`
+	Skipped   *junitElement `xml:"skipped,omitempty"`
 }
 
 type junitFailure struct {
@@ -318,7 +318,6 @@ func formatSeconds(d time.Duration) string {
 	return fmt.Sprintf("%.3f", d.Seconds())
 }
 
-
 // --- OTLP -------------------------------------------------------------------
 
 // buildOTLP pulls span rows from the SpanQuerier and folds them into a
@@ -420,4 +419,3 @@ func hexDigit(b byte) (byte, bool) {
 	}
 	return 0, false
 }
-

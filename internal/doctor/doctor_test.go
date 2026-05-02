@@ -71,7 +71,7 @@ func TestRunRespectsDeadline(t *testing.T) {
 	if elapsed > 250*time.Millisecond {
 		t.Errorf("Run did not honor deadline; elapsed %s", elapsed)
 	}
-	// hanger's stub returns "deadline exceeded" status when its ctx is cancelled.
+	// hanger's stub returns "deadline exceeded" status when its ctx is canceled.
 	// fast's result must still be OK.
 	byName := map[string]Result{}
 	for _, r := range results {

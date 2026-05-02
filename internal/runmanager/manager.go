@@ -14,8 +14,8 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 
 	teometrics "github.com/teo-dev/teo/internal/metrics"
-	teonats "github.com/teo-dev/teo/internal/nats"
 	"github.com/teo-dev/teo/internal/model"
+	teonats "github.com/teo-dev/teo/internal/nats"
 	"github.com/teo-dev/teo/internal/predictor"
 	"github.com/teo-dev/teo/internal/scheduler"
 )
@@ -27,7 +27,7 @@ type Manager struct {
 	JS        jetstream.JetStream // optional: if nil, dispatch is Postgres-only
 	Logger    *slog.Logger
 	Metrics   *teometrics.Registry // optional; nil = no-op
-	Observers []RunObserver // notified after every successful state transition
+	Observers []RunObserver        // notified after every successful state transition
 
 	PollInterval        time.Duration
 	BudgetCheckInterval time.Duration
@@ -69,7 +69,7 @@ func (m *Manager) snapshot(ctx context.Context, runID string) (RunSnapshot, erro
 	return s, err
 }
 
-// Run starts the reconciliation loop until ctx is cancelled.
+// Run starts the reconciliation loop until ctx is canceled.
 func (m *Manager) Run(ctx context.Context) error {
 	if m.PollInterval == 0 {
 		m.PollInterval = time.Second
@@ -147,7 +147,7 @@ func (m *Manager) refreshRunsActive(ctx context.Context) {
 	defer rows.Close()
 	// Reset every status we know about to 0 first so a status that vanished
 	// (e.g., last 'pending' just transitioned) reports 0 rather than stale.
-	for _, st := range []string{"pending", "planning", "dispatching", "running", "finalizing", "succeeded", "failed", "cancelled"} {
+	for _, st := range []string{"pending", "planning", "dispatching", "running", "finalizing", "succeeded", "failed", "canceled"} {
 		m.Metrics.RunsActive.WithLabelValues(st).Set(0)
 	}
 	for rows.Next() {

@@ -89,8 +89,9 @@ func isException(name string) bool {
 
 // normalizeGeneric strips numerics + hex from the last 5 non-empty lines.
 func normalizeGeneric(s string) string {
-	var lines []string
-	for _, line := range strings.Split(s, "\n") {
+	parts := strings.Split(s, "\n")
+	lines := make([]string, 0, len(parts))
+	for _, line := range parts {
 		t := strings.TrimSpace(line)
 		if t == "" {
 			continue

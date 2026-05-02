@@ -16,9 +16,9 @@ func graphqlHandler(pool *pgxpool.Pool) http.Handler {
 	schema := buildSchema(pool)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
-			Query         string                 `json:"query"`
-			Variables     map[string]any         `json:"variables"`
-			OperationName string                 `json:"operationName"`
+			Query         string         `json:"query"`
+			Variables     map[string]any `json:"variables"`
+			OperationName string         `json:"operationName"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)

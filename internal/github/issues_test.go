@@ -12,10 +12,10 @@ import (
 
 func TestIssuesCreatePostsCorrectPayload(t *testing.T) {
 	var got struct {
-		method  string
-		path    string
-		auth    string
-		body    string
+		method string
+		path   string
+		auth   string
+		body   string
 	}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		got.method = r.Method

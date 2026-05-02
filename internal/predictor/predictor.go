@@ -15,11 +15,11 @@ import (
 
 // Prediction is one test's predicted duration + flake probability.
 type Prediction struct {
-	Fingerprint     string
-	P50DurationMS   int
-	P95DurationMS   int
+	Fingerprint      string
+	P50DurationMS    int
+	P95DurationMS    int
 	FlakeProbability float32
-	IsColdStart     bool
+	IsColdStart      bool
 }
 
 // Predictor produces Predictions from history.

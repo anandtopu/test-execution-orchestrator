@@ -14,23 +14,23 @@ import (
 
 // OwnerStats summarizes one author's week.
 type OwnerStats struct {
-	Owner          string
-	OwnedTests     int
-	FlakyTests     int
-	CIMinutes      float64
-	WoWDeltaPct    float64 // ((this - prev) / prev) * 100
-	SlowestTests   []SlowTest
-	GeneratedAt    time.Time
-	WeekStart      time.Time
-	WeekEnd        time.Time
+	Owner        string
+	OwnedTests   int
+	FlakyTests   int
+	CIMinutes    float64
+	WoWDeltaPct  float64 // ((this - prev) / prev) * 100
+	SlowestTests []SlowTest
+	GeneratedAt  time.Time
+	WeekStart    time.Time
+	WeekEnd      time.Time
 }
 
 // SlowTest is one row in the slowest-tests list.
 type SlowTest struct {
-	Path           string
-	Name           string
-	AvgDurationMS  int
-	Runs           int
+	Path          string
+	Name          string
+	AvgDurationMS int
+	Runs          int
 }
 
 // Builder loads stats from the DB and renders digests.

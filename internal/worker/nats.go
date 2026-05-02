@@ -8,8 +8,8 @@ import (
 
 	"github.com/nats-io/nats.go/jetstream"
 
-	teonats "github.com/teo-dev/teo/internal/nats"
 	"github.com/teo-dev/teo/internal/model"
+	teonats "github.com/teo-dev/teo/internal/nats"
 )
 
 // SubscribeNATS pulls shard dispatch messages from JetStream and processes
@@ -92,4 +92,3 @@ func (a *Agent) handleMessage(ctx context.Context, msg jetstream.Msg) {
 	a.executeShard(ctx, d.RunID, d.ShardID, tests)
 	_ = msg.Ack()
 }
-

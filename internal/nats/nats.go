@@ -14,23 +14,23 @@ import (
 
 // Subjects used by TEO.
 const (
-	StreamShards = "TEO_SHARDS"
+	StreamShards       = "TEO_SHARDS"
 	SubjShardsDispatch = "teo.shards.dispatch"
 
-	StreamResults = "TEO_RESULTS"
+	StreamResults    = "TEO_RESULTS"
 	SubjTestStarted  = "teo.results.test_started"
 	SubjTestFinished = "teo.results.test_finished"
 )
 
 // ShardDispatch is the message body for SubjShardsDispatch.
 type ShardDispatch struct {
-	RunID         string         `json:"run_id"`
-	ShardID       string         `json:"shard_id"`
-	RepoFullName  string         `json:"repo_full_name"`
-	Runner        string         `json:"runner"`
-	Tests         []DispatchTest `json:"tests"`
-	PredictedMS   int            `json:"predicted_ms"`
-	DispatchedAt  time.Time      `json:"dispatched_at"`
+	RunID        string         `json:"run_id"`
+	ShardID      string         `json:"shard_id"`
+	RepoFullName string         `json:"repo_full_name"`
+	Runner       string         `json:"runner"`
+	Tests        []DispatchTest `json:"tests"`
+	PredictedMS  int            `json:"predicted_ms"`
+	DispatchedAt time.Time      `json:"dispatched_at"`
 }
 
 // DispatchTest is a slim TestEntry shape inside a dispatch message.

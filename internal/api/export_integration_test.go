@@ -243,4 +243,3 @@ func TestExportOTLPHappyPath_StubbedSpanQuerier(t *testing.T) {
 		t.Errorf("response missing span name; body=%s", body)
 	}
 }
-

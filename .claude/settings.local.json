@@ -31,7 +31,15 @@
       "Bash(npm --version)",
       "Bash(npm install *)",
       "Bash(npm ci *)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(\"C:/Users/anand/go/bin/golangci-lint.exe\" --version)",
+      "Bash(\"C:/Users/anand/go/bin/golangci-lint.exe\" config *)",
+      "Bash(\"C:/Users/anand/go/bin/golangci-lint.exe\" run *)",
+      "Bash(grep -E \"\\(gosec|staticcheck|unparam|prealloc|ineffassign|revive\\)\\\\\\)$\")",
+      "Bash(grep -v \"^$\")",
+      "Bash(gofmt -l .)",
+      "Bash(gofmt -d internal/api/export_integration_test.go)",
+      "Bash(gofmt -w internal/api/export_integration_test.go)"
     ]
   }
 }

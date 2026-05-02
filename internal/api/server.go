@@ -236,8 +236,8 @@ func (s *Server) resolveAPIKey(ctx context.Context, prefix, display string) (*au
 		return p, nil
 	}
 	var (
-		id    string
-		hash  string
+		id     string
+		hash   string
 		scopes []string
 	)
 	err := s.pool.QueryRow(ctx, `

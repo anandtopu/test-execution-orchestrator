@@ -28,13 +28,13 @@ type Registry struct {
 	HTTPDurationSec *prometheus.HistogramVec
 
 	// Run Manager
-	RunsActive         *prometheus.GaugeVec
-	RunTransitions     *prometheus.CounterVec
-	RunsStuck          prometheus.Gauge
+	RunsActive     *prometheus.GaugeVec
+	RunTransitions *prometheus.CounterVec
+	RunsStuck      prometheus.Gauge
 
 	// Scheduler
-	SchedulerPlanSec   prometheus.Histogram
-	SchedulerPlans     prometheus.Counter
+	SchedulerPlanSec prometheus.Histogram
+	SchedulerPlans   prometheus.Counter
 
 	// Predictor
 	PredictorRequests  prometheus.Counter
@@ -43,9 +43,9 @@ type Registry struct {
 	PredictorMAE       prometheus.Gauge
 
 	// Result pipeline
-	CHInserts          prometheus.Counter
-	CHInsertSec        prometheus.Histogram
-	CHInsertFailures   prometheus.Counter
+	CHInserts        prometheus.Counter
+	CHInsertSec      prometheus.Histogram
+	CHInsertFailures prometheus.Counter
 }
 
 // New constructs a Registry with all TEO collectors registered.
@@ -71,7 +71,7 @@ func New() *Registry {
 	}, []string{"status"})
 	r.RunTransitions = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "teo_run_transitions_total",
-		Help: "Run state-machine transitions, labelled by destination status.",
+		Help: "Run state-machine transitions, labeled by destination status.",
 	}, []string{"to_status"})
 	r.RunsStuck = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "teo_runs_stuck_total",

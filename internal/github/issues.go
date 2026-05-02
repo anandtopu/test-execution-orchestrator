@@ -39,10 +39,10 @@ type IssueRequest struct {
 
 // Issue is the response shape we care about.
 type Issue struct {
-	Number    int    `json:"number"`
-	HTMLURL   string `json:"html_url"`
-	State     string `json:"state"`
-	Title     string `json:"title"`
+	Number  int    `json:"number"`
+	HTMLURL string `json:"html_url"`
+	State   string `json:"state"`
+	Title   string `json:"title"`
 }
 
 // Comment is a reply on an issue.

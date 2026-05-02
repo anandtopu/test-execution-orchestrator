@@ -14,7 +14,7 @@ const (
 	RunFinalizing  RunStatus = "finalizing"
 	RunSucceeded   RunStatus = "succeeded"
 	RunFailed      RunStatus = "failed"
-	RunCancelled   RunStatus = "cancelled"
+	RunCancelled   RunStatus = "canceled"
 )
 
 // TestOutcome enumerates per-test outcomes.
@@ -80,16 +80,16 @@ type Run struct {
 
 // Shard is a worker assignment within a run.
 type Shard struct {
-	ID                  string     `json:"id"`
-	RunID               string     `json:"run_id"`
-	Index               int        `json:"index"`
-	Status              string     `json:"status"`
-	WorkerID            string     `json:"worker_id,omitempty"`
-	PredictedDurationMS int        `json:"predicted_duration_ms"`
-	ActualDurationMS    int        `json:"actual_duration_ms,omitempty"`
-	TestCount           int        `json:"test_count"`
-	StartedAt           *time.Time `json:"started_at,omitempty"`
-	FinishedAt          *time.Time `json:"finished_at,omitempty"`
+	ID                  string      `json:"id"`
+	RunID               string      `json:"run_id"`
+	Index               int         `json:"index"`
+	Status              string      `json:"status"`
+	WorkerID            string      `json:"worker_id,omitempty"`
+	PredictedDurationMS int         `json:"predicted_duration_ms"`
+	ActualDurationMS    int         `json:"actual_duration_ms,omitempty"`
+	TestCount           int         `json:"test_count"`
+	StartedAt           *time.Time  `json:"started_at,omitempty"`
+	FinishedAt          *time.Time  `json:"finished_at,omitempty"`
 	Tests               []TestEntry `json:"tests,omitempty"`
 }
 
