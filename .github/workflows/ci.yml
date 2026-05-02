@@ -203,7 +203,7 @@ jobs:
       - name: Add subchart repos
         run: |
           helm repo add cloudnative-pg     https://cloudnative-pg.github.io/charts
-          helm repo add clickhouse-operator https://docs.altinity.com/clickhouse-operator
+          helm repo add clickhouse-operator https://docs.altinity.com/clickhouse-operator/
           helm repo add nats               https://nats-io.github.io/k8s/helm/charts
           helm repo add minio              https://charts.min.io/
           helm repo add dex                https://charts.dexidp.io

@@ -27,7 +27,10 @@
       "Bash(\"C:/Users/anand/go/bin/buf.exe\" lint *)",
       "Bash(git -C C:/Users/anand/Downloads/Projects/TestExecutionOrchestrator status)",
       "Bash(git -C C:/Users/anand/Downloads/Projects/TestExecutionOrchestrator log --oneline -5)",
-      "Bash(git -C C:/Users/anand/Downloads/Projects/TestExecutionOrchestrator remote -v)"
+      "Bash(git -C C:/Users/anand/Downloads/Projects/TestExecutionOrchestrator remote -v)",
+      "Bash(npm --version)",
+      "Bash(npm install *)",
+      "Bash(npm ci *)"
     ]
   }
 }

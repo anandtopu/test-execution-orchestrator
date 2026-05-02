@@ -14,7 +14,8 @@ import (
 	"strings"
 
 	_ "github.com/ClickHouse/clickhouse-go/v2"
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/stdlib"
 )
 
 // Backend identifies the target store.
@@ -130,10 +131,19 @@ func Status(b Backend, dsn string) (int, error) {
 func openDriver(b Backend, dsn string) (*sql.DB, error) {
 	switch b {
 	case Postgres:
-		db, err := sql.Open("pgx", dsn)
+		// Migrations are applied as multi-statement SQL files containing
+		// plpgsql function bodies wrapped in $$...$$ dollar quotes. pgx's
+		// default QueryExecModeCacheStatement uses the extended protocol
+		// and scans the SQL for $N parameter placeholders, which corrupts
+		// dollar-quoted strings (parser sees the rewritten text and bails
+		// with "syntax error at or near (" on the first CREATE TABLE).
+		// Simple protocol forwards the SQL byte-for-byte to Postgres.
+		cfg, err := pgx.ParseConfig(dsn)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("parse pg dsn: %w", err)
 		}
+		cfg.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
+		db := stdlib.OpenDB(*cfg)
 		return db, db.Ping()
 	case ClickHouse:
 		db, err := sql.Open("clickhouse", dsn)

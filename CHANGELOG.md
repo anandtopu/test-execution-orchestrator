@@ -8,6 +8,15 @@ For a finer-grained per-FR / per-epic implementation status, see [`progress.md`]
 
 ## [Unreleased]
 
+### Fixed — CI run-1 failures (release-blocking)
+First CI run on the published GitHub repo surfaced three failures, all now resolved:
+
+- **Migration runner — `syntax error at or near "("` on every integration test.** Root cause: `internal/migrate/migrate.go` opened pgx via `sql.Open("pgx", dsn)`, which defaults to `QueryExecModeCacheStatement`. In that mode pgx scans the SQL string for `$N` parameter placeholders and corrupts dollar-quoted plpgsql function bodies (`$$ ... $$`) — Postgres then sees the rewritten text and fails on the first `(` of the next CREATE TABLE. Fix: parse the DSN with `pgx.ParseConfig`, set `DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol`, and open via `stdlib.OpenDB(*cfg)`. Simple protocol forwards the SQL byte-for-byte to Postgres. Reason captured as a comment in `openDriver` so this doesn't regress on the next refactor. All ~30 integration tests across `internal/api` and `internal/runmanager` were blocked on this one bug.
+
+- **Helm `chart-testing` — `clickhouse-operator chart not found`.** The Altinity chart is published as `altinity-clickhouse-operator` (not `clickhouse-operator`) in the repo at `https://docs.altinity.com/clickhouse-operator/` (the trailing slash matters for Helm's `index.yaml` resolution). Updated `deploy/helm/teo/Chart.yaml`'s dependency entry and the `helm repo add` lines in both `.github/workflows/ci.yml` and `release.yml`. The `clickhouse` alias is preserved so `values.yaml` toggles (`clickhouse.enabled=...`) continue to work without consumer-side churn.
+
+- **Web `setup-node` — `Some specified paths were not resolved, unable to cache dependencies`.** `web/package-lock.json` had never been generated, so the `cache-dependency-path: web/package-lock.json` hint couldn't compute a cache key. Generated the lockfile via `npm install --package-lock-only --legacy-peer-deps` and committed it (349 KB, 587 packages resolved). Added `web/.npmrc` with `legacy-peer-deps=true` so `npm ci` in CI doesn't fail the React 19 / Radix UI / `@visx/visx` peer-dep matrix that hasn't fully aligned yet. Verified locally: `npm ci --dry-run` reports "added 587 packages in 623ms".
+
 ### Changed — gRPC: protoc-gen-go wiring (JSON codec retired)
 - **`make proto`** now actually generates code: new [`proto/buf.yaml`](proto/buf.yaml) + [`proto/buf.gen.yaml`](proto/buf.gen.yaml) drive `buf generate` against the locally-installed `protoc-gen-go` and `protoc-gen-go-grpc`. Lint runs as STANDARD with four targeted exceptions documented in `buf.yaml` (PACKAGE_DIRECTORY_MATCH, SERVICE_SUFFIX, RPC_REQUEST_RESPONSE_UNIQUE, RPC_RESPONSE_STANDARD_NAME, RPC_REQUEST_STANDARD_NAME) — keeping the existing service / message names rather than wire-breaking renames for cosmetic gain.
 - **`proto/teo/v1/*.proto` → `proto/teov1/*.proto`** flat layout. The Protobuf package stays `teo.v1` (wire-compatible) but the file path now matches the `option go_package = ".../internal/proto/teov1;teov1"`, so `paths=source_relative` produces the right output dir without acrobatics.

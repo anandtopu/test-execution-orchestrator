@@ -50,7 +50,7 @@ jobs:
           helm repo add nats               https://nats-io.github.io/k8s/helm/charts
           helm repo add minio              https://charts.min.io/
           helm repo add dex                https://charts.dexidp.io
-          helm repo add clickhouse-operator https://docs.altinity.com/clickhouse-operator
+          helm repo add clickhouse-operator https://docs.altinity.com/clickhouse-operator/
           helm repo update
       - name: Build chart deps
         run: helm dependency build deploy/helm/teo

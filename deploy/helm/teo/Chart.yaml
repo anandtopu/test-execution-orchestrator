@@ -29,9 +29,12 @@ dependencies:
     condition: postgres.enabled
     alias: postgres
     tags: [stateful]
-  - name: clickhouse-operator
+  # Altinity ships the chart under the name "altinity-clickhouse-operator"
+  # in the repo at https://docs.altinity.com/clickhouse-operator/ — the
+  # trailing slash matters for helm's index.yaml resolution.
+  - name: altinity-clickhouse-operator
     version: "0.24.5"
-    repository: https://docs.altinity.com/clickhouse-operator
+    repository: https://docs.altinity.com/clickhouse-operator/
     condition: clickhouse.enabled
     alias: clickhouse
     tags: [stateful]
