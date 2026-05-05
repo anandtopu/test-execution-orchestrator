@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -120,51 +121,57 @@ func (a *Adapter) Execute(ctx context.Context, workdir string, tests []model.Tes
 		if err := cmd.Start(); err != nil {
 			return err
 		}
-
-		startedAt := map[string]time.Time{}
-		sc := bufio.NewScanner(stdout)
-		sc.Buffer(make([]byte, 0, 64*1024), 1<<20)
-		for sc.Scan() {
-			var ev goEvent
-			if err := json.Unmarshal(sc.Bytes(), &ev); err != nil {
-				continue
-			}
-			if ev.Test == "" {
-				continue
-			}
-			key := pkg + "::" + ev.Test
-			entry, ok := indexByKey[key]
-			if !ok {
-				entry = model.TestEntry{Path: pkg, Name: ev.Test}
-			}
-			switch ev.Action {
-			case "run":
-				startedAt[key] = time.Now()
-			case "pass", "fail", "skip":
-				start := startedAt[key]
-				if start.IsZero() {
-					start = startWall
-				}
-				outcome := model.OutcomePassed
-				switch ev.Action {
-				case "fail":
-					outcome = model.OutcomeFailed
-				case "skip":
-					outcome = model.OutcomeSkipped
-				}
-				dur := time.Duration(ev.Elapsed * float64(time.Second))
-				onResult(adapter.Result{
-					Test:       entry,
-					Outcome:    outcome,
-					Started:    start,
-					Finished:   start.Add(dur),
-					DurationMS: int(dur.Milliseconds()),
-				})
-			}
-		}
+		processEvents(stdout, pkg, indexByKey, startWall, onResult)
 		_ = cmd.Wait()
 	}
 	return nil
+}
+
+// processEvents reads `go test -json` output and emits one Result per
+// pass/fail/skip event. Extracted from Execute so it can be tested against
+// canned event streams without spawning a subprocess.
+func processEvents(r io.Reader, pkg string, indexByKey map[string]model.TestEntry, startWall time.Time, onResult adapter.ResultHandler) {
+	startedAt := map[string]time.Time{}
+	sc := bufio.NewScanner(r)
+	sc.Buffer(make([]byte, 0, 64*1024), 1<<20)
+	for sc.Scan() {
+		var ev goEvent
+		if err := json.Unmarshal(sc.Bytes(), &ev); err != nil {
+			continue
+		}
+		if ev.Test == "" {
+			continue
+		}
+		key := pkg + "::" + ev.Test
+		entry, ok := indexByKey[key]
+		if !ok {
+			entry = model.TestEntry{Path: pkg, Name: ev.Test}
+		}
+		switch ev.Action {
+		case "run":
+			startedAt[key] = time.Now()
+		case "pass", "fail", "skip":
+			start := startedAt[key]
+			if start.IsZero() {
+				start = startWall
+			}
+			outcome := model.OutcomePassed
+			switch ev.Action {
+			case "fail":
+				outcome = model.OutcomeFailed
+			case "skip":
+				outcome = model.OutcomeSkipped
+			}
+			dur := time.Duration(ev.Elapsed * float64(time.Second))
+			onResult(adapter.Result{
+				Test:       entry,
+				Outcome:    outcome,
+				Started:    start,
+				Finished:   start.Add(dur),
+				DurationMS: int(dur.Milliseconds()),
+			})
+		}
+	}
 }
 
 func (a *Adapter) bin() string {

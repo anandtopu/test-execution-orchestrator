@@ -1,0 +1,42 @@
+{
+  "numTotalTests": 3,
+  "testResults": [
+    {
+      "name": "/work/src/components/Button.test.tsx",
+      "assertionResults": [
+        {
+          "ancestorTitles": ["Button"],
+          "title": "renders the label",
+          "fullName": "Button renders the label",
+          "status": "passed",
+          "duration": 12,
+          "failureMessages": []
+        },
+        {
+          "ancestorTitles": ["Button", "when disabled"],
+          "title": "does not fire onClick",
+          "fullName": "Button when disabled does not fire onClick",
+          "status": "failed",
+          "duration": 47,
+          "failureMessages": [
+            "Error: expected mock to not be called",
+            "    at Object.<anonymous> (/work/src/components/Button.test.tsx:42:23)"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/work/src/utils/format.test.ts",
+      "assertionResults": [
+        {
+          "ancestorTitles": [],
+          "title": "todo: implement currency",
+          "fullName": "todo: implement currency",
+          "status": "todo",
+          "duration": 0,
+          "failureMessages": []
+        }
+      ]
+    }
+  ]
+}

@@ -22,7 +22,7 @@ Tasks are concrete enough to estimate (each ≤ 2 days). Each task references it
 | **T-11-* Helm + ops** | ✅ all complete | Chart.yaml dependencies (5 subcharts, toggleable), pre-upgrade migration Job, 5 Grafana dashboard ConfigMaps with sidecar-discovery labels, PrometheusRule with 6 alerts + runbook docs, .goreleaser.yml, release.yml workflow with cosign + SBOM + chart-releaser, chart-testing config, restore drill runbook |
 | **T-12-* ML predictor** | ✅ all complete | Real ClickHouse query landed; champion/challenger gating in place |
 | **T-13-* Karpenter** | ✅ all complete | NodePools, IMDS poller, Agent draining (atomic flag + current-shard tracking + idempotent beginDrain), Run Manager reschedule sweep with reshard manifest in runs.meta, worker reshard lookup, migration 004 for shards.meta dedupe marker, preemption_count telemetry |
-| **T-14-* Adapters** | ✅ T-14-01 (`go test`); ✅ T-14-02 (Jest); ⏳ T-14-03 (SPI doc) | |
+| **T-14-* Adapters** | ✅ all complete | `go test` adapter, Jest adapter, SPI doc at `docs/adapters/spi.md`, copy-and-fill skeleton at `pkg/adapter/template/` |
 | **T-15-* Auto-quarantine** | ✅ all complete | Issues client, dedupe-by-comment, SLA sweeper, un-quarantine proposer, magic-link restore endpoint, three Cron entries in chart |
 | **T-16-* Owner digest** | ✅ all complete | aggregation, templates, SMTP/Slack senders, runner with opt-out, dry-run CLI, Helm secret wiring |
 

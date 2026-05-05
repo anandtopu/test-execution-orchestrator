@@ -1,0 +1,11 @@
+{"Time":"2026-05-04T10:00:00Z","Action":"start","Package":"example.com/pkg/foo"}
+{"Time":"2026-05-04T10:00:00Z","Action":"run","Package":"example.com/pkg/foo","Test":"TestPassing"}
+{"Time":"2026-05-04T10:00:00Z","Action":"output","Package":"example.com/pkg/foo","Test":"TestPassing","Output":"=== RUN   TestPassing\n"}
+{"Time":"2026-05-04T10:00:00Z","Action":"output","Package":"example.com/pkg/foo","Test":"TestPassing","Output":"--- PASS: TestPassing (0.01s)\n"}
+{"Time":"2026-05-04T10:00:00Z","Action":"pass","Package":"example.com/pkg/foo","Test":"TestPassing","Elapsed":0.01}
+{"Time":"2026-05-04T10:00:00Z","Action":"run","Package":"example.com/pkg/foo","Test":"TestFailing"}
+{"Time":"2026-05-04T10:00:00Z","Action":"output","Package":"example.com/pkg/foo","Test":"TestFailing","Output":"--- FAIL: TestFailing (0.02s)\n"}
+{"Time":"2026-05-04T10:00:00Z","Action":"fail","Package":"example.com/pkg/foo","Test":"TestFailing","Elapsed":0.02}
+{"Time":"2026-05-04T10:00:00Z","Action":"run","Package":"example.com/pkg/foo","Test":"TestSkipped"}
+{"Time":"2026-05-04T10:00:00Z","Action":"skip","Package":"example.com/pkg/foo","Test":"TestSkipped","Elapsed":0}
+{"Time":"2026-05-04T10:00:00Z","Action":"fail","Package":"example.com/pkg/foo","Elapsed":0.05}

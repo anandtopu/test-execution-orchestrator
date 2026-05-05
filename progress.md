@@ -1,7 +1,7 @@
 # TEO — Implementation Progress
 
-**Last updated:** 2026-05-01 (end of session — FR-503/504 export endpoints + FR-404 log uploader landed)
-**Build status:** ✅ `go build ./...` clean · ✅ 20 Go unit packages green · ✅ 38 integration tests under `-tags=integration` (testcontainers Postgres for GraphQL + run-intake + run-export + cost resolvers; testcontainers MinIO for the logstore S3 round-trip; runs in CI) · 6 frontend test files (Vitest, runs in CI)
+**Last updated:** 2026-05-04 (post-v1.0 coverage sweep — gotest/jest/quarantine + db/audit/predictor unit tests landed)
+**Build status:** ✅ `go build ./...` clean · ✅ 25 Go unit packages green · ✅ 38 integration tests under `-tags=integration` (testcontainers Postgres for GraphQL + run-intake + run-export + cost resolvers; testcontainers MinIO for the logstore S3 round-trip; runs in CI) · 6 frontend test files (Vitest, runs in CI)
 **Reading order:** [PRD](PRD.md) → [Architecture overview](docs/architecture/overview.md) → [ADR-0012 scope](docs/adr/0012-mvp-scope-cut.md) → this file.
 
 > **▶ Resume here next session.** v1.0.0 is functionally release-ready: every epic and FR is ✅. **Cut v1.0.0** — goreleaser workflow verified, protoc-gen-go wiring landed, no known blockers. `goreleaser release --snapshot --clean --skip=sign,sbom,announce` against v2.15.4 produces all 7 services × linux/darwin amd64/arm64 + windows for the `teo` CLI, plus tar.gz/zip archives + checksums.txt (~90s locally). Remaining steps to ship: draft release notes from `CHANGELOG.md`'s `[Unreleased]` block, run a restore drill against staging per `docs/operations/restore-drill.md`, then `git tag v1.0.0 && git push --tags` — `release.yml` takes it from there.
@@ -34,7 +34,7 @@ This is the single source of truth for implementation status. Every entry links 
 | **E-11** | Helm chart + observability + release pipeline | ✅ | Umbrella chart with API/Run Manager/result-pipeline Deployments, migrations pre-upgrade Job, three quarantine + digest + ML-train CronJobs, Karpenter NodePools. **Subcharts vendored** in `Chart.yaml` (CloudNativePG, ClickHouse Operator, NATS, MinIO, Dex) — each toggleable so operators can BYO managed services. **Five Grafana dashboards** as ConfigMaps (API latency, scheduler, run state machine, ClickHouse lag, NATS lag) labeled for sidecar discovery. **Six PrometheusRule alerts** with `runbook_url` annotations pointing at `docs/operations/runbooks/`. **`.goreleaser.yml`** for binary releases (linux/darwin amd64/arm64) with cosign keyless signing + Syft SBOMs; **release.yml** workflow runs goreleaser then publishes the chart to gh-pages via chart-releaser. **chart-testing config** (`.github/ct.yaml`) + upgraded CI helm job that templates the on/off subchart matrix. **Restore drill runbook** at `docs/operations/restore-drill.md` with reproducible 8-section procedure and history log. |
 | **E-12** | ML predictor (Python, LightGBM) | ✅ | FastAPI app, model registry with S3-backed per-repo TTL cache, training script with champion/challenger gating, **real ClickHouse query** for training data, synthetic fallback for dry-runs. Dockerfile. |
 | **E-13** | Karpenter + spot-aware scheduling + checkpointing | ✅ | IMDSv2 poller (`internal/spot/`) wired into Agent via the `SpotInterruptionSource` interface. **Draining state machine** in the Agent: atomic `draining` flag, current-shard tracking, `beginDrain()` marks the in-flight shard `preempted` and bumps `runs.preemption_count`. Both the Postgres-claim and NATS-handler paths early-return when draining; NATS naks back so a non-draining worker picks up the message. **Run Manager reschedule sweep** (`reschedulePreempted`, every 5s) finds preempted/lost shards, computes the set of unfinished tests (intended-via-round-robin minus already-recorded `test_executions`), and creates a fresh pending shard with that residue under `runs.meta.reshards[<new_shard_id>]`. Worker's `loadTestsForShard` consults that map first, falling back to round-robin. Migration 004 adds `shards.meta` for the `rescheduled_at` dedupe marker. Three integration tests cover the happy path (only-uncompleted), all-completed no-op, and idempotent-second-sweep dedupe. |
-| **E-14** | Additional runner adapters | ✅ | `pkg/adapter/gotest` parses `go test -json` events; `pkg/adapter/jest` runs Jest with `--json --outputFile` and parses assertion results. SPI doc in `pkg/adapter/adapter.go`. |
+| **E-14** | Additional runner adapters | ✅ | `pkg/adapter/gotest` parses `go test -json` events; `pkg/adapter/jest` runs Jest with `--json --outputFile` and parses assertion results. **SPI contract documented at `docs/adapters/spi.md`** (interface, Discover/Execute semantics, fingerprint/redaction/OTel boundary, conformance checklist) with a copy-and-fill skeleton at `pkg/adapter/template/`. |
 | **E-15** | Auto-quarantine workflow + GitHub Issue creation | ✅ | CODEOWNERS parser + matcher, quarantine daemon transitions tests with broken-vs-flaky distinction. **GitHub Issues REST client** (`internal/github/issues.go`) wires Open/Comment/Patch via the same auth model as Check Runs. Re-quarantine dedupes via comment instead of duplicate issue. **SLA nudge sweeper** (`internal/quarantine/sla.go`) posts after `flake.sla_days` and is idempotent on `last_nudged_at`. **Un-quarantine proposer** (`internal/quarantine/unquarantine.go`) tracks K consecutive passes, posts a magic-link comment; `/api/v1/quarantine/restore?token=…` consumes it (single-use, token-gated, no auth required since the link is the auth). |
 | **E-16** | Owner digest (weekly Slack/email) | ✅ | HTML + plain-text templates, per-author aggregation, SMTP sender (with mock-dialer tests), Slack webhook sender (httptest-verified), Multiplex fanout, opt-out enforcement (per-user via `users.digest_opt_out`, per-repo via `repos.meta.digest_opt_out`), `result-pipeline owner-digest` subcommand wired into the Helm CronJob, `teo digest dry-run --user=<email>` CLI for inspection. |
 
@@ -132,11 +132,23 @@ Each FR from [`docs/requirements/functional.md`](docs/requirements/functional.md
 ok  internal/api                       (graphql schema + resolvers; OTLP export
                                         round-trip via stub SpanQuerier; hexToBytes
                                         + formatSeconds helpers)
+ok  internal/audit                     (nil-Logger + nil-pool no-op guards on Log)
 ok  internal/cost                      (Pricer.RunCost on positive/zero/negative
                                         inputs; NewFromEnv default + override +
                                         invalid/negative-fallback paths)
+ok  internal/db                        (parseClickHouseDSN: full URL, default db,
+                                        no-creds, user-only, applied defaults,
+                                        malformed-URL rejection)
 ok  internal/logstore                  (Noop body-drain + nil-safe; S3 conforms to
                                         Uploader interface)
+ok  internal/predictor                 (NewHeuristic seeded defaults; Predict nil
+                                        guards; coldStart fingerprint+P95 = 3×P50;
+                                        coldOnly preserves order; defaultFor lookup
+                                        + fallback)
+ok  internal/quarantine                (issue-body markdown structure + key-fact
+                                        substitution + zero-sample NaN guard;
+                                        GitHubOpener nil-receiver + nil-client
+                                        Open/Comment guards)
 ok  internal/worker                    (drain idempotency; uploadLog key shape +
                                         redaction + skip-when-empty + upload-error
                                         handling)
@@ -155,10 +167,21 @@ ok  internal/scheduler                 (LPT determinism, exclusivity, quarantine
                                         makespan ratio ≤ 4/3 × brute-force optimum on 30 instances)
 ok  internal/spot                      (IMDS interruption parsing)
 ok  internal/version                   (build identity round-trip)
+ok  pkg/adapter/gotest                 (dedupe order/empty; mergeEnv append/no-op;
+                                        processEvents pass/fail/skip + package-level
+                                        ignore + malformed-line skip + synthetic
+                                        entry; New defaults)
+ok  pkg/adapter/jest                   (translate full status table; mergeEnv
+                                        append/no-op; parseListTests path-relative
+                                        + malformed-rejection; parseReport assertion
+                                        emit + nested ancestors + todo→skipped +
+                                        empty-no-op + malformed-rejection)
 ok  pkg/adapter/pytest                 (collect-only parser)
+ok  pkg/adapter/template               (SPI invariants: Name non-empty, empty-tests
+                                        no-op, unknown-status → errored, mergeEnv)
 ```
 
-**Now covered by integration tests** (`-tags=integration`): `internal/api/graphql_resolvers.go` (every read resolver + the rerunFailed mutation, against a real Postgres), full `/graphql` HTTP roundtrip via `api.Server`, **run-export REST endpoints** (JUnit XML happy-path + mixed-outcome shape, OTLP+JSON happy-path with stubbed SpanQuerier, 400/404/501 negative paths), **run-intake REST endpoints** (`internal/api/runs.go` Create/Get/Cancel — happy paths, validation, idempotency-key replay returns same id, auth-required 401, unknown-repo 404, terminal-run cancel idempotent), **logstore S3 round-trip against MinIO** (small body via single PUT, >16MB body promoted to multipart by transfermanager, same-key overwrite — uses a dedicated `internal/testminio.Start` testcontainer harness). **Still uncovered:** `internal/db`, `internal/audit`, `internal/predictor`, `internal/quarantine` daemons, `pkg/adapter/{gotest,jest}` (need real runner binaries). Each is a focused follow-up; the harnesses in `internal/testpg/` and `internal/testminio/` make them straightforward.
+**Now covered by integration tests** (`-tags=integration`): `internal/api/graphql_resolvers.go` (every read resolver + the rerunFailed mutation, against a real Postgres), full `/graphql` HTTP roundtrip via `api.Server`, **run-export REST endpoints** (JUnit XML happy-path + mixed-outcome shape, OTLP+JSON happy-path with stubbed SpanQuerier, 400/404/501 negative paths), **run-intake REST endpoints** (`internal/api/runs.go` Create/Get/Cancel — happy paths, validation, idempotency-key replay returns same id, auth-required 401, unknown-repo 404, terminal-run cancel idempotent), **logstore S3 round-trip against MinIO** (small body via single PUT, >16MB body promoted to multipart by transfermanager, same-key overwrite — uses a dedicated `internal/testminio.Start` testcontainer harness). **Still uncovered (all leaf packages):** `internal/config` (struct definitions only), `internal/grpcsvc` (thin gRPC service wrappers), `internal/model` (data types), `internal/nats` (client wrapper). The DB-backed code paths in `internal/audit`, `internal/db`, `internal/predictor`, `internal/quarantine` daemons remain integration-tier — the harnesses in `internal/testpg/` and `internal/testminio/` make those follow-ups straightforward.
 
 ---
 

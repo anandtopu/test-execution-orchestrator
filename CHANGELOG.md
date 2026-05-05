@@ -8,6 +8,21 @@ For a finer-grained per-FR / per-epic implementation status, see [`progress.md`]
 
 ## [Unreleased]
 
+### Added — Post-v1.0 unit coverage sweep (gotest/jest/quarantine + db/audit/predictor)
+
+Closes the named coverage gaps from the v1.0.0 resume callout — the testable surface of every backend package now has unit tests, even where the DB-backed paths remain integration-tier.
+
+- **`pkg/adapter/gotest`** — refactored `Execute` to extract a `processEvents(io.Reader, ...)` helper so the JSON-stream parser can be exercised against canned input without spawning `go test`. New tests cover the basic pass/fail/skip stream, package-level event suppression, malformed-line skip, and the synthetic-entry fallback for un-indexed tests. Plus `dedupe`, `mergeEnv`, and `New()` defaults.
+- **`pkg/adapter/jest`** — analogous extraction of `parseListTests` and `parseReport` from `Discover`/`Execute`. Tests cover the full `translate()` status mapping (passed/failed/skipped/pending/todo + unknown→errored), path-relative `--listTests` output, nested `describe`/`it` ancestor assembly, todo-as-skipped, joined failure messages, and structural-error rejection on malformed JSON.
+- **`pkg/adapter/template`** — copy-and-fill skeleton at `pkg/adapter/template/` (referenced from `docs/adapters/spi.md`) plus a `template_test.go` that pins the SPI invariants every adapter must satisfy regardless of runner: non-empty `Name()`, no-op on empty test slice, unknown-status→`OutcomeErrored`, `mergeEnv` semantics. New adapter authors get a green test suite as their starting point.
+- **`internal/quarantine`** — `quarantine_test.go` covers `buildIssueBody` Markdown structure (must contain "## Flaky test detected", "## What happened", "## Next steps"), key-fact substitution (path/name/percent/sample-size/Wilson reference), and the zero-sample NaN guard. `github_opener_test.go` pins nil-receiver and nil-client guards on both `Open` and `Comment` so a misconfigured Daemon errors instead of panicking.
+- **`internal/db`** — `parseClickHouseDSN` is now unit-tested against full URL with creds, no-creds, user-only, default-database fallback, applied connection defaults (5s dial, 20/5 conn pool, 1h lifetime), and malformed-URL rejection.
+- **`internal/audit`** — covers the nil-`Logger` and nil-pool early-return guards on `Log`. Happy-path INSERT remains exercised by the API integration tests under `-tags=integration`.
+- **`internal/predictor`** — `NewHeuristic` seeded defaults, `Predict` nil-receiver/nil-pool error paths, `coldStart` fingerprint shape and P95 = 3 × P50 invariant, `coldOnly` order/count preservation, and `defaultFor` known-runner-vs-fallback. DB-backed `loadStats` remains integration-tier.
+- **E-14 SPI doc** — `docs/adapters/spi.md` now exists as the canonical adapter contract (Discover/Execute semantics, fingerprint/redaction/OTel boundary, conformance checklist). `progress.md` and `docs/backlog/tasks.md` rows updated from "SPI doc pending" → "all complete".
+
+Verification: `go build ./...` clean, `go test -count=1 ./...` 25 testable packages green (was 20 at end of v1.0.0 sweep).
+
 ### Fixed — CI run-6: integration tests reaching the API for the first time
 
 The migration runner finally healed enough to let the API integration tests execute their HTTP/SQL paths end-to-end — and three latent bugs surfaced in that first complete run:

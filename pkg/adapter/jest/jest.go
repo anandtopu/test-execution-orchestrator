@@ -39,6 +39,12 @@ func (a *Adapter) Discover(ctx context.Context, workdir string) ([]model.TestEnt
 	if err != nil {
 		return nil, fmt.Errorf("jest --listTests: %w", err)
 	}
+	return parseListTests(out, workdir)
+}
+
+// parseListTests turns the JSON array emitted by `jest --listTests --json` into
+// TestEntry values with paths relative to workdir.
+func parseListTests(out []byte, workdir string) ([]model.TestEntry, error) {
 	var paths []string
 	if err := json.Unmarshal(out, &paths); err != nil {
 		return nil, fmt.Errorf("parse listTests: %w", err)
@@ -113,11 +119,17 @@ func (a *Adapter) Execute(ctx context.Context, workdir string, tests []model.Tes
 		}
 		return nil
 	}
+	return parseReport(rep, workdir, started, onResult)
+}
+
+// parseReport walks a jest --json report and emits one Result per assertion.
+// Returns an error only when the report is structurally invalid; an empty
+// report is a valid (no-op) success.
+func parseReport(rep []byte, workdir string, started time.Time, onResult adapter.ResultHandler) error {
 	var jr jestReport
 	if err := json.Unmarshal(rep, &jr); err != nil {
 		return fmt.Errorf("parse jest report: %w", err)
 	}
-
 	for _, file := range jr.TestResults {
 		rel, _ := filepath.Rel(workdir, file.Name)
 		for _, ar := range file.AssertionResults {
