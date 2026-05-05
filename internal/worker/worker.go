@@ -367,11 +367,7 @@ func decodeManifestTests(b []byte) ([]model.TestEntry, error) {
 	if err := jsonUnmarshal(b, &m); err != nil {
 		return nil, err
 	}
-	if len(m.Tests) > 0 {
-		return m.Tests, nil
-	}
-	// Could also be a full Plan; ignore for MVP scaffolding.
-	return nil, nil
+	return m.Tests, nil
 }
 
 // jsonUnmarshal is a thin wrapper to avoid importing encoding/json at the top

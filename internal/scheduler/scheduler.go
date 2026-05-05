@@ -82,12 +82,14 @@ func PlanFunc(tests []Test, _ FleetSnapshot, c Constraints) Plan {
 	}
 
 	// 2. Compute total work, then choose shard count to hit the target wall-clock.
+	// The 50ms floor protects bin-packing from a predictor that returns 0 or
+	// negative durations; mutate the slice (not a value copy) so step 4 sees it.
 	totalMS := 0
-	for _, t := range active {
-		if t.PredictedMS < 50 {
-			t.PredictedMS = 50
+	for i := range active {
+		if active[i].PredictedMS < 50 {
+			active[i].PredictedMS = 50
 		}
-		totalMS += t.PredictedMS
+		totalMS += active[i].PredictedMS
 	}
 	// avoid divide-by-zero
 	target := c.TargetShardSeconds * 1000

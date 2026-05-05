@@ -1,0 +1,141 @@
+{{- if .Values.predictor.heuristic.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-predictor
+  labels:
+    {{- include "teo.componentLabels" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" "predictor") | nindent 4 }}
+spec:
+  replicas: {{ .Values.predictor.heuristic.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: teo
+      app.kubernetes.io/component: predictor
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        {{- include "teo.componentLabels" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" "predictor") | nindent 8 }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: predictor
+          image: {{ include "teo.image" (dict "Values" .Values "Chart" .Chart "repo" .Values.predictor.heuristic.image.repository "imageTag" "") }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          ports:
+            - name: grpc
+              containerPort: 9092
+            - name: metrics
+              containerPort: 9100
+          env:
+            - name: TEO_GRPC_LISTEN
+              value: ":9092"
+            - name: TEO_POSTGRES_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-postgres-creds
+                  key: dsn
+          readinessProbe:
+            httpGet: { path: /healthz, port: metrics }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /healthz, port: metrics }
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.predictor.heuristic.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-predictor
+  labels:
+    {{- include "teo.componentLabels" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" "predictor") | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: grpc
+      port: 9092
+      targetPort: grpc
+    - name: metrics
+      port: 9100
+      targetPort: metrics
+  selector:
+    app.kubernetes.io/name: teo
+    app.kubernetes.io/component: predictor
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{- if .Values.predictor.ml.enabled -}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-predictor-ml
+  labels:
+    {{- include "teo.componentLabels" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" "predictor-ml") | nindent 4 }}
+spec:
+  replicas: {{ .Values.predictor.ml.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: teo
+      app.kubernetes.io/component: predictor-ml
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        {{- include "teo.componentLabels" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" "predictor-ml") | nindent 8 }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: predictor-ml
+          image: {{ include "teo.image" (dict "Values" .Values "Chart" .Chart "repo" .Values.predictor.ml.image.repository "imageTag" .Values.predictor.ml.image.tag) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: TEO_CLICKHOUSE_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-clickhouse-creds
+                  key: dsn
+            - name: TEO_S3_BUCKET
+              value: {{ .Values.minio.enabled | ternary (printf "%s-models" .Release.Name) "" | quote }}
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.predictor.ml.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-predictor-ml
+  labels:
+    {{- include "teo.componentLabels" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" "predictor-ml") | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+  selector:
+    app.kubernetes.io/name: teo
+    app.kubernetes.io/component: predictor-ml
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}

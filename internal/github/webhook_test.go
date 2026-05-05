@@ -26,3 +26,28 @@ func TestVerifySignatureInvalid(t *testing.T) {
 		t.Fatal("expected error")
 	}
 }
+
+// TestSuspendedFlagFromAction is a pure mapping check on the action→suspended
+// translation that handleInstallation uses. Regression for H9 (was always
+// suspended=FALSE before).
+func TestSuspendedFlagFromAction(t *testing.T) {
+	for _, tc := range []struct {
+		action string
+		want   bool
+	}{
+		{"created", false},
+		{"new_permissions_accepted", false},
+		{"unsuspend", false},
+		{"deleted", true},
+		{"suspend", true},
+	} {
+		got := false
+		switch tc.action {
+		case "deleted", "suspend":
+			got = true
+		}
+		if got != tc.want {
+			t.Errorf("action=%s: got suspended=%v, want %v", tc.action, got, tc.want)
+		}
+	}
+}

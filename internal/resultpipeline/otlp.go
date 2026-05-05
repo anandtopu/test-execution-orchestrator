@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math"
 	"strings"
 	"time"
 
@@ -103,8 +104,8 @@ func (r *OTLPReceiver) flatten(req *collectorpb.ExportTraceServiceRequest) ([]ro
 					runID:         firstNonEmpty(spanAttrs["teo.run_id"], runID),
 					name:          sp.Name,
 					kind:          int8(sp.Kind),
-					startTime:     time.Unix(0, int64(sp.StartTimeUnixNano)),
-					endTime:       time.Unix(0, int64(sp.EndTimeUnixNano)),
+					startTime:     unixNanoToTime(sp.StartTimeUnixNano),
+					endTime:       unixNanoToTime(sp.EndTimeUnixNano),
 					statusCode:    statusToCode(sp.GetStatus()),
 					statusMessage: sp.GetStatus().GetMessage(),
 				}
@@ -192,6 +193,17 @@ func anyValueString(v *commonpb.AnyValue) string {
 		return "false"
 	}
 	return ""
+}
+
+// unixNanoToTime converts an OTLP *_UnixNano (uint64) into a time.Time without
+// silently wrapping when the value exceeds math.MaxInt64. The proto type permits
+// values past 2262-04-11 23:47Z that would otherwise cast negative; we clamp
+// instead of panicking or writing garbage to ClickHouse.
+func unixNanoToTime(n uint64) time.Time {
+	if n > math.MaxInt64 {
+		return time.Unix(0, math.MaxInt64)
+	}
+	return time.Unix(0, int64(n))
 }
 
 func statusToCode(s *tracepb.Status) int8 {

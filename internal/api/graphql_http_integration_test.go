@@ -14,12 +14,13 @@ import (
 	"github.com/teo-dev/teo/internal/testpg"
 )
 
-// gqlPost issues a POST against /graphql and returns the parsed JSON envelope.
+// gqlPost issues a signed POST against /graphql and returns the parsed JSON envelope.
+// The auth check on /graphql matches the inline pattern in runs.go; tests
+// share signedRequest from runs_integration_test.go.
 func gqlPost(t *testing.T, h http.Handler, query string, vars map[string]any) map[string]any {
 	t.Helper()
 	body, _ := json.Marshal(map[string]any{"query": query, "variables": vars})
-	req := httptest.NewRequest(http.MethodPost, "/graphql", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
+	req := signedRequest(t, http.MethodPost, "/graphql", body)
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, req)
 	if rr.Code != http.StatusOK {
@@ -30,6 +31,27 @@ func gqlPost(t *testing.T, h http.Handler, query string, vars map[string]any) ma
 		t.Fatalf("decode response: %v\nbody: %s", err, rr.Body.String())
 	}
 	return out
+}
+
+// TestGraphQLEndpoint_RequiresAuth locks in the C2 fix: anonymous POSTs to
+// /graphql must be rejected with 401 (same RFC 7807 envelope used elsewhere).
+func TestGraphQLEndpoint_RequiresAuth(t *testing.T) {
+	pool, cleanup := testpg.Start(t)
+	t.Cleanup(cleanup)
+
+	srv := New(Config{
+		JWTSecret: testJWTSecret,
+		JWTTTL:    time.Hour,
+	}, pool)
+
+	body, _ := json.Marshal(map[string]any{"query": `{ runs(first: 1) { id } }`})
+	req := httptest.NewRequest(http.MethodPost, "/graphql", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want 401, body = %s", rr.Code, rr.Body.String())
+	}
 }
 
 func TestGraphQLEndpoint_Runs_HappyPath(t *testing.T) {
@@ -173,8 +195,7 @@ func TestGraphQLEndpoint_BadQueryReturnsErrorEnvelope(t *testing.T) {
 	}, pool)
 
 	body, _ := json.Marshal(map[string]any{"query": `{ nonexistent }`})
-	req := httptest.NewRequest(http.MethodPost, "/graphql", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
+	req := signedRequest(t, http.MethodPost, "/graphql", body)
 	rr := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rr, req)
 	if !strings.Contains(rr.Body.String(), `"errors"`) {

@@ -183,7 +183,10 @@ func (m *Manager) tryHandle(ctx context.Context, runID string, status model.RunS
 	case model.RunPending:
 		if err := m.plan(ctx, tx, runID); err != nil {
 			m.Logger.Error("plan failed", "run", runID, "err", err)
-			_, _ = tx.Exec(ctx, `UPDATE teo.runs SET status = 'failed', finished_at = now() WHERE id = $1`, runID)
+			// Same guard as plan/finalize: don't overwrite a concurrent cancel.
+			_, _ = tx.Exec(ctx,
+				`UPDATE teo.runs SET status = 'failed', finished_at = now()
+                 WHERE id = $1 AND status NOT IN ('cancelled','succeeded','failed')`, runID)
 		}
 	case model.RunDispatching:
 		if err := m.dispatch(ctx, tx, runID); err != nil {
@@ -271,12 +274,17 @@ func (m *Manager) plan(ctx context.Context, tx pgx.Tx, runID string) error {
 		m.Metrics.SchedulerPlanSec.Observe(time.Since(planStart).Seconds())
 	}
 
-	// Persist plan and shards
+	// Persist the scheduler output into runs.meta.computed_plan. The original
+	// input manifest stays in teo.run_plans so the worker's round-robin
+	// loadTestsForShard and the run-manager reschedule sweep both keep working.
+	// (Until E-13 the upsert here overwrote run_plans with the scheduler.Plan,
+	// which silently broke every non-NATS dispatch path.)
 	planJSON, _ := json.Marshal(plan)
 	if _, err := tx.Exec(ctx, `
-        INSERT INTO teo.run_plans (run_id, plan, plan_version) VALUES ($1, $2::jsonb, $3)
-        ON CONFLICT (run_id) DO UPDATE SET plan = EXCLUDED.plan, plan_version = EXCLUDED.plan_version
-    `, runID, planJSON, plan.Version); err != nil {
+        UPDATE teo.runs
+        SET meta = COALESCE(meta,'{}'::jsonb) || jsonb_build_object('computed_plan', $2::jsonb)
+        WHERE id = $1
+    `, runID, planJSON); err != nil {
 		return err
 	}
 
@@ -290,9 +298,14 @@ func (m *Manager) plan(ctx context.Context, tx pgx.Tx, runID string) error {
 		}
 	}
 
+	// Guard against a concurrent cancel: only advance to 'dispatching' if the
+	// run is still in 'planning'. The advisory lock keeps two managers from
+	// racing each other, but a user-initiated cancel runs outside this lock
+	// and can flip status to 'cancelled' between the planning UPDATE above
+	// and here.
 	if _, err := tx.Exec(ctx, `
         UPDATE teo.runs SET status = 'dispatching', started_at = COALESCE(started_at, now())
-        WHERE id = $1
+        WHERE id = $1 AND status = 'planning'
     `, runID); err != nil {
 		return err
 	}
@@ -303,12 +316,15 @@ func (m *Manager) plan(ctx context.Context, tx pgx.Tx, runID string) error {
 
 func (m *Manager) dispatch(ctx context.Context, tx pgx.Tx, runID string) error {
 	// Publish each pending shard to NATS so subscribed workers can claim it.
-	// If NATS isn't configured (m.JS == nil), workers fall back to the
-	// Postgres SKIP-LOCKED claim path.
+	// The scheduler.Plan was stashed in runs.meta.computed_plan by plan(); we
+	// can't read it from teo.run_plans because that row holds the original
+	// input manifest the worker's round-robin and the reschedule sweep both
+	// rely on. If NATS isn't configured (m.JS == nil), workers fall back to
+	// the Postgres SKIP-LOCKED claim path.
 	if m.JS != nil {
 		var planRaw []byte
 		if err := tx.QueryRow(ctx,
-			`SELECT plan FROM teo.run_plans WHERE run_id = $1`, runID).Scan(&planRaw); err == nil {
+			`SELECT meta->'computed_plan' FROM teo.runs WHERE id = $1`, runID).Scan(&planRaw); err == nil && len(planRaw) > 0 {
 			var plan scheduler.Plan
 			if err := json.Unmarshal(planRaw, &plan); err == nil {
 				m.publishShards(ctx, tx, runID, plan)
@@ -387,13 +403,16 @@ func (m *Manager) finalize(ctx context.Context, tx pgx.Tx, runID string) error {
 	if anyFailed {
 		final = model.RunFailed
 	}
+	// Guard against an already-terminal run: if a cancel raced this finalize,
+	// the row is already in cancelled/succeeded/failed and we must not
+	// resurrect it under a new terminal label.
 	if _, err := tx.Exec(ctx, `
         UPDATE teo.runs
         SET status = $2, finished_at = now(),
             total_duration_ms = COALESCE(
                 (SELECT EXTRACT(EPOCH FROM (now() - started_at))::int * 1000 FROM teo.runs WHERE id = $1),
                 0)
-        WHERE id = $1
+        WHERE id = $1 AND status = 'finalizing'
     `, runID, final); err != nil {
 		return err
 	}

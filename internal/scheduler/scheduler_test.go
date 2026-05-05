@@ -74,6 +74,29 @@ func TestExclusivityConstraint(t *testing.T) {
 	}
 }
 
+func TestPredictedMSFloorIsApplied(t *testing.T) {
+	// Predictor edge cases — zero, negative, sub-floor — must be lifted to 50ms
+	// floor so bin-packing never sees nonsense durations.
+	tests := []Test{
+		mkTest("zero", 0),
+		mkTest("neg", -100),
+		mkTest("sub", 25),
+		mkTest("ok", 5000),
+	}
+	plan := PlanFunc(tests, FleetSnapshot{}, Constraints{MinShards: 1, MaxShards: 1})
+	for _, a := range plan.Assignments {
+		for _, te := range a.Tests {
+			if te.PredictedMS < 50 {
+				t.Fatalf("test %q has PredictedMS=%d, want ≥50", te.Entry.Name, te.PredictedMS)
+			}
+		}
+	}
+	// total = 50 + 50 + 50 + 5000 = 5150
+	if plan.TotalPredictedMS != 5150 {
+		t.Fatalf("TotalPredictedMS = %d, want 5150", plan.TotalPredictedMS)
+	}
+}
+
 func TestQuarantineLaneSeparate(t *testing.T) {
 	tests := []Test{
 		mkTest("normal", 1000),

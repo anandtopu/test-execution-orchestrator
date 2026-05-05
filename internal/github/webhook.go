@@ -90,15 +90,30 @@ func (w *Webhook) handleInstallation(ctx context.Context, body []byte) {
 		w.Logger.Error("decode installation event", "err", err)
 		return
 	}
+	// installation event actions: created, deleted, suspend, unsuspend,
+	// new_permissions_accepted. Map them to the suspended flag so a removed
+	// or suspended App stops appearing as installed (was previously hard-coded
+	// to suspended=FALSE on every action — see audit finding H9).
+	suspended := false
+	switch e.Action {
+	case "deleted", "suspend":
+		suspended = true
+	}
 	_, err := w.Pool.Exec(ctx, `
         INSERT INTO teo.github_installations (id, account_login, account_type, suspended)
-        VALUES ($1, $2, $3, FALSE)
+        VALUES ($1, $2, $3, $4)
         ON CONFLICT (id) DO UPDATE SET
             account_login = EXCLUDED.account_login,
-            account_type = EXCLUDED.account_type
-    `, e.Installation.ID, e.Installation.Account.Login, e.Installation.Account.Type)
+            account_type  = EXCLUDED.account_type,
+            suspended     = EXCLUDED.suspended
+    `, e.Installation.ID, e.Installation.Account.Login, e.Installation.Account.Type, suspended)
 	if err != nil {
 		w.Logger.Error("upsert installation", "err", err)
+		return
+	}
+	// Repo enablement only flips on installs, not on suspends/deletes —
+	// repo rows survive App removal so historical run data stays joinable.
+	if e.Action == "deleted" || e.Action == "suspend" {
 		return
 	}
 	for _, repo := range e.Repositories {

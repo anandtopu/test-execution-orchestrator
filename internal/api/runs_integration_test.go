@@ -215,6 +215,51 @@ func TestPOSTRunsIdempotencyKeyReturnsSameRun(t *testing.T) {
 	}
 }
 
+// TestPOSTRunsIdempotencyKeyDifferentCommitConflicts locks in the C3 fix:
+// reusing the same Idempotency-Key for a *different* commit must not silently
+// return the first run. The handler now returns 409.
+func TestPOSTRunsIdempotencyKeyDifferentCommitConflicts(t *testing.T) {
+	pool, cleanup := testpg.Start(t)
+	t.Cleanup(cleanup)
+	_, full := seedRepo(t, pool)
+	srv := newTestServer(pool)
+
+	rr1 := httptest.NewRecorder()
+	req1 := signedRequest(t, http.MethodPost, "/api/v1/runs", validCreateRunBody(full))
+	req1.Header.Set("Idempotency-Key", "client-key-conflict")
+	srv.Handler().ServeHTTP(rr1, req1)
+	if rr1.Code != http.StatusCreated {
+		t.Fatalf("first call status = %d, body = %s", rr1.Code, rr1.Body.String())
+	}
+
+	// Same key, different commit_sha — must 409.
+	body2, _ := json.Marshal(map[string]any{
+		"repo_full_name": full,
+		"commit_sha":     "different-commit-sha",
+		"branch":         "main",
+		"manifest": map[string]any{
+			"runner": "pytest",
+			"tests":  []map[string]any{{"path": "p", "name": "n"}},
+		},
+	})
+	rr2 := httptest.NewRecorder()
+	req2 := signedRequest(t, http.MethodPost, "/api/v1/runs", body2)
+	req2.Header.Set("Idempotency-Key", "client-key-conflict")
+	srv.Handler().ServeHTTP(rr2, req2)
+	if rr2.Code != http.StatusConflict {
+		t.Fatalf("second call status = %d, want 409, body = %s", rr2.Code, rr2.Body.String())
+	}
+
+	// Only one run should exist for the key.
+	var n int
+	_ = pool.QueryRow(context.Background(),
+		`SELECT count(*) FROM teo.runs WHERE meta->>'idempotency_key' = $1`,
+		"client-key-conflict").Scan(&n)
+	if n != 1 {
+		t.Errorf("runs count for idempotency key = %d, want 1", n)
+	}
+}
+
 func TestGETRunByIDHappyPath(t *testing.T) {
 	pool, cleanup := testpg.Start(t)
 	t.Cleanup(cleanup)

@@ -18,6 +18,7 @@ import (
 	"github.com/teo-dev/teo/internal/audit"
 	"github.com/teo-dev/teo/internal/config"
 	"github.com/teo-dev/teo/internal/db"
+	teogithub "github.com/teo-dev/teo/internal/github"
 	"github.com/teo-dev/teo/internal/grpcsvc"
 	"github.com/teo-dev/teo/internal/resultpipeline"
 	"github.com/teo-dev/teo/internal/version"
@@ -37,6 +38,13 @@ func main() {
 	}
 	if cfg.JWTSecret == "" {
 		logger.Error("TEO_JWT_SECRET is required")
+		os.Exit(1)
+	}
+	// HS256 best-practice: secret must be at least as long as the hash output
+	// (32 bytes for SHA-256). Shorter secrets reduce HMAC strength and the
+	// blame-radius of a leaked log/env dump.
+	if len(cfg.JWTSecret) < 32 {
+		logger.Error("TEO_JWT_SECRET must be at least 32 bytes", "len", len(cfg.JWTSecret))
 		os.Exit(1)
 	}
 
@@ -62,6 +70,21 @@ func main() {
 		}
 		defer chConn.Close()
 		apiOpts = append(apiOpts, api.WithClickHouseConn(chConn))
+	}
+
+	// GitHub webhook receiver (FR-901..904). Only mounted when the secret is
+	// configured; without it, /webhooks/github returns 503 instead of
+	// silently accepting unverified traffic.
+	if cfg.GitHubWebhookSecret != "" {
+		hook := &teogithub.Webhook{
+			Pool:   pool,
+			Logger: logger,
+			Secret: []byte(cfg.GitHubWebhookSecret),
+		}
+		apiOpts = append(apiOpts, api.WithGitHubWebhook(hook))
+		logger.Info("github webhook enabled", "path", "/webhooks/github")
+	} else {
+		logger.Warn("TEO_GITHUB_WEBHOOK_SECRET not set; /webhooks/github will return 503")
 	}
 
 	srv := api.New(api.Config{

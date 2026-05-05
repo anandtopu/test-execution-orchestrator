@@ -9,12 +9,20 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/teo-dev/teo/internal/audit"
 	"github.com/teo-dev/teo/internal/auth"
 	"github.com/teo-dev/teo/internal/model"
 )
+
+// isUniqueViolation reports whether err is a Postgres 23505 unique_violation,
+// produced by the partial unique index on (repo_id, meta->>'idempotency_key').
+func isUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23505"
+}
 
 // RunsHandler exposes run-intake REST endpoints.
 type RunsHandler struct {
@@ -64,15 +72,22 @@ func (h *RunsHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Idempotency: if a run already exists with the same key for this repo/commit, return it.
+	// Idempotency contract: same key + same commit → return existing run.
+	// Same key + different commit → 409 Conflict (the client is reusing a key
+	// for a semantically different request, which the spec forbids).
 	if req.IdempotencyKey != "" {
-		var existing string
+		var existing, existingCommit string
 		err := h.Pool.QueryRow(ctx,
-			`SELECT id FROM teo.runs
+			`SELECT id, commit_sha FROM teo.runs
              WHERE repo_id = $1 AND meta->>'idempotency_key' = $2
              ORDER BY created_at DESC LIMIT 1`,
-			repoID, req.IdempotencyKey).Scan(&existing)
+			repoID, req.IdempotencyKey).Scan(&existing, &existingCommit)
 		if err == nil {
+			if existingCommit != req.CommitSHA {
+				writeProblem(w, http.StatusConflict, "Idempotency-Key conflict",
+					"Idempotency-Key was previously used for a different commit on this repo")
+				return
+			}
 			run, err := h.loadRun(ctx, existing)
 			if err == nil {
 				writeJSON(w, http.StatusOK, run)
@@ -103,6 +118,29 @@ func (h *RunsHandler) Create(w http.ResponseWriter, r *http.Request) {
     `, runID, repoID, req.CommitSHA, req.Branch, "api",
 		nullableString(req.TriggerActor), req.TriggerPRNumber, budgetSec, metaJSON)
 	if err != nil {
+		// 23505 = unique_violation. The partial unique index on
+		// (repo_id, meta->>'idempotency_key') closes the SELECT/INSERT race:
+		// a concurrent request that won the insert is now visible, so re-do
+		// the lookup and return 200 OK on the existing row instead of 500.
+		if isUniqueViolation(err) && req.IdempotencyKey != "" {
+			var existing, existingCommit string
+			if qerr := h.Pool.QueryRow(ctx,
+				`SELECT id, commit_sha FROM teo.runs
+                 WHERE repo_id = $1 AND meta->>'idempotency_key' = $2
+                 ORDER BY created_at DESC LIMIT 1`,
+				repoID, req.IdempotencyKey).Scan(&existing, &existingCommit); qerr == nil {
+				if existingCommit != req.CommitSHA {
+					writeProblem(w, http.StatusConflict, "Idempotency-Key conflict",
+						"Idempotency-Key was previously used for a different commit on this repo")
+					return
+				}
+				run, lerr := h.loadRun(ctx, existing)
+				if lerr == nil {
+					writeJSON(w, http.StatusOK, run)
+					return
+				}
+			}
+		}
 		writeProblem(w, http.StatusInternalServerError, "Insert failed", err.Error())
 		return
 	}

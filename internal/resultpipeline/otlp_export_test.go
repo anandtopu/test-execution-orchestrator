@@ -2,6 +2,7 @@ package resultpipeline
 
 import (
 	"context"
+	"math"
 	"testing"
 	"time"
 
@@ -11,6 +12,24 @@ import (
 	resourcepb "go.opentelemetry.io/proto/otlp/resource/v1"
 	tracepb "go.opentelemetry.io/proto/otlp/trace/v1"
 )
+
+func TestUnixNanoToTimeClampsOnOverflow(t *testing.T) {
+	// Sane current value: passes through untouched.
+	now := time.Now()
+	got := unixNanoToTime(uint64(now.UnixNano()))
+	if !got.Equal(now) {
+		t.Fatalf("round-trip failed: got %v want %v", got, now)
+	}
+	// uint64 max is 2× int64 max; raw cast wraps negative. Clamp must produce
+	// a non-negative time so ClickHouse DateTime64 doesn't reject the row.
+	clamped := unixNanoToTime(math.MaxUint64)
+	if clamped.UnixNano() < 0 {
+		t.Fatalf("clamp produced negative ns: %d", clamped.UnixNano())
+	}
+	if clamped.UnixNano() != math.MaxInt64 {
+		t.Fatalf("clamp ns = %d, want MaxInt64", clamped.UnixNano())
+	}
+}
 
 // These tests cover the row-flattening + Export entry-point logic without
 // touching ClickHouse — the network path is exercised by the integration

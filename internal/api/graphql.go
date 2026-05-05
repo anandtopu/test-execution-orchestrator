@@ -7,6 +7,7 @@ import (
 	"github.com/graphql-go/graphql"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/teo-dev/teo/internal/auth"
 	"github.com/teo-dev/teo/internal/cost"
 )
 
@@ -15,6 +16,10 @@ import (
 func graphqlHandler(pool *pgxpool.Pool) http.Handler {
 	schema := buildSchema(pool)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if auth.PrincipalFrom(r.Context()) == nil {
+			writeProblem(w, http.StatusUnauthorized, "Unauthorized", "authentication required")
+			return
+		}
 		var req struct {
 			Query         string         `json:"query"`
 			Variables     map[string]any `json:"variables"`

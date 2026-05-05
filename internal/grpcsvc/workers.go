@@ -109,8 +109,10 @@ func (s *WorkersService) loadShardTests(ctx context.Context, tx pgx.Tx, shardID 
 	if err != nil {
 		return nil, err
 	}
-	// Plan may be a manifest-v1 (raw manifest) or a full scheduler.Plan.
-	// Try the structured plan first.
+	// teo.run_plans always holds the manifest-v1 shape; the scheduler.Plan
+	// lives in runs.meta.computed_plan. The structured-plan branch below is
+	// kept as a forward-compatibility tolerance (an older row written by the
+	// pre-fix manager will still resolve correctly through this path).
 	var plan struct {
 		Assignments []struct {
 			ShardIndex int `json:"shard_index"`

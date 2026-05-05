@@ -2,6 +2,8 @@ package api
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"sync"
@@ -26,14 +28,15 @@ type Config struct {
 
 // Server wires the HTTP router for the TEO API.
 type Server struct {
-	cfg     Config
-	pool    *pgxpool.Pool
-	cache   *apiKeyCache
-	jwt     *auth.JWTIssuer
-	audit   *audit.Logger
-	metrics *metrics.Registry
-	spans   SpanQuerier
-	mux     *chi.Mux
+	cfg            Config
+	pool           *pgxpool.Pool
+	cache          *apiKeyCache
+	jwt            *auth.JWTIssuer
+	audit          *audit.Logger
+	metrics        *metrics.Registry
+	spans          SpanQuerier
+	githubWebhook  http.Handler // nil when no secret is configured
+	mux            *chi.Mux
 }
 
 // New constructs a Server. If reg is nil a fresh metrics.Registry is created
@@ -91,6 +94,14 @@ func WithClickHouseConn(conn chdriver.Conn) Option {
 	}
 }
 
+// WithGitHubWebhook mounts an HMAC-verifying receiver at /webhooks/github.
+// When the option isn't supplied, the route returns 404 — so an operator who
+// hasn't configured TEO_GITHUB_WEBHOOK_SECRET can't accidentally accept
+// unverified webhook traffic.
+func WithGitHubWebhook(h http.Handler) Option {
+	return func(s *Server) { s.githubWebhook = h }
+}
+
 // Metrics exposes the registry the server is using (for /metrics serving).
 func (s *Server) Metrics() *metrics.Registry { return s.metrics }
 
@@ -123,7 +134,25 @@ func (s *Server) routes() {
 	r.Method("POST", "/graphql", graphqlHandler(s.pool))
 	r.Method("GET", "/graphql/schema", schemaHandler())
 
+	// GitHub App webhook receiver (FR-901..904). Always mounted; when no
+	// handler is injected we return 503 so callers can distinguish "endpoint
+	// gone" from "not configured."
+	r.Method("POST", "/webhooks/github", githubWebhookRoute(s.githubWebhook))
+
 	s.mux = r
+}
+
+// githubWebhookRoute returns h, or a stub that 503s when h is nil. Doing the
+// nil check inside the handler keeps the route mount unconditional, which
+// makes it easy to assert in tests that the path exists.
+func githubWebhookRoute(h http.Handler) http.Handler {
+	if h != nil {
+		return h
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		writeProblem(w, http.StatusServiceUnavailable, "GitHub webhook not configured",
+			"set TEO_GITHUB_WEBHOOK_SECRET to enable")
+	})
 }
 
 // schemaHandler returns the SDL of the graphql schema. Useful for tooling
@@ -199,6 +228,15 @@ func (s *Server) readyz(w http.ResponseWriter, r *http.Request) {
 }
 
 // --- API key lookup with bounded cache (NFR-SEC-805 — revocation in 30s) ---
+//
+// The cache is keyed on (prefix, sha256(secret)) — never on prefix alone.
+// Keying on prefix would let an attacker who knows the prefix (it leaks in
+// audit rows, error envelopes, server logs) authenticate with ANY secret
+// during the 30s after a legitimate use, because the cache would hand back
+// the principal without re-verifying the secret. SHA-256 is fine here as a
+// cache key: the secret is already a cryptographically strong random value,
+// so a fast hash gives the same uniqueness guarantee as argon2 without the
+// ~100ms cost we'd otherwise pay on every cached request.
 
 type apiKeyCache struct {
 	mu    sync.RWMutex
@@ -215,24 +253,33 @@ func newAPIKeyCache(ttl time.Duration) *apiKeyCache {
 	return &apiKeyCache{ttl: ttl, store: make(map[string]apiKeyEntry)}
 }
 
-func (c *apiKeyCache) Get(prefix string) (*auth.Principal, bool) {
+// cacheKey binds the prefix to a hash of the full presented credential so a
+// matching prefix with a wrong secret cannot hit a cache entry created by a
+// legitimate request.
+func cacheKey(prefix, display string) string {
+	sum := sha256.Sum256([]byte(display))
+	return prefix + "|" + hex.EncodeToString(sum[:])
+}
+
+func (c *apiKeyCache) Get(key string) (*auth.Principal, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	e, ok := c.store[prefix]
+	e, ok := c.store[key]
 	if !ok || time.Now().After(e.expires) {
 		return nil, false
 	}
 	return e.principal, true
 }
 
-func (c *apiKeyCache) Put(prefix string, p *auth.Principal) {
+func (c *apiKeyCache) Put(key string, p *auth.Principal) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.store[prefix] = apiKeyEntry{principal: p, expires: time.Now().Add(c.ttl)}
+	c.store[key] = apiKeyEntry{principal: p, expires: time.Now().Add(c.ttl)}
 }
 
 func (s *Server) resolveAPIKey(ctx context.Context, prefix, display string) (*auth.Principal, error) {
-	if p, ok := s.cache.Get(prefix); ok {
+	ck := cacheKey(prefix, display)
+	if p, ok := s.cache.Get(ck); ok {
 		return p, nil
 	}
 	var (
@@ -257,7 +304,7 @@ func (s *Server) resolveAPIKey(ctx context.Context, prefix, display string) (*au
 		Scopes:   scopes,
 		IsAPIKey: true,
 	}
-	s.cache.Put(prefix, p)
+	s.cache.Put(ck, p)
 	// fire-and-forget last_used_at update
 	go func() {
 		_, _ = s.pool.Exec(context.Background(),

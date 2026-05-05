@@ -1,0 +1,82 @@
+{{- if .Values.resultPipeline.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-result-pipeline
+  labels:
+    {{- include "teo.componentLabels" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" "result-pipeline") | nindent 4 }}
+spec:
+  replicas: {{ .Values.resultPipeline.replicas }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: teo
+      app.kubernetes.io/component: result-pipeline
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        {{- include "teo.componentLabels" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" "result-pipeline") | nindent 8 }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: result-pipeline
+          image: {{ include "teo.image" (dict "Values" .Values "Chart" .Chart "repo" .Values.resultPipeline.image.repository "imageTag" "") }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          ports:
+            - name: otlp-grpc
+              containerPort: 4317
+            - name: metrics
+              containerPort: 9100
+          env:
+            - name: TEO_GRPC_LISTEN
+              value: ":4317"
+            - name: TEO_POSTGRES_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-postgres-creds
+                  key: dsn
+            - name: TEO_CLICKHOUSE_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-clickhouse-creds
+                  key: dsn
+          readinessProbe:
+            httpGet: { path: /healthz, port: metrics }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /healthz, port: metrics }
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.resultPipeline.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-result-pipeline
+  labels:
+    {{- include "teo.componentLabels" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" "result-pipeline") | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: otlp-grpc
+      port: 4317
+      targetPort: otlp-grpc
+    - name: metrics
+      port: 9100
+      targetPort: metrics
+  selector:
+    app.kubernetes.io/name: teo
+    app.kubernetes.io/component: result-pipeline
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}

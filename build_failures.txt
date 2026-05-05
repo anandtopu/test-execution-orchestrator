@@ -1,0 +1,1679 @@
+un go test -tags=integration -race -count=1 -timeout 15m ./...
+  go test -tags=integration -race -count=1 -timeout 15m ./...
+  shell: /usr/bin/bash -e {0}
+  env:
+    GO_VERSION: 1.25
+    GOLANGCI_LINT_VERSION: v2.5.0
+    REGISTRY: ghcr.io
+    IMAGE_NAMESPACE: anandtopu
+go: downloading github.com/testcontainers/testcontainers-go v0.42.0
+go: downloading github.com/testcontainers/testcontainers-go/modules/postgres v0.42.0
+go: downloading dario.cat/mergo v1.0.2
+go: downloading github.com/cenkalti/backoff/v4 v4.3.0
+go: downloading github.com/containerd/errdefs v1.0.0
+go: downloading github.com/containerd/platforms v0.2.1
+go: downloading github.com/cpuguy83/dockercfg v0.3.2
+go: downloading github.com/moby/go-archive v0.2.0
+go: downloading github.com/moby/moby/api v1.54.1
+go: downloading github.com/moby/moby/client v0.4.0
+go: downloading github.com/moby/patternmatcher v0.6.1
+go: downloading github.com/opencontainers/image-spec v1.1.1
+go: downloading github.com/stretchr/testify v1.11.1
+go: downloading github.com/containerd/log v0.1.0
+go: downloading github.com/moby/sys/sequential v0.6.0
+go: downloading github.com/moby/sys/user v0.4.0
+go: downloading github.com/moby/sys/userns v0.1.0
+go: downloading github.com/docker/go-units v0.5.0
+go: downloading github.com/moby/docker-image-spec v1.3.1
+go: downloading github.com/moby/term v0.5.2
+go: downloading github.com/containerd/errdefs/pkg v0.3.0
+go: downloading github.com/distribution/reference v0.6.0
+go: downloading github.com/docker/go-connections v0.6.0
+go: downloading github.com/opencontainers/go-digest v1.0.0
+go: downloading go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0
+go: downloading github.com/magiconair/properties v1.8.10
+go: downloading github.com/shirou/gopsutil/v4 v4.26.3
+go: downloading github.com/sirupsen/logrus v1.9.4
+go: downloading github.com/felixge/httpsnoop v1.0.4
+go: downloading go.opentelemetry.io/otel/metric v1.41.0
+go: downloading github.com/davecgh/go-spew v1.1.1
+go: downloading github.com/pmezard/go-difflib v1.0.0
+go: downloading github.com/tklauser/go-sysconf v0.3.16
+go: downloading github.com/go-logr/logr v1.4.3
+go: downloading gopkg.in/yaml.v3 v3.0.1
+go: downloading github.com/tklauser/numcpus v0.11.0
+go: downloading github.com/go-logr/stdr v1.2.2
+go: downloading go.opentelemetry.io/auto/sdk v1.2.1
+?   	github.com/teo-dev/teo/cmd/api	[no test files]
+?   	github.com/teo-dev/teo/cmd/predictor	[no test files]
+?   	github.com/teo-dev/teo/cmd/result-pipeline	[no test files]
+?   	github.com/teo-dev/teo/cmd/run-manager	[no test files]
+?   	github.com/teo-dev/teo/cmd/scheduler	[no test files]
+?   	github.com/teo-dev/teo/cmd/teo	[no test files]
+?   	github.com/teo-dev/teo/cmd/worker	[no test files]
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+--- FAIL: TestExportJUnitHappyPath (9.14s)
+    export_integration_test.go:35: status = 401, body = {"type":"about:blank","title":"Unauthorized","status":401,"detail":"authentication required"}
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+--- FAIL: TestExportJUnitWithMixedOutcomes (1.86s)
+    export_integration_test.go:117: status = 401, body = {"type":"about:blank","title":"Unauthorized","status":401,"detail":"authentication required"}
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+--- FAIL: TestExportRejectsUnknownFormat (1.96s)
+    export_integration_test.go:166: status = 401, want 400
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+--- FAIL: TestExportNotFoundForUnknownRun (1.94s)
+    export_integration_test.go:185: status = 401, want 404 (body={"type":"about:blank","title":"Unauthorized","status":401,"detail":"authentication required"}
+        )
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+--- FAIL: TestExportOTLPReturns501WithoutClickHouse (2.35s)
+    export_integration_test.go:204: status = 401, want 501
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+--- FAIL: TestExportOTLPHappyPath_StubbedSpanQuerier (2.53s)
+    export_integration_test.go:236: status = 401, body = {"type":"about:blank","title":"Unauthorized","status":401,"detail":"authentication required"}
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+--- FAIL: TestGraphQLEndpoint_RerunFailedMutation (1.79s)
+    graphql_http_integration_test.go:154: unexpected errors: [map[locations:[map[column:28 line:1]] message:ERROR: could not determine data type of parameter $6 (SQLSTATE 42P18) path:[rerunFailed]]]
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+--- FAIL: TestRerunFailedCreatesChildRun (1.52s)
+    graphql_integration_test.go:303: ERROR: could not determine data type of parameter $6 (SQLSTATE 42P18)
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+[migrate postgres] applying 001_initial.up.sql
+[migrate postgres] applying 002_quarantine_tracking.up.sql
+[migrate postgres] applying 003_run_check_run.up.sql
+[migrate postgres] applying 004_shard_meta.up.sql
+FAIL
+FAIL	github.com/teo-dev/teo/internal/api	66.816s
+?   	github.com/teo-dev/teo/internal/audit	[no test files]
+ok  	github.com/teo-dev/teo/internal/auth	2.111s
+ok  	github.com/teo-dev/teo/internal/codeowners	1.008s
+?   	github.com/teo-dev/teo/internal/config	[no test files]
+ok  	github.com/teo-dev/teo/internal/cost	1.012s
+?   	github.com/teo-dev/teo/internal/db	[no test files]
+ok  	github.com/teo-dev/teo/internal/digest	1.012s
+ok  	github.com/teo-dev/teo/internal/doctor	1.186s
+ok  	github.com/teo-dev/teo/internal/flake	1.015s
+ok  	github.com/teo-dev/teo/internal/github	1.019s
+?   	github.com/teo-dev/teo/internal/grpcsvc	[no test files]
+ok  	github.com/teo-dev/teo/internal/logstore	7.666s
+ok  	github.com/teo-dev/teo/internal/metrics	1.080s
+ok  	github.com/teo-dev/teo/internal/migrate	1.018s
+?   	github.com/teo-dev/teo/internal/model	[no test files]
+?   	github.com/teo-dev/teo/internal/nats	[no test files]
+?   	github.com/teo-dev/teo/internal/predictor	[no test files]
+?   	github.com/teo-dev/teo/internal/proto/teov1	[no test files]
+ok  	github.com/teo-dev/teo/internal/quarantine	1.025s
+ok  	github.com/teo-dev/teo/internal/redact	1.013s
+ok  	github.com/teo-dev/teo/internal/resultpipeline	1.026s
+ok  	github.com/teo-dev/teo/internal/runmanager	7.831s
+ok  	github.com/teo-dev/teo/internal/scheduler	3.683s
+ok  	github.com/teo-dev/teo/internal/spot	1.013s
+?   	github.com/teo-dev/teo/internal/testminio	[no test files]
+?   	github.com/teo-dev/teo/internal/testpg	[no test files]
+ok  	github.com/teo-dev/teo/internal/version	1.011s
+ok  	github.com/teo-dev/teo/internal/worker	1.155s
+?   	github.com/teo-dev/teo/pkg/adapter	[no test files]
+?   	github.com/teo-dev/teo/pkg/adapter/gotest	[no test files]
+?   	github.com/teo-dev/teo/pkg/adapter/jest	[no test files]
+ok  	github.com/teo-dev/teo/pkg/adapter/pytest	1.012s
+FAIL
+Error: Process completed with exit code 1.
+
+
+
+12s
+Run docker/build-push-action@v6
+GitHub Actions runtime token ACs
+Docker info
+Proxy configuration
+Buildx version
+Builder info
+/usr/bin/docker buildx build --build-arg SERVICE=teo --build-arg VERSION=main --build-arg COMMIT=1d74d69b21fed3a64a82a1233e045eff9ef149a6 --build-arg DATE=2026-05-02T14:02:00-05:00 --cache-from type=gha,scope=teo --cache-to type=gha,mode=max,scope=teo --file ./Dockerfile --iidfile /home/runner/work/_temp/docker-actions-toolkit-zeg5Ys/build-iidfile-a3ff8a756e.txt --label org.opencontainers.image.created=2026-05-02T19:04:41.312Z --label org.opencontainers.image.description=This project is test execution orchestrator for software development teams. --label org.opencontainers.image.licenses=Apache-2.0 --label org.opencontainers.image.revision=1d74d69b21fed3a64a82a1233e045eff9ef149a6 --label org.opencontainers.image.source=https://github.com/anandtopu/test-execution-orchestrator --label org.opencontainers.image.title=test-execution-orchestrator --label org.opencontainers.image.url=https://github.com/anandtopu/test-execution-orchestrator --label org.opencontainers.image.version=main --platform linux/amd64,linux/arm64 --attest type=provenance,mode=min,inline-only=true,builder-id=https://github.com/anandtopu/test-execution-orchestrator/actions/runs/25259472331/attempts/1 --tag ghcr.io/anandtopu/teo:main --tag ghcr.io/anandtopu/teo:1d74d69 --metadata-file /home/runner/work/_temp/docker-actions-toolkit-zeg5Ys/build-metadata-eeb069ab57.json --push .
+#0 building with "builder-0ff4fa77-c53e-487b-b5d5-48cbb2f64155" instance using docker-container driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 906B done
+#1 DONE 0.0s
+
+#2 [auth] library/golang:pull token for registry-1.docker.io
+#2 DONE 0.0s
+
+#3 [linux/amd64 internal] load metadata for docker.io/library/golang:1.23-alpine
+#3 ...
+
+#4 [linux/arm64 internal] load metadata for docker.io/library/golang:1.23-alpine
+#4 DONE 0.4s
+
+#3 [linux/amd64 internal] load metadata for docker.io/library/golang:1.23-alpine
+#3 DONE 0.4s
+
+#5 [linux/arm64 internal] load metadata for gcr.io/distroless/static-debian12:nonroot
+#5 ...
+
+#6 [linux/amd64 internal] load metadata for gcr.io/distroless/static-debian12:nonroot
+#6 DONE 0.7s
+
+#5 [linux/arm64 internal] load metadata for gcr.io/distroless/static-debian12:nonroot
+#5 DONE 0.7s
+
+#7 [internal] load .dockerignore
+#7 transferring context: 2B done
+#7 DONE 0.0s
+
+#8 importing cache manifest from gha:9918678045510391063
+#8 DONE 0.1s
+
+#9 [linux/amd64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#9 resolve docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f 0.0s done
+#9 sha256:d3178a7b27090e22bc2464346d1cdc8f59d0fd7a241452e8148342edf3d0b1e9 126B / 126B 0.1s done
+#9 ...
+
+#10 [internal] load build context
+#10 transferring context: 1.81MB 0.2s done
+#10 DONE 0.3s
+
+#11 [linux/arm64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#11 resolve gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1 0.0s done
+#11 DONE 0.4s
+
+#9 [linux/amd64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#9 sha256:8371a51cbc44c1323f96695eaeaeeb1c44b2d30d138a279b348af5c18b2c5e24 282.45kB / 282.45kB 0.1s done
+#9 sha256:9824c27679d3b27c5e1cb00a73adb6f4f8d556994111c12db3c5d61a0c843df8 3.80MB / 3.80MB 0.1s done
+#9 extracting sha256:9824c27679d3b27c5e1cb00a73adb6f4f8d556994111c12db3c5d61a0c843df8
+#9 sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 10.49MB / 74.07MB 0.2s
+#9 sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 29.36MB / 74.07MB 0.3s
+#9 extracting sha256:9824c27679d3b27c5e1cb00a73adb6f4f8d556994111c12db3c5d61a0c843df8 0.3s done
+#9 extracting sha256:8371a51cbc44c1323f96695eaeaeeb1c44b2d30d138a279b348af5c18b2c5e24
+#9 sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 42.99MB / 74.07MB 0.5s
+#9 sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 67.11MB / 74.07MB 0.6s
+#9 extracting sha256:8371a51cbc44c1323f96695eaeaeeb1c44b2d30d138a279b348af5c18b2c5e24 0.2s done
+#9 sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 74.07MB / 74.07MB 0.7s done
+#9 extracting sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3
+#9 ...
+
+#12 [linux/arm64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#12 resolve docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f done
+#12 sha256:13eebdc497b76e3a8d650f3508406dd372001df44915970a80418896bf835077 126B / 126B 0.0s done
+#12 sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 32B / 32B 0.1s done
+#12 sha256:7d1a427e917c48b164eae3ec3692b4741f5de528261925d2e5efc62a43e5bfc4 284.71kB / 284.71kB 0.1s done
+#12 sha256:382d65ac76ebcbc7ba7ee0d232ae7afbec48e2b3b673983ac8ced522dabe3abb 70.70MB / 70.70MB 1.3s done
+#12 sha256:6e174226ea690ced550e5641249a412cdbefd2d09871f3e64ab52137a54ba606 4.13MB / 4.13MB 0.2s done
+#12 extracting sha256:6e174226ea690ced550e5641249a412cdbefd2d09871f3e64ab52137a54ba606 0.3s done
+#12 extracting sha256:7d1a427e917c48b164eae3ec3692b4741f5de528261925d2e5efc62a43e5bfc4 0.2s done
+#12 DONE 1.4s
+
+#13 [linux/amd64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#13 resolve gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1 0.0s done
+#13 sha256:069d1e267530c2e681fbd4d481553b4d05f98082b18fafac86e7f12996dddd0b 131.91kB / 131.91kB 0.2s done
+#13 sha256:dcaa5a89b0ccda4b283e16d0b4d0891cd93d5fe05c6798f7806781a6a2d84354 314B / 314B 0.2s done
+#13 sha256:b839dfae01f66e15c6a8b63520557ed315bdfe036342fa7a0c537259f10d7a9a 351B / 351B 0.2s done
+#13 sha256:dd64bf2dd177757451a98fcdc999a339c35dee5d9872d8f4dc69c8f3c4dd0112 80B / 80B 0.2s done
+#13 sha256:52630fc75a18675c530ed9eba5f55eca09b03e91bd5bc15307918bbc1a7e7296 162B / 162B 0.2s done
+#13 sha256:3214acf345c0cc6bbdb56b698a41ccdefc624a09d6beb0d38b5de0b2303ecaf4 123B / 123B 0.2s done
+#13 sha256:7c12895b777bcaa8ccae0605b4de635b68fc32d60fa08f421dc3818bf55ee212 188B / 188B 0.2s done
+#13 sha256:2780920e5dbfbe103d03a583ed75345306e572ec5a48cb10361f046767d9f29a 67B / 67B 0.1s done
+#13 sha256:bf7a4185f01524837d19abde915ffde84e64368b250f5b5e9f6f75aea62a11d4 29.00kB / 29.00kB 0.1s done
+#13 sha256:ef49c20a7b35aa995683f311510d35d77e203a2204f84de14a71a6d726e6af73 440.80kB / 440.80kB 0.2s done
+#13 sha256:990a9c434e5e0f11549a8d4a41a1991e621b04e30cd63269adbc97b1dc38fd7e 12.48kB / 12.48kB 0.2s done
+#13 sha256:526604835308e0d61f64a3d3e2d614308fef4ed655f0111a4566627296c0195c 83.84kB / 83.84kB 0.2s done
+#13 extracting sha256:526604835308e0d61f64a3d3e2d614308fef4ed655f0111a4566627296c0195c 0.0s done
+#13 extracting sha256:990a9c434e5e0f11549a8d4a41a1991e621b04e30cd63269adbc97b1dc38fd7e 0.0s done
+#13 extracting sha256:ef49c20a7b35aa995683f311510d35d77e203a2204f84de14a71a6d726e6af73 0.3s done
+#13 extracting sha256:bf7a4185f01524837d19abde915ffde84e64368b250f5b5e9f6f75aea62a11d4 0.2s done
+#13 extracting sha256:2780920e5dbfbe103d03a583ed75345306e572ec5a48cb10361f046767d9f29a 0.0s done
+#13 extracting sha256:7c12895b777bcaa8ccae0605b4de635b68fc32d60fa08f421dc3818bf55ee212 0.0s done
+#13 extracting sha256:3214acf345c0cc6bbdb56b698a41ccdefc624a09d6beb0d38b5de0b2303ecaf4 0.0s done
+#13 extracting sha256:52630fc75a18675c530ed9eba5f55eca09b03e91bd5bc15307918bbc1a7e7296 0.0s done
+#13 extracting sha256:dd64bf2dd177757451a98fcdc999a339c35dee5d9872d8f4dc69c8f3c4dd0112
+#13 extracting sha256:dd64bf2dd177757451a98fcdc999a339c35dee5d9872d8f4dc69c8f3c4dd0112 0.0s done
+#13 extracting sha256:b839dfae01f66e15c6a8b63520557ed315bdfe036342fa7a0c537259f10d7a9a 0.0s done
+#13 extracting sha256:dcaa5a89b0ccda4b283e16d0b4d0891cd93d5fe05c6798f7806781a6a2d84354 0.0s done
+#13 extracting sha256:069d1e267530c2e681fbd4d481553b4d05f98082b18fafac86e7f12996dddd0b 0.0s done
+#13 DONE 1.6s
+
+#11 [linux/arm64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#11 sha256:296b5494f17a830dcf9b0da028437305ab7ba3eaca4adf0dec9a463a18950079 83.84kB / 83.84kB 0.1s done
+#11 extracting sha256:296b5494f17a830dcf9b0da028437305ab7ba3eaca4adf0dec9a463a18950079 0.0s done
+#11 extracting sha256:990a9c434e5e0f11549a8d4a41a1991e621b04e30cd63269adbc97b1dc38fd7e 0.0s done
+#11 extracting sha256:ef49c20a7b35aa995683f311510d35d77e203a2204f84de14a71a6d726e6af73 0.3s done
+#11 extracting sha256:bf7a4185f01524837d19abde915ffde84e64368b250f5b5e9f6f75aea62a11d4 0.0s done
+#11 extracting sha256:2780920e5dbfbe103d03a583ed75345306e572ec5a48cb10361f046767d9f29a 0.0s done
+#11 extracting sha256:7c12895b777bcaa8ccae0605b4de635b68fc32d60fa08f421dc3818bf55ee212 0.0s done
+#11 extracting sha256:3214acf345c0cc6bbdb56b698a41ccdefc624a09d6beb0d38b5de0b2303ecaf4 0.0s done
+#11 extracting sha256:52630fc75a18675c530ed9eba5f55eca09b03e91bd5bc15307918bbc1a7e7296 0.0s done
+#11 extracting sha256:dd64bf2dd177757451a98fcdc999a339c35dee5d9872d8f4dc69c8f3c4dd0112 0.0s done
+#11 extracting sha256:b839dfae01f66e15c6a8b63520557ed315bdfe036342fa7a0c537259f10d7a9a 0.0s done
+#11 extracting sha256:dcaa5a89b0ccda4b283e16d0b4d0891cd93d5fe05c6798f7806781a6a2d84354 0.0s done
+#11 extracting sha256:069d1e267530c2e681fbd4d481553b4d05f98082b18fafac86e7f12996dddd0b 0.0s done
+#11 DONE 1.5s
+
+#12 [linux/arm64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#12 extracting sha256:382d65ac76ebcbc7ba7ee0d232ae7afbec48e2b3b673983ac8ced522dabe3abb
+#12 ...
+
+#9 [linux/amd64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#9 extracting sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 5.5s done
+#9 extracting sha256:d3178a7b27090e22bc2464346d1cdc8f59d0fd7a241452e8148342edf3d0b1e9
+#9 extracting sha256:d3178a7b27090e22bc2464346d1cdc8f59d0fd7a241452e8148342edf3d0b1e9 0.0s done
+#9 extracting sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 done
+#9 DONE 6.6s
+
+#12 [linux/arm64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#12 extracting sha256:382d65ac76ebcbc7ba7ee0d232ae7afbec48e2b3b673983ac8ced522dabe3abb 5.3s done
+#12 DONE 6.7s
+
+#14 [linux/amd64 builder 2/7] RUN apk add --no-cache git ca-certificates
+#14 0.073 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/main/x86_64/APKINDEX.tar.gz
+#14 ...
+
+#12 [linux/arm64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#12 extracting sha256:13eebdc497b76e3a8d650f3508406dd372001df44915970a80418896bf835077 done
+#12 extracting sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 done
+#12 DONE 6.7s
+
+#14 [linux/amd64 builder 2/7] RUN apk add --no-cache git ca-certificates
+#14 0.217 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/community/x86_64/APKINDEX.tar.gz
+#14 0.724 (1/12) Installing brotli-libs (1.1.0-r2)
+#14 0.873 (2/12) Installing c-ares (1.34.6-r0)
+#14 0.888 (3/12) Installing libunistring (1.3-r0)
+#14 0.922 (4/12) Installing libidn2 (2.3.7-r0)
+#14 0.933 (5/12) Installing nghttp2-libs (1.65.0-r0)
+#14 0.942 (6/12) Installing libpsl (0.21.5-r3)
+#14 0.951 (7/12) Installing zstd-libs (1.5.7-r0)
+#14 0.970 (8/12) Installing libcurl (8.14.1-r2)
+#14 0.988 (9/12) Installing libexpat (2.7.5-r0)
+#14 0.998 (10/12) Installing pcre2 (10.46-r0)
+#14 1.015 (11/12) Installing git (2.49.1-r0)
+#14 1.120 (12/12) Installing git-init-template (2.49.1-r0)
+#14 1.132 Executing busybox-1.37.0-r18.trigger
+#14 1.144 OK: 20 MiB in 29 packages
+#14 DONE 3.5s
+
+#15 [linux/arm64 builder 2/7] RUN apk add --no-cache git ca-certificates
+#15 0.180 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/main/aarch64/APKINDEX.tar.gz
+#15 1.052 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/community/aarch64/APKINDEX.tar.gz
+#15 ...
+
+#16 [linux/amd64 builder 3/7] WORKDIR /src
+#16 DONE 0.0s
+
+#17 [linux/amd64 builder 4/7] COPY go.mod go.sum* ./
+#17 DONE 0.0s
+
+#15 [linux/arm64 builder 2/7] RUN apk add --no-cache git ca-certificates
+#15 3.340 (1/12) Installing brotli-libs (1.1.0-r2)
+#15 3.458 (2/12) Installing c-ares (1.34.6-r0)
+#15 ...
+
+#18 [linux/amd64 builder 5/7] RUN go mod download || true
+#18 0.122 go: go.mod requires go >= 1.25.0 (running go 1.23.12; GOTOOLCHAIN=local)
+#18 DONE 0.1s
+
+#15 [linux/arm64 builder 2/7] RUN apk add --no-cache git ca-certificates
+#15 3.578 (3/12) Installing libunistring (1.3-r0)
+#15 ...
+
+#19 [linux/amd64 builder 6/7] COPY . .
+#19 DONE 0.1s
+
+#15 [linux/arm64 builder 2/7] RUN apk add --no-cache git ca-certificates
+#15 3.691 (4/12) Installing libidn2 (2.3.7-r0)
+#15 3.731 (5/12) Installing nghttp2-libs (1.65.0-r0)
+#15 CANCELED
+
+#20 [linux/amd64 builder 7/7] RUN CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags "-s -w         -X github.com/teo-dev/teo/internal/version.Version=main         -X github.com/teo-dev/teo/internal/version.Commit=1d74d69b21fed3a64a82a1233e045eff9ef149a6         -X github.com/teo-dev/teo/internal/version.Date=2026-05-02T14:02:00-05:00"       -o /out/service       ./cmd/teo
+#20 0.112 go: go.mod requires go >= 1.25.0 (running go 1.23.12; GOTOOLCHAIN=local)
+#20 ERROR: process "/bin/sh -c CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags \"-s -w         -X github.com/teo-dev/teo/internal/version.Version=${VERSION}         -X github.com/teo-dev/teo/internal/version.Commit=${COMMIT}         -X github.com/teo-dev/teo/internal/version.Date=${DATE}\"       -o /out/service       ./cmd/${SERVICE}" did not complete successfully: exit code: 1
+------
+ > [linux/amd64 builder 7/7] RUN CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags "-s -w         -X github.com/teo-dev/teo/internal/version.Version=main         -X github.com/teo-dev/teo/internal/version.Commit=1d74d69b21fed3a64a82a1233e045eff9ef149a6         -X github.com/teo-dev/teo/internal/version.Date=2026-05-02T14:02:00-05:00"       -o /out/service       ./cmd/teo:
+0.112 go: go.mod requires go >= 1.25.0 (running go 1.23.12; GOTOOLCHAIN=local)
+------
+Dockerfile:19
+--------------------
+  18 |
+  19 | >>> RUN CGO_ENABLED=0 GOOS=linux \
+  20 | >>>     go build \
+  21 | >>>       -trimpath \
+  22 | >>>       -ldflags "-s -w \
+  23 | >>>         -X github.com/teo-dev/teo/internal/version.Version=${VERSION} \
+  24 | >>>         -X github.com/teo-dev/teo/internal/version.Commit=${COMMIT} \
+  25 | >>>         -X github.com/teo-dev/teo/internal/version.Date=${DATE}" \
+  26 | >>>       -o /out/service \
+  27 | >>>       ./cmd/${SERVICE}
+  28 |
+--------------------
+ERROR: failed to build: failed to solve: process "/bin/sh -c CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags \"-s -w         -X github.com/teo-dev/teo/internal/version.Version=${VERSION}         -X github.com/teo-dev/teo/internal/version.Commit=${COMMIT}         -X github.com/teo-dev/teo/internal/version.Date=${DATE}\"       -o /out/service       ./cmd/${SERVICE}" did not complete successfully: exit code: 1
+Reference
+Check build summary support
+Error: buildx failed with: ERROR: failed to build: failed to solve: process "/bin/sh -c CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags \"-s -w         -X github.com/teo-dev/teo/internal/version.Version=${VERSION}         -X github.com/teo-dev/teo/internal/version.Commit=${COMMIT}         -X github.com/teo-dev/teo/internal/version.Date=${DATE}\"       -o /out/service       ./cmd/${SERVICE}" did not complete successfully: exit code: 1
+
+
+
+14s
+Run docker/build-push-action@v6
+GitHub Actions runtime token ACs
+Docker info
+Proxy configuration
+Buildx version
+Builder info
+/usr/bin/docker buildx build --build-arg SERVICE=run-manager --build-arg VERSION=main --build-arg COMMIT=1d74d69b21fed3a64a82a1233e045eff9ef149a6 --build-arg DATE=2026-05-02T14:02:00-05:00 --cache-from type=gha,scope=run-manager --cache-to type=gha,mode=max,scope=run-manager --file ./Dockerfile --iidfile /home/runner/work/_temp/docker-actions-toolkit-D6CxBj/build-iidfile-3b5c690c85.txt --label org.opencontainers.image.created=2026-05-02T19:04:49.809Z --label org.opencontainers.image.description=This project is test execution orchestrator for software development teams. --label org.opencontainers.image.licenses=Apache-2.0 --label org.opencontainers.image.revision=1d74d69b21fed3a64a82a1233e045eff9ef149a6 --label org.opencontainers.image.source=https://github.com/anandtopu/test-execution-orchestrator --label org.opencontainers.image.title=test-execution-orchestrator --label org.opencontainers.image.url=https://github.com/anandtopu/test-execution-orchestrator --label org.opencontainers.image.version=main --platform linux/amd64,linux/arm64 --attest type=provenance,mode=min,inline-only=true,builder-id=https://github.com/anandtopu/test-execution-orchestrator/actions/runs/25259472331/attempts/1 --tag ghcr.io/anandtopu/run-manager:main --tag ghcr.io/anandtopu/run-manager:1d74d69 --metadata-file /home/runner/work/_temp/docker-actions-toolkit-D6CxBj/build-metadata-db658ae6d3.json --push .
+#0 building with "builder-c01f69ec-6c73-4475-80ca-b6d0a6d3cdff" instance using docker-container driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 906B done
+#1 DONE 0.0s
+
+#2 [linux/arm64 internal] load metadata for gcr.io/distroless/static-debian12:nonroot
+#2 ...
+
+#3 [auth] library/golang:pull token for registry-1.docker.io
+#3 DONE 0.0s
+
+#4 [linux/amd64 internal] load metadata for docker.io/library/golang:1.23-alpine
+#4 ...
+
+#5 [linux/arm64 internal] load metadata for docker.io/library/golang:1.23-alpine
+#5 DONE 0.8s
+
+#4 [linux/amd64 internal] load metadata for docker.io/library/golang:1.23-alpine
+#4 DONE 0.8s
+
+#6 [linux/amd64 internal] load metadata for gcr.io/distroless/static-debian12:nonroot
+#6 DONE 1.1s
+
+#2 [linux/arm64 internal] load metadata for gcr.io/distroless/static-debian12:nonroot
+#2 DONE 1.2s
+
+#7 [internal] load .dockerignore
+#7 transferring context: 2B done
+#7 DONE 0.0s
+
+#8 [internal] load build context
+#8 DONE 0.0s
+
+#9 [linux/amd64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#9 resolve docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f 0.0s done
+#9 DONE 0.0s
+
+#10 [linux/arm64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#10 resolve docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f 0.0s done
+#10 DONE 0.0s
+
+#11 [linux/amd64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#11 resolve gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1 0.0s done
+#11 DONE 0.0s
+
+#12 [linux/arm64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#12 resolve gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1 done
+#12 DONE 0.0s
+
+#13 importing cache manifest from gha:7608534002575829628
+#13 DONE 0.2s
+
+#9 [linux/amd64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#9 ...
+
+#8 [internal] load build context
+#8 transferring context: 1.81MB 0.1s done
+#8 DONE 0.2s
+
+#9 [linux/amd64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#9 sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 32B / 32B 0.1s done
+#9 sha256:d3178a7b27090e22bc2464346d1cdc8f59d0fd7a241452e8148342edf3d0b1e9 126B / 126B 0.1s done
+#9 sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 0B / 74.07MB 0.2s
+#9 sha256:8371a51cbc44c1323f96695eaeaeeb1c44b2d30d138a279b348af5c18b2c5e24 282.45kB / 282.45kB 0.2s done
+#9 sha256:9824c27679d3b27c5e1cb00a73adb6f4f8d556994111c12db3c5d61a0c843df8 0B / 3.80MB 0.2s
+#9 sha256:9824c27679d3b27c5e1cb00a73adb6f4f8d556994111c12db3c5d61a0c843df8 3.80MB / 3.80MB 0.2s done
+#9 extracting sha256:9824c27679d3b27c5e1cb00a73adb6f4f8d556994111c12db3c5d61a0c843df8
+#9 sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 28.31MB / 74.07MB 0.5s
+#9 sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 60.82MB / 74.07MB 0.6s
+#9 sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 74.07MB / 74.07MB 0.8s done
+#9 extracting sha256:9824c27679d3b27c5e1cb00a73adb6f4f8d556994111c12db3c5d61a0c843df8 0.4s done
+#9 extracting sha256:8371a51cbc44c1323f96695eaeaeeb1c44b2d30d138a279b348af5c18b2c5e24
+#9 extracting sha256:8371a51cbc44c1323f96695eaeaeeb1c44b2d30d138a279b348af5c18b2c5e24 0.1s done
+#9 extracting sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3
+#9 ...
+
+#12 [linux/arm64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#12 sha256:7c12895b777bcaa8ccae0605b4de635b68fc32d60fa08f421dc3818bf55ee212 188B / 188B 0.2s done
+#12 sha256:dcaa5a89b0ccda4b283e16d0b4d0891cd93d5fe05c6798f7806781a6a2d84354 314B / 314B 0.3s done
+#12 sha256:b839dfae01f66e15c6a8b63520557ed315bdfe036342fa7a0c537259f10d7a9a 351B / 351B 0.2s done
+#12 sha256:52630fc75a18675c530ed9eba5f55eca09b03e91bd5bc15307918bbc1a7e7296 162B / 162B 0.3s done
+#12 sha256:dd64bf2dd177757451a98fcdc999a339c35dee5d9872d8f4dc69c8f3c4dd0112 80B / 80B 0.3s done
+#12 sha256:3214acf345c0cc6bbdb56b698a41ccdefc624a09d6beb0d38b5de0b2303ecaf4 123B / 123B 0.3s done
+#12 sha256:069d1e267530c2e681fbd4d481553b4d05f98082b18fafac86e7f12996dddd0b 131.91kB / 131.91kB 0.4s done
+#12 sha256:2780920e5dbfbe103d03a583ed75345306e572ec5a48cb10361f046767d9f29a 67B / 67B 0.2s done
+#12 sha256:bf7a4185f01524837d19abde915ffde84e64368b250f5b5e9f6f75aea62a11d4 29.00kB / 29.00kB 0.3s done
+#12 sha256:ef49c20a7b35aa995683f311510d35d77e203a2204f84de14a71a6d726e6af73 440.80kB / 440.80kB 0.4s done
+#12 sha256:990a9c434e5e0f11549a8d4a41a1991e621b04e30cd63269adbc97b1dc38fd7e 12.48kB / 12.48kB 0.3s done
+#12 sha256:296b5494f17a830dcf9b0da028437305ab7ba3eaca4adf0dec9a463a18950079 83.84kB / 83.84kB 0.2s done
+#12 extracting sha256:296b5494f17a830dcf9b0da028437305ab7ba3eaca4adf0dec9a463a18950079 0.0s done
+#12 extracting sha256:990a9c434e5e0f11549a8d4a41a1991e621b04e30cd63269adbc97b1dc38fd7e 0.0s done
+#12 extracting sha256:ef49c20a7b35aa995683f311510d35d77e203a2204f84de14a71a6d726e6af73 0.4s done
+#12 extracting sha256:bf7a4185f01524837d19abde915ffde84e64368b250f5b5e9f6f75aea62a11d4 0.0s done
+#12 extracting sha256:2780920e5dbfbe103d03a583ed75345306e572ec5a48cb10361f046767d9f29a 0.0s done
+#12 extracting sha256:7c12895b777bcaa8ccae0605b4de635b68fc32d60fa08f421dc3818bf55ee212 done
+#12 extracting sha256:3214acf345c0cc6bbdb56b698a41ccdefc624a09d6beb0d38b5de0b2303ecaf4 0.0s done
+#12 extracting sha256:52630fc75a18675c530ed9eba5f55eca09b03e91bd5bc15307918bbc1a7e7296 done
+#12 extracting sha256:dd64bf2dd177757451a98fcdc999a339c35dee5d9872d8f4dc69c8f3c4dd0112 done
+#12 extracting sha256:b839dfae01f66e15c6a8b63520557ed315bdfe036342fa7a0c537259f10d7a9a done
+#12 extracting sha256:dcaa5a89b0ccda4b283e16d0b4d0891cd93d5fe05c6798f7806781a6a2d84354 done
+#12 extracting sha256:069d1e267530c2e681fbd4d481553b4d05f98082b18fafac86e7f12996dddd0b 0.0s done
+#12 DONE 1.8s
+
+#11 [linux/amd64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#11 sha256:526604835308e0d61f64a3d3e2d614308fef4ed655f0111a4566627296c0195c 83.84kB / 83.84kB 0.3s done
+#11 extracting sha256:526604835308e0d61f64a3d3e2d614308fef4ed655f0111a4566627296c0195c 0.1s done
+#11 extracting sha256:990a9c434e5e0f11549a8d4a41a1991e621b04e30cd63269adbc97b1dc38fd7e 0.0s done
+#11 extracting sha256:ef49c20a7b35aa995683f311510d35d77e203a2204f84de14a71a6d726e6af73 0.4s done
+#11 extracting sha256:bf7a4185f01524837d19abde915ffde84e64368b250f5b5e9f6f75aea62a11d4 0.0s done
+#11 extracting sha256:2780920e5dbfbe103d03a583ed75345306e572ec5a48cb10361f046767d9f29a done
+#11 extracting sha256:7c12895b777bcaa8ccae0605b4de635b68fc32d60fa08f421dc3818bf55ee212 done
+#11 extracting sha256:3214acf345c0cc6bbdb56b698a41ccdefc624a09d6beb0d38b5de0b2303ecaf4 done
+#11 extracting sha256:52630fc75a18675c530ed9eba5f55eca09b03e91bd5bc15307918bbc1a7e7296 done
+#11 extracting sha256:dd64bf2dd177757451a98fcdc999a339c35dee5d9872d8f4dc69c8f3c4dd0112 done
+#11 extracting sha256:b839dfae01f66e15c6a8b63520557ed315bdfe036342fa7a0c537259f10d7a9a done
+#11 extracting sha256:dcaa5a89b0ccda4b283e16d0b4d0891cd93d5fe05c6798f7806781a6a2d84354 done
+#11 extracting sha256:069d1e267530c2e681fbd4d481553b4d05f98082b18fafac86e7f12996dddd0b 0.0s done
+#11 DONE 1.8s
+
+#10 [linux/arm64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#10 sha256:13eebdc497b76e3a8d650f3508406dd372001df44915970a80418896bf835077 126B / 126B 0.1s done
+#10 sha256:382d65ac76ebcbc7ba7ee0d232ae7afbec48e2b3b673983ac8ced522dabe3abb 70.70MB / 70.70MB 1.2s done
+#10 sha256:7d1a427e917c48b164eae3ec3692b4741f5de528261925d2e5efc62a43e5bfc4 284.71kB / 284.71kB 0.2s done
+#10 sha256:6e174226ea690ced550e5641249a412cdbefd2d09871f3e64ab52137a54ba606 4.13MB / 4.13MB 0.1s done
+#10 extracting sha256:6e174226ea690ced550e5641249a412cdbefd2d09871f3e64ab52137a54ba606 0.3s done
+#10 extracting sha256:7d1a427e917c48b164eae3ec3692b4741f5de528261925d2e5efc62a43e5bfc4 0.1s done
+#10 extracting sha256:382d65ac76ebcbc7ba7ee0d232ae7afbec48e2b3b673983ac8ced522dabe3abb
+#10 ...
+
+#9 [linux/amd64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#9 extracting sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 5.6s done
+#9 extracting sha256:d3178a7b27090e22bc2464346d1cdc8f59d0fd7a241452e8148342edf3d0b1e9
+#9 extracting sha256:d3178a7b27090e22bc2464346d1cdc8f59d0fd7a241452e8148342edf3d0b1e9 0.1s done
+#9 extracting sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 done
+#9 DONE 6.7s
+
+#10 [linux/arm64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#10 extracting sha256:382d65ac76ebcbc7ba7ee0d232ae7afbec48e2b3b673983ac8ced522dabe3abb 5.3s done
+#10 extracting sha256:13eebdc497b76e3a8d650f3508406dd372001df44915970a80418896bf835077 0.0s done
+#10 extracting sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 done
+#10 DONE 6.8s
+
+#14 [linux/amd64 builder 2/7] RUN apk add --no-cache git ca-certificates
+#14 0.083 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/main/x86_64/APKINDEX.tar.gz
+#14 0.296 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/community/x86_64/APKINDEX.tar.gz
+#14 0.713 (1/12) Installing brotli-libs (1.1.0-r2)
+#14 0.742 (2/12) Installing c-ares (1.34.6-r0)
+#14 0.763 (3/12) Installing libunistring (1.3-r0)
+#14 0.802 (4/12) Installing libidn2 (2.3.7-r0)
+#14 0.823 (5/12) Installing nghttp2-libs (1.65.0-r0)
+#14 0.843 (6/12) Installing libpsl (0.21.5-r3)
+#14 0.862 (7/12) Installing zstd-libs (1.5.7-r0)
+#14 0.889 (8/12) Installing libcurl (8.14.1-r2)
+#14 0.915 (9/12) Installing libexpat (2.7.5-r0)
+#14 0.935 (10/12) Installing pcre2 (10.46-r0)
+#14 0.963 (11/12) Installing git (2.49.1-r0)
+#14 1.064 (12/12) Installing git-init-template (2.49.1-r0)
+#14 1.085 Executing busybox-1.37.0-r18.trigger
+#14 1.094 OK: 20 MiB in 29 packages
+#14 DONE 3.7s
+
+#15 [linux/arm64 builder 2/7] RUN apk add --no-cache git ca-certificates
+#15 0.166 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/main/aarch64/APKINDEX.tar.gz
+#15 1.035 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/community/aarch64/APKINDEX.tar.gz
+#15 2.606 (1/12) Installing brotli-libs (1.1.0-r2)
+#15 2.738 (2/12) Installing c-ares (1.34.6-r0)
+#15 2.783 (3/12) Installing libunistring (1.3-r0)
+#15 2.934 (4/12) Installing libidn2 (2.3.7-r0)
+#15 2.969 (5/12) Installing nghttp2-libs (1.65.0-r0)
+#15 3.003 (6/12) Installing libpsl (0.21.5-r3)
+#15 3.035 (7/12) Installing zstd-libs (1.5.7-r0)
+#15 3.101 (8/12) Installing libcurl (8.14.1-r2)
+#15 3.185 (9/12) Installing libexpat (2.7.5-r0)
+#15 3.219 (10/12) Installing pcre2 (10.46-r0)
+#15 3.274 (11/12) Installing git (2.49.1-r0)
+#15 ...
+
+#16 [linux/amd64 builder 3/7] WORKDIR /src
+#16 DONE 0.0s
+
+#17 [linux/amd64 builder 4/7] COPY go.mod go.sum* ./
+#17 DONE 0.0s
+
+#15 [linux/arm64 builder 2/7] RUN apk add --no-cache git ca-certificates
+#15 3.898 (12/12) Installing git-init-template (2.49.1-r0)
+#15 ...
+
+#18 [linux/amd64 builder 5/7] RUN go mod download || true
+#18 0.097 go: go.mod requires go >= 1.25.0 (running go 1.23.12; GOTOOLCHAIN=local)
+#18 DONE 0.1s
+
+#15 [linux/arm64 builder 2/7] RUN apk add --no-cache git ca-certificates
+#15 3.930 Executing busybox-1.37.0-r18.trigger
+#15 4.010 OK: 20 MiB in 29 packages
+#15 ...
+
+#19 [linux/amd64 builder 6/7] COPY . .
+#19 DONE 0.5s
+
+#15 [linux/arm64 builder 2/7] RUN apk add --no-cache git ca-certificates
+#15 DONE 4.4s
+
+#20 [linux/arm64 builder 3/7] WORKDIR /src
+#20 DONE 0.0s
+
+#21 [linux/arm64 builder 4/7] COPY go.mod go.sum* ./
+#21 DONE 0.0s
+
+#22 [linux/amd64 builder 7/7] RUN CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags "-s -w         -X github.com/teo-dev/teo/internal/version.Version=main         -X github.com/teo-dev/teo/internal/version.Commit=1d74d69b21fed3a64a82a1233e045eff9ef149a6         -X github.com/teo-dev/teo/internal/version.Date=2026-05-02T14:02:00-05:00"       -o /out/service       ./cmd/run-manager
+#22 0.117 go: go.mod requires go >= 1.25.0 (running go 1.23.12; GOTOOLCHAIN=local)
+#22 ERROR: process "/bin/sh -c CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags \"-s -w         -X github.com/teo-dev/teo/internal/version.Version=${VERSION}         -X github.com/teo-dev/teo/internal/version.Commit=${COMMIT}         -X github.com/teo-dev/teo/internal/version.Date=${DATE}\"       -o /out/service       ./cmd/${SERVICE}" did not complete successfully: exit code: 1
+
+#23 [linux/arm64 builder 5/7] RUN go mod download || true
+#23 0.185 runc run failed: container process is already dead
+#23 CANCELED
+------
+ > [linux/amd64 builder 7/7] RUN CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags "-s -w         -X github.com/teo-dev/teo/internal/version.Version=main         -X github.com/teo-dev/teo/internal/version.Commit=1d74d69b21fed3a64a82a1233e045eff9ef149a6         -X github.com/teo-dev/teo/internal/version.Date=2026-05-02T14:02:00-05:00"       -o /out/service       ./cmd/run-manager:
+0.117 go: go.mod requires go >= 1.25.0 (running go 1.23.12; GOTOOLCHAIN=local)
+------
+Dockerfile:19
+--------------------
+  18 |
+  19 | >>> RUN CGO_ENABLED=0 GOOS=linux \
+  20 | >>>     go build \
+  21 | >>>       -trimpath \
+  22 | >>>       -ldflags "-s -w \
+  23 | >>>         -X github.com/teo-dev/teo/internal/version.Version=${VERSION} \
+  24 | >>>         -X github.com/teo-dev/teo/internal/version.Commit=${COMMIT} \
+  25 | >>>         -X github.com/teo-dev/teo/internal/version.Date=${DATE}" \
+  26 | >>>       -o /out/service \
+  27 | >>>       ./cmd/${SERVICE}
+  28 |
+--------------------
+ERROR: failed to build: failed to solve: process "/bin/sh -c CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags \"-s -w         -X github.com/teo-dev/teo/internal/version.Version=${VERSION}         -X github.com/teo-dev/teo/internal/version.Commit=${COMMIT}         -X github.com/teo-dev/teo/internal/version.Date=${DATE}\"       -o /out/service       ./cmd/${SERVICE}" did not complete successfully: exit code: 1
+Reference
+Check build summary support
+Error: buildx failed with: ERROR: failed to build: failed to solve: process "/bin/sh -c CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags \"-s -w         -X github.com/teo-dev/teo/internal/version.Version=${VERSION}         -X github.com/teo-dev/teo/internal/version.Commit=${COMMIT}         -X github.com/teo-dev/teo/internal/version.Date=${DATE}\"       -o /out/service       ./cmd/${SERVICE}" did not complete successfully: exit code: 1
+
+
+1s
+13s
+Run docker/build-push-action@v6
+GitHub Actions runtime token ACs
+Docker info
+Proxy configuration
+Buildx version
+Builder info
+/usr/bin/docker buildx build --build-arg SERVICE=scheduler --build-arg VERSION=main --build-arg COMMIT=1d74d69b21fed3a64a82a1233e045eff9ef149a6 --build-arg DATE=2026-05-02T14:02:00-05:00 --cache-from type=gha,scope=scheduler --cache-to type=gha,mode=max,scope=scheduler --file ./Dockerfile --iidfile /home/runner/work/_temp/docker-actions-toolkit-eB7sGe/build-iidfile-bdfb92170c.txt --label org.opencontainers.image.created=2026-05-02T19:04:42.543Z --label org.opencontainers.image.description=This project is test execution orchestrator for software development teams. --label org.opencontainers.image.licenses=Apache-2.0 --label org.opencontainers.image.revision=1d74d69b21fed3a64a82a1233e045eff9ef149a6 --label org.opencontainers.image.source=https://github.com/anandtopu/test-execution-orchestrator --label org.opencontainers.image.title=test-execution-orchestrator --label org.opencontainers.image.url=https://github.com/anandtopu/test-execution-orchestrator --label org.opencontainers.image.version=main --platform linux/amd64,linux/arm64 --attest type=provenance,mode=min,inline-only=true,builder-id=https://github.com/anandtopu/test-execution-orchestrator/actions/runs/25259472331/attempts/1 --tag ghcr.io/anandtopu/scheduler:main --tag ghcr.io/anandtopu/scheduler:1d74d69 --metadata-file /home/runner/work/_temp/docker-actions-toolkit-eB7sGe/build-metadata-0f4dd41962.json --push .
+#0 building with "builder-7c947298-8062-4494-84f1-4ff30c68251b" instance using docker-container driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 906B done
+#1 DONE 0.0s
+
+#2 [auth] library/golang:pull token for registry-1.docker.io
+#2 DONE 0.0s
+
+#3 [linux/amd64 internal] load metadata for docker.io/library/golang:1.23-alpine
+#3 ...
+
+#4 [linux/arm64 internal] load metadata for docker.io/library/golang:1.23-alpine
+#4 DONE 0.4s
+
+#3 [linux/amd64 internal] load metadata for docker.io/library/golang:1.23-alpine
+#3 DONE 0.4s
+
+#5 [linux/amd64 internal] load metadata for gcr.io/distroless/static-debian12:nonroot
+#5 DONE 0.6s
+
+#6 [linux/arm64 internal] load metadata for gcr.io/distroless/static-debian12:nonroot
+#6 DONE 0.6s
+
+#7 [internal] load .dockerignore
+#7 transferring context: 2B done
+#7 DONE 0.0s
+
+#8 importing cache manifest from gha:7196347322104067050
+#8 DONE 0.0s
+
+#9 [linux/arm64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#9 resolve docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f 0.0s done
+#9 DONE 0.1s
+
+#10 [linux/arm64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#10 resolve gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1 0.0s done
+#10 ...
+
+#11 [internal] load build context
+#11 transferring context: 1.81MB 0.2s done
+#11 DONE 0.3s
+
+#10 [linux/arm64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#10 sha256:069d1e267530c2e681fbd4d481553b4d05f98082b18fafac86e7f12996dddd0b 131.91kB / 131.91kB 0.1s done
+#10 sha256:dcaa5a89b0ccda4b283e16d0b4d0891cd93d5fe05c6798f7806781a6a2d84354 0B / 314B 0.2s
+#10 sha256:b839dfae01f66e15c6a8b63520557ed315bdfe036342fa7a0c537259f10d7a9a 0B / 351B 0.2s
+#10 sha256:dcaa5a89b0ccda4b283e16d0b4d0891cd93d5fe05c6798f7806781a6a2d84354 314B / 314B 0.2s done
+#10 sha256:b839dfae01f66e15c6a8b63520557ed315bdfe036342fa7a0c537259f10d7a9a 351B / 351B 0.2s done
+#10 sha256:dd64bf2dd177757451a98fcdc999a339c35dee5d9872d8f4dc69c8f3c4dd0112 80B / 80B 0.2s done
+#10 sha256:52630fc75a18675c530ed9eba5f55eca09b03e91bd5bc15307918bbc1a7e7296 162B / 162B 0.1s done
+#10 sha256:7c12895b777bcaa8ccae0605b4de635b68fc32d60fa08f421dc3818bf55ee212 188B / 188B 0.1s done
+#10 sha256:3214acf345c0cc6bbdb56b698a41ccdefc624a09d6beb0d38b5de0b2303ecaf4 123B / 123B 0.1s done
+#10 sha256:2780920e5dbfbe103d03a583ed75345306e572ec5a48cb10361f046767d9f29a 67B / 67B 0.1s done
+#10 sha256:bf7a4185f01524837d19abde915ffde84e64368b250f5b5e9f6f75aea62a11d4 29.00kB / 29.00kB 0.1s done
+#10 sha256:ef49c20a7b35aa995683f311510d35d77e203a2204f84de14a71a6d726e6af73 440.80kB / 440.80kB 0.1s done
+#10 sha256:990a9c434e5e0f11549a8d4a41a1991e621b04e30cd63269adbc97b1dc38fd7e 12.48kB / 12.48kB 0.1s done
+#10 sha256:296b5494f17a830dcf9b0da028437305ab7ba3eaca4adf0dec9a463a18950079 0B / 83.84kB 0.2s
+#10 sha256:296b5494f17a830dcf9b0da028437305ab7ba3eaca4adf0dec9a463a18950079 83.84kB / 83.84kB 0.2s done
+#10 extracting sha256:296b5494f17a830dcf9b0da028437305ab7ba3eaca4adf0dec9a463a18950079 0.0s done
+#10 extracting sha256:990a9c434e5e0f11549a8d4a41a1991e621b04e30cd63269adbc97b1dc38fd7e 0.0s done
+#10 extracting sha256:ef49c20a7b35aa995683f311510d35d77e203a2204f84de14a71a6d726e6af73
+#10 ...
+
+#12 [linux/amd64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#12 resolve gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1 0.0s done
+#12 sha256:526604835308e0d61f64a3d3e2d614308fef4ed655f0111a4566627296c0195c 83.84kB / 83.84kB 0.1s done
+#12 extracting sha256:526604835308e0d61f64a3d3e2d614308fef4ed655f0111a4566627296c0195c 0.0s done
+#12 extracting sha256:990a9c434e5e0f11549a8d4a41a1991e621b04e30cd63269adbc97b1dc38fd7e 0.0s done
+#12 extracting sha256:ef49c20a7b35aa995683f311510d35d77e203a2204f84de14a71a6d726e6af73 0.3s done
+#12 extracting sha256:bf7a4185f01524837d19abde915ffde84e64368b250f5b5e9f6f75aea62a11d4 0.0s done
+#12 extracting sha256:2780920e5dbfbe103d03a583ed75345306e572ec5a48cb10361f046767d9f29a done
+#12 extracting sha256:7c12895b777bcaa8ccae0605b4de635b68fc32d60fa08f421dc3818bf55ee212 0.0s done
+#12 extracting sha256:3214acf345c0cc6bbdb56b698a41ccdefc624a09d6beb0d38b5de0b2303ecaf4 done
+#12 extracting sha256:52630fc75a18675c530ed9eba5f55eca09b03e91bd5bc15307918bbc1a7e7296 done
+#12 DONE 1.2s
+
+#10 [linux/arm64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#10 extracting sha256:ef49c20a7b35aa995683f311510d35d77e203a2204f84de14a71a6d726e6af73 0.3s done
+#10 extracting sha256:bf7a4185f01524837d19abde915ffde84e64368b250f5b5e9f6f75aea62a11d4 0.0s done
+#10 extracting sha256:2780920e5dbfbe103d03a583ed75345306e572ec5a48cb10361f046767d9f29a 0.0s done
+#10 extracting sha256:7c12895b777bcaa8ccae0605b4de635b68fc32d60fa08f421dc3818bf55ee212 done
+#10 extracting sha256:3214acf345c0cc6bbdb56b698a41ccdefc624a09d6beb0d38b5de0b2303ecaf4 0.0s done
+#10 extracting sha256:52630fc75a18675c530ed9eba5f55eca09b03e91bd5bc15307918bbc1a7e7296 0.0s done
+#10 extracting sha256:dd64bf2dd177757451a98fcdc999a339c35dee5d9872d8f4dc69c8f3c4dd0112 done
+#10 extracting sha256:b839dfae01f66e15c6a8b63520557ed315bdfe036342fa7a0c537259f10d7a9a done
+#10 extracting sha256:dcaa5a89b0ccda4b283e16d0b4d0891cd93d5fe05c6798f7806781a6a2d84354 0.0s done
+#10 extracting sha256:069d1e267530c2e681fbd4d481553b4d05f98082b18fafac86e7f12996dddd0b 0.0s done
+#10 DONE 1.2s
+
+#12 [linux/amd64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#12 extracting sha256:dd64bf2dd177757451a98fcdc999a339c35dee5d9872d8f4dc69c8f3c4dd0112 done
+#12 extracting sha256:b839dfae01f66e15c6a8b63520557ed315bdfe036342fa7a0c537259f10d7a9a done
+#12 extracting sha256:069d1e267530c2e681fbd4d481553b4d05f98082b18fafac86e7f12996dddd0b 0.0s done
+#12 DONE 1.2s
+
+#13 [linux/amd64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#13 resolve docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f 0.0s done
+#13 sha256:d3178a7b27090e22bc2464346d1cdc8f59d0fd7a241452e8148342edf3d0b1e9 126B / 126B 0.0s done
+#13 sha256:8371a51cbc44c1323f96695eaeaeeb1c44b2d30d138a279b348af5c18b2c5e24 282.45kB / 282.45kB 0.1s done
+#13 sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 48.23MB / 74.07MB 1.2s
+#13 sha256:9824c27679d3b27c5e1cb00a73adb6f4f8d556994111c12db3c5d61a0c843df8 3.80MB / 3.80MB 0.1s done
+#13 extracting sha256:9824c27679d3b27c5e1cb00a73adb6f4f8d556994111c12db3c5d61a0c843df8 0.3s done
+#13 extracting sha256:8371a51cbc44c1323f96695eaeaeeb1c44b2d30d138a279b348af5c18b2c5e24 0.1s done
+#13 sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 54.53MB / 74.07MB 1.4s
+#13 sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 63.96MB / 74.07MB 1.5s
+#13 sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 74.07MB / 74.07MB 1.7s
+#13 sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 74.07MB / 74.07MB 1.7s done
+#13 extracting sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3
+#13 ...
+
+#9 [linux/arm64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#9 sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 32B / 32B 0.0s done
+#9 sha256:13eebdc497b76e3a8d650f3508406dd372001df44915970a80418896bf835077 126B / 126B 0.1s done
+#9 sha256:7d1a427e917c48b164eae3ec3692b4741f5de528261925d2e5efc62a43e5bfc4 284.71kB / 284.71kB 0.1s done
+#9 sha256:382d65ac76ebcbc7ba7ee0d232ae7afbec48e2b3b673983ac8ced522dabe3abb 70.70MB / 70.70MB 0.7s done
+#9 sha256:6e174226ea690ced550e5641249a412cdbefd2d09871f3e64ab52137a54ba606 4.13MB / 4.13MB 0.1s done
+#9 extracting sha256:6e174226ea690ced550e5641249a412cdbefd2d09871f3e64ab52137a54ba606 0.3s done
+#9 extracting sha256:7d1a427e917c48b164eae3ec3692b4741f5de528261925d2e5efc62a43e5bfc4 0.1s done
+#9 extracting sha256:382d65ac76ebcbc7ba7ee0d232ae7afbec48e2b3b673983ac8ced522dabe3abb 5.1s done
+#9 DONE 5.9s
+
+#9 [linux/arm64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#9 extracting sha256:13eebdc497b76e3a8d650f3508406dd372001df44915970a80418896bf835077 0.0s done
+#9 extracting sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 done
+#9 DONE 5.9s
+
+#14 [linux/arm64 builder 2/7] RUN apk add --no-cache git ca-certificates
+#14 0.197 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/main/aarch64/APKINDEX.tar.gz
+#14 1.122 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/community/aarch64/APKINDEX.tar.gz
+#14 ...
+
+#13 [linux/amd64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#13 extracting sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 5.1s done
+#13 extracting sha256:d3178a7b27090e22bc2464346d1cdc8f59d0fd7a241452e8148342edf3d0b1e9 done
+#13 extracting sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 done
+#13 DONE 7.1s
+
+#15 [linux/amd64 builder 2/7] RUN apk add --no-cache git ca-certificates
+#15 0.244 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/main/x86_64/APKINDEX.tar.gz
+#15 0.380 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/community/x86_64/APKINDEX.tar.gz
+#15 0.860 (1/12) Installing brotli-libs (1.1.0-r2)
+#15 0.894 (2/12) Installing c-ares (1.34.6-r0)
+#15 0.912 (3/12) Installing libunistring (1.3-r0)
+#15 0.949 (4/12) Installing libidn2 (2.3.7-r0)
+#15 0.961 (5/12) Installing nghttp2-libs (1.65.0-r0)
+#15 0.974 (6/12) Installing libpsl (0.21.5-r3)
+#15 0.986 (7/12) Installing zstd-libs (1.5.7-r0)
+#15 1.010 (8/12) Installing libcurl (8.14.1-r2)
+#15 1.028 (9/12) Installing libexpat (2.7.5-r0)
+#15 1.042 (10/12) Installing pcre2 (10.46-r0)
+#15 1.061 (11/12) Installing git (2.49.1-r0)
+#15 1.168 (12/12) Installing git-init-template (2.49.1-r0)
+#15 1.184 Executing busybox-1.37.0-r18.trigger
+#15 1.194 OK: 20 MiB in 29 packages
+#15 ...
+
+#14 [linux/arm64 builder 2/7] RUN apk add --no-cache git ca-certificates
+#14 2.869 (1/12) Installing brotli-libs (1.1.0-r2)
+#14 3.000 (2/12) Installing c-ares (1.34.6-r0)
+#14 3.024 (3/12) Installing libunistring (1.3-r0)
+#14 3.079 (4/12) Installing libidn2 (2.3.7-r0)
+#14 3.090 (5/12) Installing nghttp2-libs (1.65.0-r0)
+#14 3.100 (6/12) Installing libpsl (0.21.5-r3)
+#14 3.110 (7/12) Installing zstd-libs (1.5.7-r0)
+#14 3.142 (8/12) Installing libcurl (8.14.1-r2)
+#14 3.170 (9/12) Installing libexpat (2.7.5-r0)
+#14 3.180 (10/12) Installing pcre2 (10.46-r0)
+#14 3.202 (11/12) Installing git (2.49.1-r0)
+#14 3.565 (12/12) Installing git-init-template (2.49.1-r0)
+#14 3.578 Executing busybox-1.37.0-r18.trigger
+#14 3.663 OK: 20 MiB in 29 packages
+#14 DONE 4.9s
+
+#15 [linux/amd64 builder 2/7] RUN apk add --no-cache git ca-certificates
+#15 DONE 3.7s
+
+#16 [linux/amd64 builder 3/7] WORKDIR /src
+#16 DONE 0.1s
+
+#17 [linux/arm64 builder 3/7] WORKDIR /src
+#17 DONE 0.1s
+
+#18 [linux/arm64 builder 4/7] COPY go.mod go.sum* ./
+#18 DONE 0.0s
+
+#19 [linux/amd64 builder 4/7] COPY go.mod go.sum* ./
+#19 DONE 0.0s
+
+#20 [linux/amd64 builder 5/7] RUN go mod download || true
+#20 0.136 go: go.mod requires go >= 1.25.0 (running go 1.23.12; GOTOOLCHAIN=local)
+#20 DONE 0.1s
+
+#21 [linux/amd64 builder 6/7] COPY . .
+#21 DONE 0.1s
+
+#22 [linux/arm64 builder 5/7] RUN go mod download || true
+#22 CANCELED
+
+#23 [linux/amd64 builder 7/7] RUN CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags "-s -w         -X github.com/teo-dev/teo/internal/version.Version=main         -X github.com/teo-dev/teo/internal/version.Commit=1d74d69b21fed3a64a82a1233e045eff9ef149a6         -X github.com/teo-dev/teo/internal/version.Date=2026-05-02T14:02:00-05:00"       -o /out/service       ./cmd/scheduler
+#23 0.098 go: go.mod requires go >= 1.25.0 (running go 1.23.12; GOTOOLCHAIN=local)
+#23 ERROR: process "/bin/sh -c CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags \"-s -w         -X github.com/teo-dev/teo/internal/version.Version=${VERSION}         -X github.com/teo-dev/teo/internal/version.Commit=${COMMIT}         -X github.com/teo-dev/teo/internal/version.Date=${DATE}\"       -o /out/service       ./cmd/${SERVICE}" did not complete successfully: exit code: 1
+------
+ > [linux/amd64 builder 7/7] RUN CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags "-s -w         -X github.com/teo-dev/teo/internal/version.Version=main         -X github.com/teo-dev/teo/internal/version.Commit=1d74d69b21fed3a64a82a1233e045eff9ef149a6         -X github.com/teo-dev/teo/internal/version.Date=2026-05-02T14:02:00-05:00"       -o /out/service       ./cmd/scheduler:
+0.098 go: go.mod requires go >= 1.25.0 (running go 1.23.12; GOTOOLCHAIN=local)
+------
+Dockerfile:19
+--------------------
+  18 |
+  19 | >>> RUN CGO_ENABLED=0 GOOS=linux \
+  20 | >>>     go build \
+  21 | >>>       -trimpath \
+  22 | >>>       -ldflags "-s -w \
+  23 | >>>         -X github.com/teo-dev/teo/internal/version.Version=${VERSION} \
+  24 | >>>         -X github.com/teo-dev/teo/internal/version.Commit=${COMMIT} \
+  25 | >>>         -X github.com/teo-dev/teo/internal/version.Date=${DATE}" \
+  26 | >>>       -o /out/service \
+  27 | >>>       ./cmd/${SERVICE}
+  28 |
+--------------------
+ERROR: failed to build: failed to solve: process "/bin/sh -c CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags \"-s -w         -X github.com/teo-dev/teo/internal/version.Version=${VERSION}         -X github.com/teo-dev/teo/internal/version.Commit=${COMMIT}         -X github.com/teo-dev/teo/internal/version.Date=${DATE}\"       -o /out/service       ./cmd/${SERVICE}" did not complete successfully: exit code: 1
+Reference
+Check build summary support
+Error: buildx failed with: ERROR: failed to build: failed to solve: process "/bin/sh -c CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags \"-s -w         -X github.com/teo-dev/teo/internal/version.Version=${VERSION}         -X github.com/teo-dev/teo/internal/version.Commit=${COMMIT}         -X github.com/teo-dev/teo/internal/version.Date=${DATE}\"       -o /out/service       ./cmd/${SERVICE}" did not complete successfully: exit code: 1
+
+Run docker/build-push-action@v6
+GitHub Actions runtime token ACs
+Docker info
+Proxy configuration
+Buildx version
+Builder info
+/usr/bin/docker buildx build --build-arg SERVICE=result-pipeline --build-arg VERSION=main --build-arg COMMIT=1d74d69b21fed3a64a82a1233e045eff9ef149a6 --build-arg DATE=2026-05-02T14:02:00-05:00 --cache-from type=gha,scope=result-pipeline --cache-to type=gha,mode=max,scope=result-pipeline --file ./Dockerfile --iidfile /home/runner/work/_temp/docker-actions-toolkit-3qSFBe/build-iidfile-4a66d089f1.txt --label org.opencontainers.image.created=2026-05-02T19:04:41.549Z --label org.opencontainers.image.description=This project is test execution orchestrator for software development teams. --label org.opencontainers.image.licenses=Apache-2.0 --label org.opencontainers.image.revision=1d74d69b21fed3a64a82a1233e045eff9ef149a6 --label org.opencontainers.image.source=https://github.com/anandtopu/test-execution-orchestrator --label org.opencontainers.image.title=test-execution-orchestrator --label org.opencontainers.image.url=https://github.com/anandtopu/test-execution-orchestrator --label org.opencontainers.image.version=main --platform linux/amd64,linux/arm64 --attest type=provenance,mode=min,inline-only=true,builder-id=https://github.com/anandtopu/test-execution-orchestrator/actions/runs/25259472331/attempts/1 --tag ghcr.io/anandtopu/result-pipeline:main --tag ghcr.io/anandtopu/result-pipeline:1d74d69 --metadata-file /home/runner/work/_temp/docker-actions-toolkit-3qSFBe/build-metadata-4412110845.json --push .
+#0 building with "builder-9306ed99-7da7-416c-a281-e591b42fb0bc" instance using docker-container driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 906B done
+#1 DONE 0.0s
+
+#2 [auth] library/golang:pull token for registry-1.docker.io
+#2 DONE 0.0s
+
+#3 [linux/amd64 internal] load metadata for gcr.io/distroless/static-debian12:nonroot
+#3 ...
+
+#4 [linux/amd64 internal] load metadata for docker.io/library/golang:1.23-alpine
+#4 DONE 0.4s
+
+#5 [linux/arm64 internal] load metadata for docker.io/library/golang:1.23-alpine
+#5 DONE 0.4s
+
+#6 [linux/arm64 internal] load metadata for gcr.io/distroless/static-debian12:nonroot
+#6 DONE 0.6s
+
+#3 [linux/amd64 internal] load metadata for gcr.io/distroless/static-debian12:nonroot
+#3 DONE 0.7s
+
+#7 [internal] load .dockerignore
+#7 transferring context: 2B done
+#7 DONE 0.0s
+
+#8 importing cache manifest from gha:17555931565253932901
+#8 DONE 0.0s
+
+#9 [linux/amd64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#9 resolve docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f done
+#9 DONE 0.1s
+
+#10 [linux/amd64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#10 resolve gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1 done
+#10 ...
+
+#11 [internal] load build context
+#11 transferring context: 1.81MB 0.1s done
+#11 DONE 0.2s
+
+#10 [linux/amd64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#10 sha256:069d1e267530c2e681fbd4d481553b4d05f98082b18fafac86e7f12996dddd0b 131.91kB / 131.91kB 0.1s done
+#10 sha256:dcaa5a89b0ccda4b283e16d0b4d0891cd93d5fe05c6798f7806781a6a2d84354 314B / 314B 0.1s done
+#10 sha256:b839dfae01f66e15c6a8b63520557ed315bdfe036342fa7a0c537259f10d7a9a 351B / 351B 0.2s done
+#10 sha256:dd64bf2dd177757451a98fcdc999a339c35dee5d9872d8f4dc69c8f3c4dd0112 80B / 80B 0.2s done
+#10 sha256:3214acf345c0cc6bbdb56b698a41ccdefc624a09d6beb0d38b5de0b2303ecaf4 123B / 123B 0.1s done
+#10 sha256:2780920e5dbfbe103d03a583ed75345306e572ec5a48cb10361f046767d9f29a 67B / 67B 0.1s done
+#10 sha256:52630fc75a18675c530ed9eba5f55eca09b03e91bd5bc15307918bbc1a7e7296 162B / 162B 0.1s done
+#10 sha256:7c12895b777bcaa8ccae0605b4de635b68fc32d60fa08f421dc3818bf55ee212 188B / 188B 0.2s done
+#10 sha256:bf7a4185f01524837d19abde915ffde84e64368b250f5b5e9f6f75aea62a11d4 29.00kB / 29.00kB 0.1s done
+#10 sha256:990a9c434e5e0f11549a8d4a41a1991e621b04e30cd63269adbc97b1dc38fd7e 12.48kB / 12.48kB 0.1s done
+#10 sha256:ef49c20a7b35aa995683f311510d35d77e203a2204f84de14a71a6d726e6af73 440.80kB / 440.80kB 0.2s done
+#10 sha256:526604835308e0d61f64a3d3e2d614308fef4ed655f0111a4566627296c0195c 83.84kB / 83.84kB 0.1s done
+#10 extracting sha256:526604835308e0d61f64a3d3e2d614308fef4ed655f0111a4566627296c0195c
+#10 extracting sha256:526604835308e0d61f64a3d3e2d614308fef4ed655f0111a4566627296c0195c 0.1s done
+#10 extracting sha256:990a9c434e5e0f11549a8d4a41a1991e621b04e30cd63269adbc97b1dc38fd7e 0.0s done
+#10 extracting sha256:ef49c20a7b35aa995683f311510d35d77e203a2204f84de14a71a6d726e6af73
+#10 extracting sha256:ef49c20a7b35aa995683f311510d35d77e203a2204f84de14a71a6d726e6af73 0.6s done
+#10 extracting sha256:bf7a4185f01524837d19abde915ffde84e64368b250f5b5e9f6f75aea62a11d4 0.0s done
+#10 extracting sha256:2780920e5dbfbe103d03a583ed75345306e572ec5a48cb10361f046767d9f29a done
+#10 extracting sha256:7c12895b777bcaa8ccae0605b4de635b68fc32d60fa08f421dc3818bf55ee212 done
+#10 extracting sha256:3214acf345c0cc6bbdb56b698a41ccdefc624a09d6beb0d38b5de0b2303ecaf4 done
+#10 extracting sha256:52630fc75a18675c530ed9eba5f55eca09b03e91bd5bc15307918bbc1a7e7296 0.0s done
+#10 extracting sha256:dd64bf2dd177757451a98fcdc999a339c35dee5d9872d8f4dc69c8f3c4dd0112 0.0s done
+#10 extracting sha256:b839dfae01f66e15c6a8b63520557ed315bdfe036342fa7a0c537259f10d7a9a
+#10 extracting sha256:b839dfae01f66e15c6a8b63520557ed315bdfe036342fa7a0c537259f10d7a9a done
+#10 extracting sha256:dcaa5a89b0ccda4b283e16d0b4d0891cd93d5fe05c6798f7806781a6a2d84354 0.0s done
+#10 extracting sha256:069d1e267530c2e681fbd4d481553b4d05f98082b18fafac86e7f12996dddd0b 0.0s done
+#10 DONE 1.5s
+
+#12 [linux/arm64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#12 resolve gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1 0.0s done
+#12 sha256:296b5494f17a830dcf9b0da028437305ab7ba3eaca4adf0dec9a463a18950079 83.84kB / 83.84kB 0.2s done
+#12 extracting sha256:296b5494f17a830dcf9b0da028437305ab7ba3eaca4adf0dec9a463a18950079 0.0s done
+#12 extracting sha256:990a9c434e5e0f11549a8d4a41a1991e621b04e30cd63269adbc97b1dc38fd7e 0.0s done
+#12 extracting sha256:ef49c20a7b35aa995683f311510d35d77e203a2204f84de14a71a6d726e6af73 0.6s done
+#12 extracting sha256:bf7a4185f01524837d19abde915ffde84e64368b250f5b5e9f6f75aea62a11d4 0.0s done
+#12 extracting sha256:2780920e5dbfbe103d03a583ed75345306e572ec5a48cb10361f046767d9f29a 0.0s done
+#12 extracting sha256:7c12895b777bcaa8ccae0605b4de635b68fc32d60fa08f421dc3818bf55ee212 done
+#12 extracting sha256:3214acf345c0cc6bbdb56b698a41ccdefc624a09d6beb0d38b5de0b2303ecaf4 done
+#12 extracting sha256:52630fc75a18675c530ed9eba5f55eca09b03e91bd5bc15307918bbc1a7e7296 done
+#12 DONE 1.5s
+
+#13 [linux/arm64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#13 resolve docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f 0.0s done
+#13 sha256:13eebdc497b76e3a8d650f3508406dd372001df44915970a80418896bf835077 126B / 126B 0.0s done
+#13 sha256:7d1a427e917c48b164eae3ec3692b4741f5de528261925d2e5efc62a43e5bfc4 284.71kB / 284.71kB 0.0s done
+#13 sha256:6e174226ea690ced550e5641249a412cdbefd2d09871f3e64ab52137a54ba606 4.13MB / 4.13MB 0.1s done
+#13 extracting sha256:6e174226ea690ced550e5641249a412cdbefd2d09871f3e64ab52137a54ba606 0.3s done
+#13 sha256:382d65ac76ebcbc7ba7ee0d232ae7afbec48e2b3b673983ac8ced522dabe3abb 70.70MB / 70.70MB 0.6s done
+#13 extracting sha256:7d1a427e917c48b164eae3ec3692b4741f5de528261925d2e5efc62a43e5bfc4 0.1s done
+#13 extracting sha256:382d65ac76ebcbc7ba7ee0d232ae7afbec48e2b3b673983ac8ced522dabe3abb
+#13 ...
+
+#12 [linux/arm64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#12 extracting sha256:dd64bf2dd177757451a98fcdc999a339c35dee5d9872d8f4dc69c8f3c4dd0112 0.0s done
+#12 extracting sha256:b839dfae01f66e15c6a8b63520557ed315bdfe036342fa7a0c537259f10d7a9a done
+#12 extracting sha256:dcaa5a89b0ccda4b283e16d0b4d0891cd93d5fe05c6798f7806781a6a2d84354 done
+#12 extracting sha256:069d1e267530c2e681fbd4d481553b4d05f98082b18fafac86e7f12996dddd0b 0.0s done
+#12 DONE 1.6s
+
+#9 [linux/amd64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#9 sha256:d3178a7b27090e22bc2464346d1cdc8f59d0fd7a241452e8148342edf3d0b1e9 126B / 126B 0.0s done
+#9 sha256:8371a51cbc44c1323f96695eaeaeeb1c44b2d30d138a279b348af5c18b2c5e24 282.45kB / 282.45kB 0.1s done
+#9 sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 32B / 32B 0.1s done
+#9 sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 65.01MB / 74.07MB 1.8s
+#9 sha256:9824c27679d3b27c5e1cb00a73adb6f4f8d556994111c12db3c5d61a0c843df8 3.80MB / 3.80MB 0.2s done
+#9 extracting sha256:9824c27679d3b27c5e1cb00a73adb6f4f8d556994111c12db3c5d61a0c843df8 0.3s done
+#9 extracting sha256:8371a51cbc44c1323f96695eaeaeeb1c44b2d30d138a279b348af5c18b2c5e24 0.1s done
+#9 sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 74.07MB / 74.07MB 2.0s
+#9 sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 74.07MB / 74.07MB 2.0s done
+#9 extracting sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3
+#9 ...
+
+#13 [linux/arm64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#13 extracting sha256:382d65ac76ebcbc7ba7ee0d232ae7afbec48e2b3b673983ac8ced522dabe3abb 5.5s done
+#13 extracting sha256:13eebdc497b76e3a8d650f3508406dd372001df44915970a80418896bf835077
+#13 extracting sha256:13eebdc497b76e3a8d650f3508406dd372001df44915970a80418896bf835077 done
+#13 extracting sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 done
+#13 DONE 6.2s
+
+#14 [linux/arm64 builder 2/7] RUN apk add --no-cache git ca-certificates
+#14 0.192 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/main/aarch64/APKINDEX.tar.gz
+#14 ...
+
+#9 [linux/amd64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#9 extracting sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 5.1s done
+#9 DONE 7.2s
+
+#9 [linux/amd64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#9 extracting sha256:d3178a7b27090e22bc2464346d1cdc8f59d0fd7a241452e8148342edf3d0b1e9 done
+#9 extracting sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 done
+#9 DONE 7.2s
+
+#14 [linux/arm64 builder 2/7] RUN apk add --no-cache git ca-certificates
+#14 1.161 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/community/aarch64/APKINDEX.tar.gz
+#14 2.848 (1/12) Installing brotli-libs (1.1.0-r2)
+#14 2.919 (2/12) Installing c-ares (1.34.6-r0)
+#14 2.948 (3/12) Installing libunistring (1.3-r0)
+#14 3.054 (4/12) Installing libidn2 (2.3.7-r0)
+#14 3.079 (5/12) Installing nghttp2-libs (1.65.0-r0)
+#14 3.094 (6/12) Installing libpsl (0.21.5-r3)
+#14 3.106 (7/12) Installing zstd-libs (1.5.7-r0)
+#14 3.154 (8/12) Installing libcurl (8.14.1-r2)
+#14 3.206 (9/12) Installing libexpat (2.7.5-r0)
+#14 3.226 (10/12) Installing pcre2 (10.46-r0)
+#14 3.263 (11/12) Installing git (2.49.1-r0)
+#14 3.783 (12/12) Installing git-init-template (2.49.1-r0)
+#14 3.795 Executing busybox-1.37.0-r18.trigger
+#14 ...
+
+#15 [linux/amd64 builder 2/7] RUN apk add --no-cache git ca-certificates
+#15 0.079 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/main/x86_64/APKINDEX.tar.gz
+#15 0.236 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/community/x86_64/APKINDEX.tar.gz
+#15 0.637 (1/12) Installing brotli-libs (1.1.0-r2)
+#15 0.655 (2/12) Installing c-ares (1.34.6-r0)
+#15 0.661 (3/12) Installing libunistring (1.3-r0)
+#15 0.687 (4/12) Installing libidn2 (2.3.7-r0)
+#15 0.693 (5/12) Installing nghttp2-libs (1.65.0-r0)
+#15 0.698 (6/12) Installing libpsl (0.21.5-r3)
+#15 0.702 (7/12) Installing zstd-libs (1.5.7-r0)
+#15 0.713 (8/12) Installing libcurl (8.14.1-r2)
+#15 0.724 (9/12) Installing libexpat (2.7.5-r0)
+#15 0.730 (10/12) Installing pcre2 (10.46-r0)
+#15 0.743 (11/12) Installing git (2.49.1-r0)
+#15 0.835 (12/12) Installing git-init-template (2.49.1-r0)
+#15 0.840 Executing busybox-1.37.0-r18.trigger
+#15 0.851 OK: 20 MiB in 29 packages
+#15 DONE 3.0s
+
+#16 [linux/amd64 builder 3/7] WORKDIR /src
+#16 DONE 0.1s
+
+#17 [linux/amd64 builder 4/7] COPY go.mod go.sum* ./
+#17 DONE 0.0s
+
+#18 [linux/amd64 builder 5/7] RUN go mod download || true
+#18 0.116 go: go.mod requires go >= 1.25.0 (running go 1.23.12; GOTOOLCHAIN=local)
+#18 DONE 0.1s
+
+#19 [linux/amd64 builder 6/7] COPY . .
+#19 DONE 0.1s
+
+#20 [linux/amd64 builder 7/7] RUN CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags "-s -w         -X github.com/teo-dev/teo/internal/version.Version=main         -X github.com/teo-dev/teo/internal/version.Commit=1d74d69b21fed3a64a82a1233e045eff9ef149a6         -X github.com/teo-dev/teo/internal/version.Date=2026-05-02T14:02:00-05:00"       -o /out/service       ./cmd/result-pipeline
+#20 0.113 go: go.mod requires go >= 1.25.0 (running go 1.23.12; GOTOOLCHAIN=local)
+#20 ERROR: process "/bin/sh -c CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags \"-s -w         -X github.com/teo-dev/teo/internal/version.Version=${VERSION}         -X github.com/teo-dev/teo/internal/version.Commit=${COMMIT}         -X github.com/teo-dev/teo/internal/version.Date=${DATE}\"       -o /out/service       ./cmd/${SERVICE}" did not complete successfully: exit code: 1
+
+#14 [linux/arm64 builder 2/7] RUN apk add --no-cache git ca-certificates
+#14 4.037 OK: 20 MiB in 29 packages
+#14 CANCELED
+------
+ > [linux/amd64 builder 7/7] RUN CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags "-s -w         -X github.com/teo-dev/teo/internal/version.Version=main         -X github.com/teo-dev/teo/internal/version.Commit=1d74d69b21fed3a64a82a1233e045eff9ef149a6         -X github.com/teo-dev/teo/internal/version.Date=2026-05-02T14:02:00-05:00"       -o /out/service       ./cmd/result-pipeline:
+0.113 go: go.mod requires go >= 1.25.0 (running go 1.23.12; GOTOOLCHAIN=local)
+------
+Dockerfile:19
+--------------------
+  18 |
+  19 | >>> RUN CGO_ENABLED=0 GOOS=linux \
+  20 | >>>     go build \
+  21 | >>>       -trimpath \
+  22 | >>>       -ldflags "-s -w \
+  23 | >>>         -X github.com/teo-dev/teo/internal/version.Version=${VERSION} \
+  24 | >>>         -X github.com/teo-dev/teo/internal/version.Commit=${COMMIT} \
+  25 | >>>         -X github.com/teo-dev/teo/internal/version.Date=${DATE}" \
+  26 | >>>       -o /out/service \
+  27 | >>>       ./cmd/${SERVICE}
+  28 |
+--------------------
+ERROR: failed to build: failed to solve: process "/bin/sh -c CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags \"-s -w         -X github.com/teo-dev/teo/internal/version.Version=${VERSION}         -X github.com/teo-dev/teo/internal/version.Commit=${COMMIT}         -X github.com/teo-dev/teo/internal/version.Date=${DATE}\"       -o /out/service       ./cmd/${SERVICE}" did not complete successfully: exit code: 1
+Reference
+Check build summary support
+Error: buildx failed with: ERROR: failed to build: failed to solve: process "/bin/sh -c CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags \"-s -w         -X github.com/teo-dev/teo/internal/version.Version=${VERSION}         -X github.com/teo-dev/teo/internal/version.Commit=${COMMIT}         -X github.com/teo-dev/teo/internal/version.Date=${DATE}\"       -o /out/service       ./cmd/${SERVICE}" did not complete successfully: exit code: 1
+
+
+14s
+Run docker/build-push-action@v6
+GitHub Actions runtime token ACs
+Docker info
+Proxy configuration
+Buildx version
+Builder info
+/usr/bin/docker buildx build --build-arg SERVICE=predictor --build-arg VERSION=main --build-arg COMMIT=1d74d69b21fed3a64a82a1233e045eff9ef149a6 --build-arg DATE=2026-05-02T14:02:00-05:00 --cache-from type=gha,scope=predictor --cache-to type=gha,mode=max,scope=predictor --file ./Dockerfile --iidfile /home/runner/work/_temp/docker-actions-toolkit-i4ANxY/build-iidfile-73c73152ec.txt --label org.opencontainers.image.created=2026-05-02T19:04:46.299Z --label org.opencontainers.image.description=This project is test execution orchestrator for software development teams. --label org.opencontainers.image.licenses=Apache-2.0 --label org.opencontainers.image.revision=1d74d69b21fed3a64a82a1233e045eff9ef149a6 --label org.opencontainers.image.source=https://github.com/anandtopu/test-execution-orchestrator --label org.opencontainers.image.title=test-execution-orchestrator --label org.opencontainers.image.url=https://github.com/anandtopu/test-execution-orchestrator --label org.opencontainers.image.version=main --platform linux/amd64,linux/arm64 --attest type=provenance,mode=min,inline-only=true,builder-id=https://github.com/anandtopu/test-execution-orchestrator/actions/runs/25259472331/attempts/1 --tag ghcr.io/anandtopu/predictor:main --tag ghcr.io/anandtopu/predictor:1d74d69 --metadata-file /home/runner/work/_temp/docker-actions-toolkit-i4ANxY/build-metadata-0b7f23fdee.json --push .
+#0 building with "builder-40a6a52d-f391-472a-9151-7af1374a4b11" instance using docker-container driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 906B done
+#1 DONE 0.0s
+
+#2 [auth] library/golang:pull token for registry-1.docker.io
+#2 DONE 0.0s
+
+#3 [linux/amd64 internal] load metadata for docker.io/library/golang:1.23-alpine
+#3 ...
+
+#4 [linux/arm64 internal] load metadata for docker.io/library/golang:1.23-alpine
+#4 DONE 0.6s
+
+#3 [linux/amd64 internal] load metadata for docker.io/library/golang:1.23-alpine
+#3 DONE 0.6s
+
+#5 [linux/arm64 internal] load metadata for gcr.io/distroless/static-debian12:nonroot
+#5 DONE 0.7s
+
+#6 [linux/amd64 internal] load metadata for gcr.io/distroless/static-debian12:nonroot
+#6 DONE 0.8s
+
+#7 [internal] load .dockerignore
+#7 transferring context: 2B done
+#7 DONE 0.0s
+
+#8 [internal] load build context
+#8 DONE 0.0s
+
+#9 [linux/arm64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#9 resolve docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f done
+#9 DONE 0.0s
+
+#10 [linux/amd64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#10 resolve docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f done
+#10 DONE 0.0s
+
+#11 [linux/amd64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#11 resolve gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1 done
+#11 DONE 0.0s
+
+#12 [linux/arm64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#12 resolve gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1 0.0s done
+#12 DONE 0.0s
+
+#13 importing cache manifest from gha:8887443258009578429
+#13 DONE 0.1s
+
+#10 [linux/amd64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#10 ...
+
+#8 [internal] load build context
+#8 transferring context: 1.81MB 0.1s done
+#8 DONE 0.1s
+
+#10 [linux/amd64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#10 sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 32B / 32B 0.1s done
+#10 sha256:d3178a7b27090e22bc2464346d1cdc8f59d0fd7a241452e8148342edf3d0b1e9 126B / 126B 0.1s done
+#10 sha256:8371a51cbc44c1323f96695eaeaeeb1c44b2d30d138a279b348af5c18b2c5e24 282.45kB / 282.45kB 0.1s done
+#10 sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 14.68MB / 74.07MB 0.2s
+#10 sha256:9824c27679d3b27c5e1cb00a73adb6f4f8d556994111c12db3c5d61a0c843df8 3.80MB / 3.80MB 0.1s done
+#10 extracting sha256:9824c27679d3b27c5e1cb00a73adb6f4f8d556994111c12db3c5d61a0c843df8
+#10 sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 30.41MB / 74.07MB 0.3s
+#10 sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 39.85MB / 74.07MB 0.5s
+#10 extracting sha256:9824c27679d3b27c5e1cb00a73adb6f4f8d556994111c12db3c5d61a0c843df8 0.3s done
+#10 extracting sha256:8371a51cbc44c1323f96695eaeaeeb1c44b2d30d138a279b348af5c18b2c5e24
+#10 sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 48.23MB / 74.07MB 0.6s
+#10 extracting sha256:8371a51cbc44c1323f96695eaeaeeb1c44b2d30d138a279b348af5c18b2c5e24 0.1s done
+#10 ...
+
+#11 [linux/amd64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#11 sha256:526604835308e0d61f64a3d3e2d614308fef4ed655f0111a4566627296c0195c 83.84kB / 83.84kB 0.2s done
+#11 DONE 1.0s
+
+#10 [linux/amd64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#10 sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 57.67MB / 74.07MB 0.8s
+#10 sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 74.07MB / 74.07MB 1.1s
+#10 ...
+
+#12 [linux/arm64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#12 sha256:069d1e267530c2e681fbd4d481553b4d05f98082b18fafac86e7f12996dddd0b 131.91kB / 131.91kB 0.2s done
+#12 sha256:dcaa5a89b0ccda4b283e16d0b4d0891cd93d5fe05c6798f7806781a6a2d84354 314B / 314B 0.2s done
+#12 sha256:b839dfae01f66e15c6a8b63520557ed315bdfe036342fa7a0c537259f10d7a9a 351B / 351B 0.2s done
+#12 sha256:dd64bf2dd177757451a98fcdc999a339c35dee5d9872d8f4dc69c8f3c4dd0112 80B / 80B 0.2s done
+#12 sha256:52630fc75a18675c530ed9eba5f55eca09b03e91bd5bc15307918bbc1a7e7296 162B / 162B 0.2s done
+#12 sha256:3214acf345c0cc6bbdb56b698a41ccdefc624a09d6beb0d38b5de0b2303ecaf4 123B / 123B 0.2s done
+#12 sha256:7c12895b777bcaa8ccae0605b4de635b68fc32d60fa08f421dc3818bf55ee212 188B / 188B 0.2s done
+#12 sha256:2780920e5dbfbe103d03a583ed75345306e572ec5a48cb10361f046767d9f29a 67B / 67B 0.2s done
+#12 sha256:bf7a4185f01524837d19abde915ffde84e64368b250f5b5e9f6f75aea62a11d4 29.00kB / 29.00kB 0.2s done
+#12 sha256:ef49c20a7b35aa995683f311510d35d77e203a2204f84de14a71a6d726e6af73 440.80kB / 440.80kB 0.3s done
+#12 sha256:990a9c434e5e0f11549a8d4a41a1991e621b04e30cd63269adbc97b1dc38fd7e 12.48kB / 12.48kB 0.2s done
+#12 sha256:296b5494f17a830dcf9b0da028437305ab7ba3eaca4adf0dec9a463a18950079 83.84kB / 83.84kB 0.2s done
+#12 extracting sha256:296b5494f17a830dcf9b0da028437305ab7ba3eaca4adf0dec9a463a18950079 0.0s done
+#12 extracting sha256:990a9c434e5e0f11549a8d4a41a1991e621b04e30cd63269adbc97b1dc38fd7e 0.0s done
+#12 extracting sha256:ef49c20a7b35aa995683f311510d35d77e203a2204f84de14a71a6d726e6af73 0.4s done
+#12 extracting sha256:bf7a4185f01524837d19abde915ffde84e64368b250f5b5e9f6f75aea62a11d4 0.0s done
+#12 DONE 1.3s
+
+#10 [linux/amd64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#10 sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 74.07MB / 74.07MB 1.1s done
+#10 extracting sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3
+#10 ...
+
+#12 [linux/arm64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#12 extracting sha256:2780920e5dbfbe103d03a583ed75345306e572ec5a48cb10361f046767d9f29a 0.0s done
+#12 extracting sha256:7c12895b777bcaa8ccae0605b4de635b68fc32d60fa08f421dc3818bf55ee212 0.0s done
+#12 extracting sha256:3214acf345c0cc6bbdb56b698a41ccdefc624a09d6beb0d38b5de0b2303ecaf4 0.0s done
+#12 extracting sha256:52630fc75a18675c530ed9eba5f55eca09b03e91bd5bc15307918bbc1a7e7296 0.0s done
+#12 extracting sha256:dd64bf2dd177757451a98fcdc999a339c35dee5d9872d8f4dc69c8f3c4dd0112 0.0s done
+#12 extracting sha256:b839dfae01f66e15c6a8b63520557ed315bdfe036342fa7a0c537259f10d7a9a 0.0s done
+#12 extracting sha256:dcaa5a89b0ccda4b283e16d0b4d0891cd93d5fe05c6798f7806781a6a2d84354 0.0s done
+#12 extracting sha256:069d1e267530c2e681fbd4d481553b4d05f98082b18fafac86e7f12996dddd0b 0.0s done
+#12 DONE 1.4s
+
+#11 [linux/amd64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#11 extracting sha256:526604835308e0d61f64a3d3e2d614308fef4ed655f0111a4566627296c0195c 0.0s done
+#11 extracting sha256:990a9c434e5e0f11549a8d4a41a1991e621b04e30cd63269adbc97b1dc38fd7e 0.0s done
+#11 extracting sha256:ef49c20a7b35aa995683f311510d35d77e203a2204f84de14a71a6d726e6af73 0.4s done
+#11 extracting sha256:bf7a4185f01524837d19abde915ffde84e64368b250f5b5e9f6f75aea62a11d4 0.0s done
+#11 extracting sha256:2780920e5dbfbe103d03a583ed75345306e572ec5a48cb10361f046767d9f29a 0.0s done
+#11 extracting sha256:7c12895b777bcaa8ccae0605b4de635b68fc32d60fa08f421dc3818bf55ee212 0.0s done
+#11 DONE 1.5s
+
+#9 [linux/arm64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#9 sha256:7d1a427e917c48b164eae3ec3692b4741f5de528261925d2e5efc62a43e5bfc4 284.71kB / 284.71kB 0.1s done
+#9 sha256:13eebdc497b76e3a8d650f3508406dd372001df44915970a80418896bf835077 126B / 126B 0.0s done
+#9 sha256:6e174226ea690ced550e5641249a412cdbefd2d09871f3e64ab52137a54ba606 4.13MB / 4.13MB 0.1s done
+#9 extracting sha256:6e174226ea690ced550e5641249a412cdbefd2d09871f3e64ab52137a54ba606 0.3s done
+#9 sha256:382d65ac76ebcbc7ba7ee0d232ae7afbec48e2b3b673983ac8ced522dabe3abb 70.70MB / 70.70MB 0.4s done
+#9 extracting sha256:7d1a427e917c48b164eae3ec3692b4741f5de528261925d2e5efc62a43e5bfc4 0.1s done
+#9 extracting sha256:382d65ac76ebcbc7ba7ee0d232ae7afbec48e2b3b673983ac8ced522dabe3abb
+#9 ...
+
+#11 [linux/amd64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#11 extracting sha256:3214acf345c0cc6bbdb56b698a41ccdefc624a09d6beb0d38b5de0b2303ecaf4 done
+#11 extracting sha256:52630fc75a18675c530ed9eba5f55eca09b03e91bd5bc15307918bbc1a7e7296 done
+#11 extracting sha256:dd64bf2dd177757451a98fcdc999a339c35dee5d9872d8f4dc69c8f3c4dd0112 done
+#11 extracting sha256:b839dfae01f66e15c6a8b63520557ed315bdfe036342fa7a0c537259f10d7a9a done
+#11 extracting sha256:dcaa5a89b0ccda4b283e16d0b4d0891cd93d5fe05c6798f7806781a6a2d84354 0.0s done
+#11 extracting sha256:069d1e267530c2e681fbd4d481553b4d05f98082b18fafac86e7f12996dddd0b 0.0s done
+#11 DONE 1.6s
+
+#9 [linux/arm64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#9 extracting sha256:382d65ac76ebcbc7ba7ee0d232ae7afbec48e2b3b673983ac8ced522dabe3abb 6.0s done
+#9 DONE 6.8s
+
+#10 [linux/amd64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#10 ...
+
+#9 [linux/arm64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#9 extracting sha256:13eebdc497b76e3a8d650f3508406dd372001df44915970a80418896bf835077 0.0s done
+#9 extracting sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 done
+#9 DONE 6.8s
+
+#14 [linux/arm64 builder 2/7] RUN apk add --no-cache git ca-certificates
+#14 ...
+
+#10 [linux/amd64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#10 extracting sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 6.0s done
+#10 DONE 7.3s
+
+#10 [linux/amd64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#10 extracting sha256:d3178a7b27090e22bc2464346d1cdc8f59d0fd7a241452e8148342edf3d0b1e9 done
+#10 extracting sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 done
+#10 DONE 7.3s
+
+#15 [linux/amd64 builder 2/7] RUN apk add --no-cache git ca-certificates
+#15 0.096 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/main/x86_64/APKINDEX.tar.gz
+#15 0.341 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/community/x86_64/APKINDEX.tar.gz
+#15 1.042 (1/12) Installing brotli-libs (1.1.0-r2)
+#15 1.072 (2/12) Installing c-ares (1.34.6-r0)
+#15 1.083 (3/12) Installing libunistring (1.3-r0)
+#15 1.114 (4/12) Installing libidn2 (2.3.7-r0)
+#15 1.127 (5/12) Installing nghttp2-libs (1.65.0-r0)
+#15 1.136 (6/12) Installing libpsl (0.21.5-r3)
+#15 1.143 (7/12) Installing zstd-libs (1.5.7-r0)
+#15 1.162 (8/12) Installing libcurl (8.14.1-r2)
+#15 1.180 (9/12) Installing libexpat (2.7.5-r0)
+#15 1.188 (10/12) Installing pcre2 (10.46-r0)
+#15 1.205 (11/12) Installing git (2.49.1-r0)
+#15 1.380 (12/12) Installing git-init-template (2.49.1-r0)
+#15 1.390 Executing busybox-1.37.0-r18.trigger
+#15 1.409 OK: 20 MiB in 29 packages
+#15 ...
+
+#14 [linux/arm64 builder 2/7] RUN apk add --no-cache git ca-certificates
+#14 0.635 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/main/aarch64/APKINDEX.tar.gz
+#14 2.088 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/community/aarch64/APKINDEX.tar.gz
+#14 3.583 (1/12) Installing brotli-libs (1.1.0-r2)
+#14 3.655 (2/12) Installing c-ares (1.34.6-r0)
+#14 3.680 (3/12) Installing libunistring (1.3-r0)
+#14 3.730 (4/12) Installing libidn2 (2.3.7-r0)
+#14 3.745 (5/12) Installing nghttp2-libs (1.65.0-r0)
+#14 3.755 (6/12) Installing libpsl (0.21.5-r3)
+#14 3.763 (7/12) Installing zstd-libs (1.5.7-r0)
+#14 3.787 (8/12) Installing libcurl (8.14.1-r2)
+#14 3.816 (9/12) Installing libexpat (2.7.5-r0)
+#14 3.839 (10/12) Installing pcre2 (10.46-r0)
+#14 3.870 (11/12) Installing git (2.49.1-r0)
+#14 4.148 (12/12) Installing git-init-template (2.49.1-r0)
+#14 4.158 Executing busybox-1.37.0-r18.trigger
+#14 4.303 OK: 20 MiB in 29 packages
+#14 DONE 4.8s
+
+#15 [linux/amd64 builder 2/7] RUN apk add --no-cache git ca-certificates
+#15 DONE 4.3s
+
+#16 [linux/amd64 builder 3/7] WORKDIR /src
+#16 DONE 0.0s
+
+#17 [linux/arm64 builder 3/7] WORKDIR /src
+#17 DONE 0.0s
+
+#18 [linux/amd64 builder 4/7] COPY go.mod go.sum* ./
+#18 DONE 0.0s
+
+#19 [linux/arm64 builder 4/7] COPY go.mod go.sum* ./
+#19 DONE 0.0s
+
+#20 [linux/amd64 builder 5/7] RUN go mod download || true
+#20 0.069 go: go.mod requires go >= 1.25.0 (running go 1.23.12; GOTOOLCHAIN=local)
+#20 DONE 0.1s
+
+#21 [linux/amd64 builder 6/7] COPY . .
+#21 DONE 0.1s
+
+#22 [linux/amd64 builder 7/7] RUN CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags "-s -w         -X github.com/teo-dev/teo/internal/version.Version=main         -X github.com/teo-dev/teo/internal/version.Commit=1d74d69b21fed3a64a82a1233e045eff9ef149a6         -X github.com/teo-dev/teo/internal/version.Date=2026-05-02T14:02:00-05:00"       -o /out/service       ./cmd/predictor
+#22 0.076 go: go.mod requires go >= 1.25.0 (running go 1.23.12; GOTOOLCHAIN=local)
+#22 ERROR: process "/bin/sh -c CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags \"-s -w         -X github.com/teo-dev/teo/internal/version.Version=${VERSION}         -X github.com/teo-dev/teo/internal/version.Commit=${COMMIT}         -X github.com/teo-dev/teo/internal/version.Date=${DATE}\"       -o /out/service       ./cmd/${SERVICE}" did not complete successfully: exit code: 1
+
+#23 [linux/arm64 builder 5/7] RUN go mod download || true
+#23 CANCELED
+------
+ > [linux/amd64 builder 7/7] RUN CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags "-s -w         -X github.com/teo-dev/teo/internal/version.Version=main         -X github.com/teo-dev/teo/internal/version.Commit=1d74d69b21fed3a64a82a1233e045eff9ef149a6         -X github.com/teo-dev/teo/internal/version.Date=2026-05-02T14:02:00-05:00"       -o /out/service       ./cmd/predictor:
+0.076 go: go.mod requires go >= 1.25.0 (running go 1.23.12; GOTOOLCHAIN=local)
+------
+Dockerfile:19
+--------------------
+  18 |
+  19 | >>> RUN CGO_ENABLED=0 GOOS=linux \
+  20 | >>>     go build \
+  21 | >>>       -trimpath \
+  22 | >>>       -ldflags "-s -w \
+  23 | >>>         -X github.com/teo-dev/teo/internal/version.Version=${VERSION} \
+  24 | >>>         -X github.com/teo-dev/teo/internal/version.Commit=${COMMIT} \
+  25 | >>>         -X github.com/teo-dev/teo/internal/version.Date=${DATE}" \
+  26 | >>>       -o /out/service \
+  27 | >>>       ./cmd/${SERVICE}
+  28 |
+--------------------
+ERROR: failed to build: failed to solve: process "/bin/sh -c CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags \"-s -w         -X github.com/teo-dev/teo/internal/version.Version=${VERSION}         -X github.com/teo-dev/teo/internal/version.Commit=${COMMIT}         -X github.com/teo-dev/teo/internal/version.Date=${DATE}\"       -o /out/service       ./cmd/${SERVICE}" did not complete successfully: exit code: 1
+Reference
+Check build summary support
+Error: buildx failed with: ERROR: failed to build: failed to solve: process "/bin/sh -c CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags \"-s -w         -X github.com/teo-dev/teo/internal/version.Version=${VERSION}         -X github.com/teo-dev/teo/internal/version.Commit=${COMMIT}         -X github.com/teo-dev/teo/internal/version.Date=${DATE}\"       -o /out/service       ./cmd/${SERVICE}" did not complete successfully: exit code: 1
+
+
+6s
+1s
+1s
+13s
+Run docker/build-push-action@v6
+GitHub Actions runtime token ACs
+Docker info
+Proxy configuration
+Buildx version
+Builder info
+/usr/bin/docker buildx build --build-arg SERVICE=worker --build-arg VERSION=main --build-arg COMMIT=1d74d69b21fed3a64a82a1233e045eff9ef149a6 --build-arg DATE=2026-05-02T14:02:00-05:00 --cache-from type=gha,scope=worker --cache-to type=gha,mode=max,scope=worker --file ./Dockerfile --iidfile /home/runner/work/_temp/docker-actions-toolkit-P6Kv5c/build-iidfile-54c6269a16.txt --label org.opencontainers.image.created=2026-05-02T19:04:46.032Z --label org.opencontainers.image.description=This project is test execution orchestrator for software development teams. --label org.opencontainers.image.licenses=Apache-2.0 --label org.opencontainers.image.revision=1d74d69b21fed3a64a82a1233e045eff9ef149a6 --label org.opencontainers.image.source=https://github.com/anandtopu/test-execution-orchestrator --label org.opencontainers.image.title=test-execution-orchestrator --label org.opencontainers.image.url=https://github.com/anandtopu/test-execution-orchestrator --label org.opencontainers.image.version=main --platform linux/amd64,linux/arm64 --attest type=provenance,mode=min,inline-only=true,builder-id=https://github.com/anandtopu/test-execution-orchestrator/actions/runs/25259472331/attempts/1 --tag ghcr.io/anandtopu/worker:main --tag ghcr.io/anandtopu/worker:1d74d69 --metadata-file /home/runner/work/_temp/docker-actions-toolkit-P6Kv5c/build-metadata-29f158f3ec.json --push .
+#0 building with "builder-f598149e-010f-4d23-8b8c-ddd03db1d327" instance using docker-container driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 906B done
+#1 DONE 0.0s
+
+#2 [linux/amd64 internal] load metadata for docker.io/library/golang:1.23-alpine
+#2 ...
+
+#3 [auth] library/golang:pull token for registry-1.docker.io
+#3 DONE 0.0s
+
+#4 [linux/arm64 internal] load metadata for gcr.io/distroless/static-debian12:nonroot
+#4 DONE 0.4s
+
+#5 [linux/arm64 internal] load metadata for docker.io/library/golang:1.23-alpine
+#5 ...
+
+#6 [linux/amd64 internal] load metadata for gcr.io/distroless/static-debian12:nonroot
+#6 DONE 0.5s
+
+#2 [linux/amd64 internal] load metadata for docker.io/library/golang:1.23-alpine
+#2 DONE 0.7s
+
+#5 [linux/arm64 internal] load metadata for docker.io/library/golang:1.23-alpine
+#5 DONE 0.7s
+
+#7 [internal] load .dockerignore
+#7 transferring context: 2B done
+#7 DONE 0.0s
+
+#8 [internal] load build context
+#8 DONE 0.0s
+
+#9 [linux/arm64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#9 resolve docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f done
+#9 DONE 0.0s
+
+#10 [linux/amd64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#10 resolve docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f 0.0s done
+#10 DONE 0.0s
+
+#11 [linux/amd64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#11 resolve gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1 done
+#11 DONE 0.0s
+
+#12 [linux/arm64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#12 resolve gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1 0.0s done
+#12 DONE 0.0s
+
+#13 importing cache manifest from gha:5709708692809764169
+#13 DONE 0.1s
+
+#9 [linux/arm64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#9 DONE 0.1s
+
+#8 [internal] load build context
+#8 transferring context: 1.81MB 0.1s done
+#8 DONE 0.2s
+
+#12 [linux/arm64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#12 DONE 0.2s
+
+#9 [linux/arm64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#9 sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 32B / 32B 0.1s done
+#9 sha256:13eebdc497b76e3a8d650f3508406dd372001df44915970a80418896bf835077 126B / 126B 0.1s done
+#9 sha256:382d65ac76ebcbc7ba7ee0d232ae7afbec48e2b3b673983ac8ced522dabe3abb 0B / 70.70MB 0.2s
+#9 sha256:7d1a427e917c48b164eae3ec3692b4741f5de528261925d2e5efc62a43e5bfc4 284.71kB / 284.71kB 0.2s done
+#9 sha256:382d65ac76ebcbc7ba7ee0d232ae7afbec48e2b3b673983ac8ced522dabe3abb 25.17MB / 70.70MB 0.3s
+#9 sha256:6e174226ea690ced550e5641249a412cdbefd2d09871f3e64ab52137a54ba606 4.13MB / 4.13MB 0.2s done
+#9 extracting sha256:6e174226ea690ced550e5641249a412cdbefd2d09871f3e64ab52137a54ba606
+#9 sha256:382d65ac76ebcbc7ba7ee0d232ae7afbec48e2b3b673983ac8ced522dabe3abb 48.23MB / 70.70MB 0.5s
+#9 sha256:382d65ac76ebcbc7ba7ee0d232ae7afbec48e2b3b673983ac8ced522dabe3abb 70.70MB / 70.70MB 0.6s done
+#9 extracting sha256:6e174226ea690ced550e5641249a412cdbefd2d09871f3e64ab52137a54ba606 0.4s done
+#9 DONE 0.9s
+
+#11 [linux/amd64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#11 sha256:b839dfae01f66e15c6a8b63520557ed315bdfe036342fa7a0c537259f10d7a9a 351B / 351B 0.1s done
+#11 sha256:069d1e267530c2e681fbd4d481553b4d05f98082b18fafac86e7f12996dddd0b 131.91kB / 131.91kB 0.2s done
+#11 sha256:dd64bf2dd177757451a98fcdc999a339c35dee5d9872d8f4dc69c8f3c4dd0112 80B / 80B 0.3s done
+#11 sha256:52630fc75a18675c530ed9eba5f55eca09b03e91bd5bc15307918bbc1a7e7296 162B / 162B 0.2s done
+#11 sha256:3214acf345c0cc6bbdb56b698a41ccdefc624a09d6beb0d38b5de0b2303ecaf4 123B / 123B 0.1s done
+#11 sha256:7c12895b777bcaa8ccae0605b4de635b68fc32d60fa08f421dc3818bf55ee212 188B / 188B 0.1s done
+#11 sha256:2780920e5dbfbe103d03a583ed75345306e572ec5a48cb10361f046767d9f29a 67B / 67B 0.1s done
+#11 sha256:bf7a4185f01524837d19abde915ffde84e64368b250f5b5e9f6f75aea62a11d4 29.00kB / 29.00kB 0.2s done
+#11 sha256:ef49c20a7b35aa995683f311510d35d77e203a2204f84de14a71a6d726e6af73 440.80kB / 440.80kB 0.3s done
+#11 sha256:990a9c434e5e0f11549a8d4a41a1991e621b04e30cd63269adbc97b1dc38fd7e 12.48kB / 12.48kB 0.2s done
+#11 sha256:526604835308e0d61f64a3d3e2d614308fef4ed655f0111a4566627296c0195c 83.84kB / 83.84kB 0.2s done
+#11 extracting sha256:526604835308e0d61f64a3d3e2d614308fef4ed655f0111a4566627296c0195c 0.0s done
+#11 sha256:dcaa5a89b0ccda4b283e16d0b4d0891cd93d5fe05c6798f7806781a6a2d84354 314B / 314B 0.1s done
+#11 extracting sha256:990a9c434e5e0f11549a8d4a41a1991e621b04e30cd63269adbc97b1dc38fd7e 0.0s done
+#11 extracting sha256:ef49c20a7b35aa995683f311510d35d77e203a2204f84de14a71a6d726e6af73
+#11 ...
+
+#12 [linux/arm64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#12 sha256:296b5494f17a830dcf9b0da028437305ab7ba3eaca4adf0dec9a463a18950079 83.84kB / 83.84kB 0.3s done
+#12 DONE 1.1s
+
+#12 [linux/arm64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#12 extracting sha256:296b5494f17a830dcf9b0da028437305ab7ba3eaca4adf0dec9a463a18950079 0.1s done
+#12 extracting sha256:990a9c434e5e0f11549a8d4a41a1991e621b04e30cd63269adbc97b1dc38fd7e 0.0s done
+#12 ...
+
+#11 [linux/amd64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#11 extracting sha256:ef49c20a7b35aa995683f311510d35d77e203a2204f84de14a71a6d726e6af73 0.6s done
+#11 extracting sha256:bf7a4185f01524837d19abde915ffde84e64368b250f5b5e9f6f75aea62a11d4 0.0s done
+#11 extracting sha256:2780920e5dbfbe103d03a583ed75345306e572ec5a48cb10361f046767d9f29a done
+#11 extracting sha256:7c12895b777bcaa8ccae0605b4de635b68fc32d60fa08f421dc3818bf55ee212 0.0s done
+#11 extracting sha256:3214acf345c0cc6bbdb56b698a41ccdefc624a09d6beb0d38b5de0b2303ecaf4 done
+#11 extracting sha256:52630fc75a18675c530ed9eba5f55eca09b03e91bd5bc15307918bbc1a7e7296 0.0s done
+#11 extracting sha256:dd64bf2dd177757451a98fcdc999a339c35dee5d9872d8f4dc69c8f3c4dd0112 done
+#11 extracting sha256:b839dfae01f66e15c6a8b63520557ed315bdfe036342fa7a0c537259f10d7a9a 0.0s done
+#11 extracting sha256:dcaa5a89b0ccda4b283e16d0b4d0891cd93d5fe05c6798f7806781a6a2d84354 0.0s done
+#11 extracting sha256:069d1e267530c2e681fbd4d481553b4d05f98082b18fafac86e7f12996dddd0b 0.0s done
+#11 DONE 1.5s
+
+#12 [linux/arm64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#12 extracting sha256:ef49c20a7b35aa995683f311510d35d77e203a2204f84de14a71a6d726e6af73 0.4s done
+#12 extracting sha256:bf7a4185f01524837d19abde915ffde84e64368b250f5b5e9f6f75aea62a11d4 0.0s done
+#12 extracting sha256:2780920e5dbfbe103d03a583ed75345306e572ec5a48cb10361f046767d9f29a done
+#12 DONE 1.6s
+
+#10 [linux/amd64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#10 sha256:d3178a7b27090e22bc2464346d1cdc8f59d0fd7a241452e8148342edf3d0b1e9 126B / 126B 0.1s done
+#10 sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 74.07MB / 74.07MB 0.9s done
+#10 sha256:8371a51cbc44c1323f96695eaeaeeb1c44b2d30d138a279b348af5c18b2c5e24 282.45kB / 282.45kB 0.1s done
+#10 sha256:9824c27679d3b27c5e1cb00a73adb6f4f8d556994111c12db3c5d61a0c843df8 3.80MB / 3.80MB 0.2s done
+#10 extracting sha256:9824c27679d3b27c5e1cb00a73adb6f4f8d556994111c12db3c5d61a0c843df8 0.6s done
+#10 extracting sha256:8371a51cbc44c1323f96695eaeaeeb1c44b2d30d138a279b348af5c18b2c5e24 0.2s done
+#10 extracting sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3
+#10 ...
+
+#12 [linux/arm64 stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+#12 extracting sha256:7c12895b777bcaa8ccae0605b4de635b68fc32d60fa08f421dc3818bf55ee212 done
+#12 extracting sha256:3214acf345c0cc6bbdb56b698a41ccdefc624a09d6beb0d38b5de0b2303ecaf4 done
+#12 extracting sha256:52630fc75a18675c530ed9eba5f55eca09b03e91bd5bc15307918bbc1a7e7296 done
+#12 extracting sha256:dd64bf2dd177757451a98fcdc999a339c35dee5d9872d8f4dc69c8f3c4dd0112 done
+#12 extracting sha256:b839dfae01f66e15c6a8b63520557ed315bdfe036342fa7a0c537259f10d7a9a 0.0s done
+#12 extracting sha256:dcaa5a89b0ccda4b283e16d0b4d0891cd93d5fe05c6798f7806781a6a2d84354 done
+#12 extracting sha256:069d1e267530c2e681fbd4d481553b4d05f98082b18fafac86e7f12996dddd0b 0.0s done
+#12 DONE 1.7s
+
+#9 [linux/arm64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#9 extracting sha256:7d1a427e917c48b164eae3ec3692b4741f5de528261925d2e5efc62a43e5bfc4 0.4s done
+#9 extracting sha256:382d65ac76ebcbc7ba7ee0d232ae7afbec48e2b3b673983ac8ced522dabe3abb
+#9 extracting sha256:382d65ac76ebcbc7ba7ee0d232ae7afbec48e2b3b673983ac8ced522dabe3abb 5.4s done
+#9 extracting sha256:13eebdc497b76e3a8d650f3508406dd372001df44915970a80418896bf835077
+#9 extracting sha256:13eebdc497b76e3a8d650f3508406dd372001df44915970a80418896bf835077 0.1s done
+#9 extracting sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1
+#9 ...
+
+#10 [linux/amd64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#10 extracting sha256:d5791340ef181f05ef1e99760e4be81cb2008d99b2bc1e56b2faa9b6295d0ac3 5.4s done
+#10 extracting sha256:d3178a7b27090e22bc2464346d1cdc8f59d0fd7a241452e8148342edf3d0b1e9
+#10 extracting sha256:d3178a7b27090e22bc2464346d1cdc8f59d0fd7a241452e8148342edf3d0b1e9 0.0s done
+#10 extracting sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 done
+#10 DONE 6.8s
+
+#9 [linux/arm64 builder 1/7] FROM docker.io/library/golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f
+#9 extracting sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 done
+#9 DONE 6.8s
+
+#14 [linux/amd64 builder 2/7] RUN apk add --no-cache git ca-certificates
+#14 0.146 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/main/x86_64/APKINDEX.tar.gz
+#14 0.492 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/community/x86_64/APKINDEX.tar.gz
+#14 1.424 (1/12) Installing brotli-libs (1.1.0-r2)
+#14 1.475 (2/12) Installing c-ares (1.34.6-r0)
+#14 1.498 (3/12) Installing libunistring (1.3-r0)
+#14 1.558 (4/12) Installing libidn2 (2.3.7-r0)
+#14 1.576 (5/12) Installing nghttp2-libs (1.65.0-r0)
+#14 1.592 (6/12) Installing libpsl (0.21.5-r3)
+#14 1.606 (7/12) Installing zstd-libs (1.5.7-r0)
+#14 1.638 (8/12) Installing libcurl (8.14.1-r2)
+#14 1.673 (9/12) Installing libexpat (2.7.5-r0)
+#14 1.691 (10/12) Installing pcre2 (10.46-r0)
+#14 1.725 (11/12) Installing git (2.49.1-r0)
+#14 1.920 (12/12) Installing git-init-template (2.49.1-r0)
+#14 1.938 Executing busybox-1.37.0-r18.trigger
+#14 1.957 OK: 20 MiB in 29 packages
+#14 DONE 4.1s
+
+#15 [linux/arm64 builder 2/7] RUN apk add --no-cache git ca-certificates
+#15 0.751 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/main/aarch64/APKINDEX.tar.gz
+#15 2.228 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/community/aarch64/APKINDEX.tar.gz
+#15 ...
+
+#16 [linux/amd64 builder 3/7] WORKDIR /src
+#16 DONE 0.0s
+
+#17 [linux/amd64 builder 4/7] COPY go.mod go.sum* ./
+#17 DONE 0.0s
+
+#18 [linux/amd64 builder 5/7] RUN go mod download || true
+#18 0.080 go: go.mod requires go >= 1.25.0 (running go 1.23.12; GOTOOLCHAIN=local)
+#18 DONE 0.1s
+
+#19 [linux/amd64 builder 6/7] COPY . .
+#19 DONE 0.1s
+
+#20 [linux/amd64 builder 7/7] RUN CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags "-s -w         -X github.com/teo-dev/teo/internal/version.Version=main         -X github.com/teo-dev/teo/internal/version.Commit=1d74d69b21fed3a64a82a1233e045eff9ef149a6         -X github.com/teo-dev/teo/internal/version.Date=2026-05-02T14:02:00-05:00"       -o /out/service       ./cmd/worker
+#20 0.084 go: go.mod requires go >= 1.25.0 (running go 1.23.12; GOTOOLCHAIN=local)
+#20 ERROR: process "/bin/sh -c CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags \"-s -w         -X github.com/teo-dev/teo/internal/version.Version=${VERSION}         -X github.com/teo-dev/teo/internal/version.Commit=${COMMIT}         -X github.com/teo-dev/teo/internal/version.Date=${DATE}\"       -o /out/service       ./cmd/${SERVICE}" did not complete successfully: exit code: 1
+
+#15 [linux/arm64 builder 2/7] RUN apk add --no-cache git ca-certificates
+#15 CANCELED
+------
+ > [linux/amd64 builder 7/7] RUN CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags "-s -w         -X github.com/teo-dev/teo/internal/version.Version=main         -X github.com/teo-dev/teo/internal/version.Commit=1d74d69b21fed3a64a82a1233e045eff9ef149a6         -X github.com/teo-dev/teo/internal/version.Date=2026-05-02T14:02:00-05:00"       -o /out/service       ./cmd/worker:
+0.084 go: go.mod requires go >= 1.25.0 (running go 1.23.12; GOTOOLCHAIN=local)
+------
+Dockerfile:19
+--------------------
+  18 |
+  19 | >>> RUN CGO_ENABLED=0 GOOS=linux \
+  20 | >>>     go build \
+  21 | >>>       -trimpath \
+  22 | >>>       -ldflags "-s -w \
+  23 | >>>         -X github.com/teo-dev/teo/internal/version.Version=${VERSION} \
+  24 | >>>         -X github.com/teo-dev/teo/internal/version.Commit=${COMMIT} \
+  25 | >>>         -X github.com/teo-dev/teo/internal/version.Date=${DATE}" \
+  26 | >>>       -o /out/service \
+  27 | >>>       ./cmd/${SERVICE}
+  28 |
+--------------------
+ERROR: failed to build: failed to solve: process "/bin/sh -c CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags \"-s -w         -X github.com/teo-dev/teo/internal/version.Version=${VERSION}         -X github.com/teo-dev/teo/internal/version.Commit=${COMMIT}         -X github.com/teo-dev/teo/internal/version.Date=${DATE}\"       -o /out/service       ./cmd/${SERVICE}" did not complete successfully: exit code: 1
+Reference
+Check build summary support
+Error: buildx failed with: ERROR: failed to build: failed to solve: process "/bin/sh -c CGO_ENABLED=0 GOOS=linux     go build       -trimpath       -ldflags \"-s -w         -X github.com/teo-dev/teo/internal/version.Version=${VERSION}         -X github.com/teo-dev/teo/internal/version.Commit=${COMMIT}         -X github.com/teo-dev/teo/internal/version.Date=${DATE}\"       -o /out/service       ./cmd/${SERVICE}" did not complete successfully: exit code: 1

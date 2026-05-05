@@ -78,6 +78,13 @@ func loadFiles(dir string) ([]File, error) {
 
 // Up applies all unapplied up migrations to the backend at dsn.
 // dir is the parent migrations directory; subdirectory <backend>/ is read.
+//
+// Atomicity: Postgres migrations run in a single transaction (DDL + the
+// schema_migrations row commit together) so a process kill mid-apply rolls
+// back cleanly. ClickHouse DDL is not transactional — a kill mid-statement
+// can leave a partially-applied schema with no schema_migrations row, which
+// the next Up will retry. Author ClickHouse migrations to be idempotent
+// (CREATE TABLE IF NOT EXISTS, etc.) to keep retries safe.
 func Up(b Backend, dsn, dir string) error {
 	subdir := filepath.Join(dir, string(b))
 	files, err := loadFiles(subdir)
@@ -107,11 +114,59 @@ func Up(b Backend, dsn, dir string) error {
 			continue
 		}
 		fmt.Printf("[migrate %s] applying %s\n", b, f.Name)
-		if err := applyMigration(b, driver, f); err != nil {
+		if err := applyAndRecord(b, driver, f); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// applyAndRecord applies one migration and records its version. For Postgres
+// these run in a single transaction — partial application is impossible. For
+// ClickHouse the two run sequentially without a transaction (the engine
+// doesn't support DDL transactions); a crash between them leaves the
+// migration applied but unrecorded, which the next Up retries idempotently.
+func applyAndRecord(b Backend, db *sql.DB, f File) error {
+	if b == Postgres {
+		tx, err := db.Begin()
+		if err != nil {
+			return fmt.Errorf("begin tx for %s: %w", f.Name, err)
+		}
+		// On any failure below, Rollback. On success we Commit explicitly and
+		// the deferred Rollback becomes a no-op.
+		defer tx.Rollback()
+		if err := applyMigrationTx(tx, f); err != nil {
 			return fmt.Errorf("apply %s: %w", f.Name, err)
 		}
-		if err := recordVersion(b, driver, f.Version, f.Name); err != nil {
+		if _, err := tx.Exec(
+			`INSERT INTO teo.schema_migrations (version, name) VALUES ($1, $2)`,
+			f.Version, f.Name); err != nil {
 			return fmt.Errorf("record %s: %w", f.Name, err)
+		}
+		if err := tx.Commit(); err != nil {
+			return fmt.Errorf("commit %s: %w", f.Name, err)
+		}
+		return nil
+	}
+	// ClickHouse: non-atomic path.
+	if err := applyMigration(b, db, f); err != nil {
+		return fmt.Errorf("apply %s: %w", f.Name, err)
+	}
+	if err := recordVersion(b, db, f.Version, f.Name); err != nil {
+		return fmt.Errorf("record %s: %w", f.Name, err)
+	}
+	return nil
+}
+
+// applyMigrationTx is the transaction-aware variant of applyMigration.
+func applyMigrationTx(tx *sql.Tx, f File) error {
+	stmts := splitSQL(f.Contents)
+	for i, stmt := range stmts {
+		if strings.TrimSpace(stmt) == "" {
+			continue
+		}
+		if _, err := tx.Exec(stmt); err != nil {
+			return fmt.Errorf("statement %d %q: %w", i+1, firstLine(stmt), err)
 		}
 	}
 	return nil
