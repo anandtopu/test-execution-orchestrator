@@ -4,9 +4,13 @@
 **Build status:** ✅ `go build ./...` clean · ✅ 25 Go unit packages green · ✅ 38 integration tests under `-tags=integration` (testcontainers Postgres for GraphQL + run-intake + run-export + cost resolvers; testcontainers MinIO for the logstore S3 round-trip; runs in CI) · 6 frontend test files (Vitest, runs in CI)
 **Reading order:** [PRD](PRD.md) → [Architecture overview](docs/architecture/overview.md) → [ADR-0012 scope](docs/adr/0012-mvp-scope-cut.md) → this file.
 
-> **▶ Resume here next session.** v1.0.0 is functionally release-ready: every epic and FR is ✅. **Cut v1.0.0** — goreleaser workflow verified, protoc-gen-go wiring landed, no known blockers. `goreleaser release --snapshot --clean --skip=sign,sbom,announce` against v2.15.4 produces all 7 services × linux/darwin amd64/arm64 + windows for the `teo` CLI, plus tar.gz/zip archives + checksums.txt (~90s locally). Remaining steps to ship: draft release notes from `CHANGELOG.md`'s `[Unreleased]` block, run a restore drill against staging per `docs/operations/restore-drill.md`, then `git tag v1.0.0 && git push --tags` — `release.yml` takes it from there.
+> **▶ Resume here next session.** v1.0.0 is functionally release-ready: every epic and FR is ✅, the post-v1.0 unit-coverage sweep landed (25 packages green), and `docs/release-notes/v1.0.0.md` is drafted and current. Goreleaser workflow verified end-to-end (`goreleaser release --snapshot --clean --skip=sign,sbom,announce` against v2.15.4 produces all 7 services × linux/darwin amd64/arm64 + windows for the `teo` CLI, plus tar.gz/zip archives + checksums.txt in ~90s locally), protoc-gen-go wiring landed, no known blockers.
 >
-> Recommendation: option 2 unless someone needs binary-protobuf gRPC for an external integration today.
+> Two manual steps remain to ship — both require human authorization:
+> 1. **Run the restore drill** against staging per [`docs/operations/restore-drill.md`](docs/operations/restore-drill.md) and record the outcome in the runbook's history log.
+> 2. **Tag and push:** `git tag v1.0.0 && git push --tags` — `release.yml` then runs goreleaser (binaries + cosign + Syft SBOMs) and chart-releaser (Helm chart published to gh-pages). After GitHub creates the Release, paste `docs/release-notes/v1.0.0.md` into the description.
+>
+> At tag time, also roll the `[Unreleased]` block in `CHANGELOG.md` under `## [v1.0.0] — <YYYY-MM-DD>`.
 
 This is the single source of truth for implementation status. Every entry links to the code or doc it tracks. Status legend:
 
