@@ -45,7 +45,9 @@
       "Bash(powershell -NoProfile -Command \"Get-ChildItem -Recurse -Path 'internal/proto/teov1' -Filter '*.pb.go' | Select-Object Name,Length\")",
       "Bash(powershell -NoProfile -Command \"Get-ChildItem -Recurse -Path 'proto' -Filter '*.proto' | Select-Object FullName\")",
       "Bash(helm version *)",
-      "Bash(helm template *)"
+      "Bash(helm template *)",
+      "PowerShell(go test *)",
+      "PowerShell(go *)"
     ]
   }
 }

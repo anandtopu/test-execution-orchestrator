@@ -1,6 +1,6 @@
 # TEO — Implementation Progress
 
-**Last updated:** 2026-05-04 (post-v1.0 coverage sweep — gotest/jest/quarantine + db/audit/predictor unit tests landed)
+**Last updated:** 2026-05-05 (Gap #5 GraphQL authz gate landed; FR-106 / Gap #5 statuses reconciled to ✅; `internal/nats` unit-tested; `tasks.md` T-07-* row reconciled to ✅)
 **Build status:** ✅ `go build ./...` clean · ✅ 25 Go unit packages green · ✅ 38 integration tests under `-tags=integration` (testcontainers Postgres for GraphQL + run-intake + run-export + cost resolvers; testcontainers MinIO for the logstore S3 round-trip; runs in CI) · 6 frontend test files (Vitest, runs in CI)
 **Reading order:** [PRD](PRD.md) → [Architecture overview](docs/architecture/overview.md) → [ADR-0012 scope](docs/adr/0012-mvp-scope-cut.md) → this file.
 
@@ -54,7 +54,7 @@ These were called out as the realistic gaps after the E-01..E-16 sweep, and are 
 | 2 | NATS dispatch + worker subscriber | ✅ | [`internal/nats/`](internal/nats), [`internal/worker/nats.go`](internal/worker/nats.go), publish path in [`internal/runmanager/manager.go`](internal/runmanager/manager.go) |
 | 3 | gRPC server in cmd/api | ✅ | [`internal/grpcsvc/workers.go`](internal/grpcsvc/workers.go) embeds `teov1.UnimplementedWorkersServer` from [`internal/proto/teov1/`](internal/proto/teov1) (binary protobuf wire format); generation wired via [`proto/buf.yaml`](proto/buf.yaml) + [`proto/buf.gen.yaml`](proto/buf.gen.yaml) and the `make proto` target. JSON codec deleted. |
 | 4 | Real ClickHouse query in predictor trainer | ✅ | [`services/predictor-ml/src/teo_predictor_ml/train.py`](services/predictor-ml/src/teo_predictor_ml/train.py) |
-| 5 | GraphQL read API | 🟡 | [`internal/api/graphql.go`](internal/api/graphql.go) — endpoint live, schema served at `/graphql/schema`. **UI not yet swapped to GraphQL**; **route inherits auth middleware but doesn't enforce role check**. |
+| 5 | GraphQL read API | ✅ | [`internal/api/graphql.go`](internal/api/graphql.go) — endpoint live, schema served at `/graphql/schema`. UI swap landed under E-09 (zero `/api/v1/*` REST calls in `web/src/app/`). **Authz now enforced**: route returns 401 for missing principal, 403 for principals with no role; the `rerunFailed` mutation gates on `RoleEngineer`/`RoleAdmin` via the new `requireMutationRole` helper, so read-only browsers can read but cannot mutate. |
 | 6 | Lint sweep | ✅ | `slices.Contains`, `strings.CutPrefix`/`CutSuffix`, builtin `max`/`min`, `any` over `interface{}`, dead helpers removed. |
 
 ---
@@ -66,7 +66,7 @@ Each FR from [`docs/requirements/functional.md`](docs/requirements/functional.md
 ### FR-100 Run intake
 - ✅ FR-101..104: create/cancel via REST, idempotency via `Idempotency-Key`
 - ✅ FR-105: budget enforcement loop in Run Manager
-- 🟡 FR-106: `pytest` + `go test` + `jest` adapters present, runner-image variants in chart
+- ✅ FR-106: `pytest` + `go test` + `jest` adapters present (E-14); runner-image variants wired into the Helm chart at [`deploy/helm/teo/values.yaml`](deploy/helm/teo/values.yaml) (`workers.runners.{pytest,gotest,jest}.image`)
 
 ### FR-200 Test discovery & manifest
 - ✅ FR-201..204: pytest discovery with `--collect-only`, manifest schema in `internal/model`
@@ -164,6 +164,10 @@ ok  internal/digest                    (SMTP MIME composition, ctx cancel, Slack
 ok  internal/flake                     (Wilson textbook, classify states)
 ok  internal/github                    (HMAC verify valid + tampered + malformed)
 ok  internal/migrate                   (statement splitting)
+ok  internal/nats                      (Connect("") → ErrUnavailable; ShardDispatch
+                                        JSON wire format incl. time.Time round-trip
+                                        + omitempty optional fields; subject/stream
+                                        constants pinned)
 ok  internal/redact                    (AWS keys, JWTs, PATs scrubbed; clean text untouched)
 ok  internal/resultpipeline            (Python fingerprint stable across line-numbers; OTLP attr/status mapping)
 ok  internal/runmanager                (state transitions, terminal detection)
@@ -185,7 +189,7 @@ ok  pkg/adapter/template               (SPI invariants: Name non-empty, empty-te
                                         no-op, unknown-status → errored, mergeEnv)
 ```
 
-**Now covered by integration tests** (`-tags=integration`): `internal/api/graphql_resolvers.go` (every read resolver + the rerunFailed mutation, against a real Postgres), full `/graphql` HTTP roundtrip via `api.Server`, **run-export REST endpoints** (JUnit XML happy-path + mixed-outcome shape, OTLP+JSON happy-path with stubbed SpanQuerier, 400/404/501 negative paths), **run-intake REST endpoints** (`internal/api/runs.go` Create/Get/Cancel — happy paths, validation, idempotency-key replay returns same id, auth-required 401, unknown-repo 404, terminal-run cancel idempotent), **logstore S3 round-trip against MinIO** (small body via single PUT, >16MB body promoted to multipart by transfermanager, same-key overwrite — uses a dedicated `internal/testminio.Start` testcontainer harness). **Still uncovered (all leaf packages):** `internal/config` (struct definitions only), `internal/grpcsvc` (thin gRPC service wrappers), `internal/model` (data types), `internal/nats` (client wrapper). The DB-backed code paths in `internal/audit`, `internal/db`, `internal/predictor`, `internal/quarantine` daemons remain integration-tier — the harnesses in `internal/testpg/` and `internal/testminio/` make those follow-ups straightforward.
+**Now covered by integration tests** (`-tags=integration`): `internal/api/graphql_resolvers.go` (every read resolver + the rerunFailed mutation, against a real Postgres), full `/graphql` HTTP roundtrip via `api.Server`, **run-export REST endpoints** (JUnit XML happy-path + mixed-outcome shape, OTLP+JSON happy-path with stubbed SpanQuerier, 400/404/501 negative paths), **run-intake REST endpoints** (`internal/api/runs.go` Create/Get/Cancel — happy paths, validation, idempotency-key replay returns same id, auth-required 401, unknown-repo 404, terminal-run cancel idempotent), **logstore S3 round-trip against MinIO** (small body via single PUT, >16MB body promoted to multipart by transfermanager, same-key overwrite — uses a dedicated `internal/testminio.Start` testcontainer harness). **`internal/nats`** is now unit-tested for the broker-free surface: empty-URL `Connect` returns `ErrUnavailable`, `ShardDispatch` JSON wire format pinned (field tags + `time.Time` round-trip + `omitempty` on optional `DispatchTest` fields), and the five subject/stream constants are pinned against accidental rename. The `Connect`/`EnsureStreams`/`Publish` paths that need a live broker remain integration-tier. **Still uncovered (all leaf packages):** `internal/config` (struct definitions only), `internal/grpcsvc` (thin gRPC service wrappers), `internal/model` (data types). The DB-backed code paths in `internal/audit`, `internal/db`, `internal/predictor`, `internal/quarantine` daemons remain integration-tier — the harnesses in `internal/testpg/` and `internal/testminio/` make those follow-ups straightforward.
 
 ---
 

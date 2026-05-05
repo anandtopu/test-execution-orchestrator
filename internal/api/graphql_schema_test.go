@@ -9,7 +9,19 @@ import (
 	"testing"
 
 	"github.com/graphql-go/graphql"
+
+	"github.com/teo-dev/teo/internal/auth"
 )
+
+// engineerCtx returns a context carrying an engineer-role principal — the
+// minimum credential needed to clear requireMutationRole and exercise the
+// mutation's argument-validation path in tests.
+func engineerCtx() context.Context {
+	return auth.WithPrincipal(context.Background(), &auth.Principal{
+		UserID: "test-user",
+		Roles:  []auth.Role{auth.RoleEngineer},
+	})
+}
 
 // buildSchema requires a *pgxpool.Pool but for schema-shape tests we never
 // invoke the resolvers that touch DB; passing nil is safe as long as the
@@ -146,15 +158,70 @@ func TestRunTypeResolvesFromMapSource(t *testing.T) {
 }
 
 // TestRerunFailedRequiresRunID verifies the mutation rejects empty IDs at the
-// resolver layer (defense in depth — graphql.NonNull also catches it).
+// resolver layer (defense in depth — graphql.NonNull also catches it). An
+// engineer-role principal is injected so the test exercises the runId path
+// rather than the role gate added in 2026-05-05.
 func TestRerunFailedRequiresRunID(t *testing.T) {
 	schema := buildSchema(nil)
 	res := graphql.Do(graphql.Params{
 		Schema:        schema,
-		Context:       context.Background(),
+		Context:       engineerCtx(),
 		RequestString: `mutation { rerunFailed(runId: "") { id } }`,
 	})
 	if len(res.Errors) == 0 {
 		t.Fatal("expected error for empty runId")
+	}
+	if !strings.Contains(res.Errors[0].Message, "runId is required") {
+		t.Fatalf("expected runId-required error, got %q", res.Errors[0].Message)
+	}
+}
+
+// TestRequireMutationRole covers the gate directly, decoupled from any
+// resolver. Read-only and unauthenticated principals are forbidden; engineers
+// and admins pass.
+func TestRequireMutationRole(t *testing.T) {
+	cases := []struct {
+		name   string
+		ctx    context.Context
+		wantOK bool
+	}{
+		{name: "no_principal", ctx: context.Background(), wantOK: false},
+		{name: "read_only", ctx: auth.WithPrincipal(context.Background(),
+			&auth.Principal{Roles: []auth.Role{auth.RoleReadOnly}}), wantOK: false},
+		{name: "engineer", ctx: auth.WithPrincipal(context.Background(),
+			&auth.Principal{Roles: []auth.Role{auth.RoleEngineer}}), wantOK: true},
+		{name: "admin", ctx: auth.WithPrincipal(context.Background(),
+			&auth.Principal{Roles: []auth.Role{auth.RoleAdmin}}), wantOK: true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := requireMutationRole(tc.ctx)
+			if tc.wantOK && err != nil {
+				t.Fatalf("expected nil err, got %v", err)
+			}
+			if !tc.wantOK && err == nil {
+				t.Fatal("expected forbidden, got nil")
+			}
+		})
+	}
+}
+
+// TestRerunFailedRejectsReadOnlyPrincipal locks in the resolver-layer guard:
+// even with a valid runId arg, a read-only principal must be rejected before
+// any DB call is made (proven by passing a nil pool).
+func TestRerunFailedRejectsReadOnlyPrincipal(t *testing.T) {
+	schema := buildSchema(nil)
+	ctx := auth.WithPrincipal(context.Background(),
+		&auth.Principal{Roles: []auth.Role{auth.RoleReadOnly}})
+	res := graphql.Do(graphql.Params{
+		Schema:        schema,
+		Context:       ctx,
+		RequestString: `mutation { rerunFailed(runId: "abc") { id } }`,
+	})
+	if len(res.Errors) == 0 {
+		t.Fatal("expected forbidden error for read_only")
+	}
+	if !strings.Contains(res.Errors[0].Message, "forbidden") {
+		t.Fatalf("expected forbidden error, got %q", res.Errors[0].Message)
 	}
 }

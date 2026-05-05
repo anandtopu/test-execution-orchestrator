@@ -15,7 +15,7 @@ Tasks are concrete enough to estimate (each ≤ 2 days). Each task references it
 | **T-04-* Run Manager** | ✅ all complete | Leader-election chaos test runs locally; CI integration test pending |
 | **T-05-* Scheduler** | ✅ all complete | LPT + property test against brute-force optimum land; plan-persist works |
 | **T-06-* Worker** | ✅ all complete | pytest adapter executes; redactor verified |
-| **T-07-* Result pipeline** | ✅ T-07-01-* (OTLP); ✅ T-07-02-* (clustering); ⏳ T-07-03-* (REST export endpoints not yet wired) | |
+| **T-07-* Result pipeline** | ✅ all complete | OTLP receiver, failure clustering, and REST export endpoints (`GET /api/v1/runs/{id}/export?format={junit\|otlp}`) all wired and integration-tested |
 | **T-08-* Flake detection** | ✅ all complete | Wilson math verified against textbook |
 | **T-09-* Web UI** | ✅ all complete | All four pages migrated to GraphQL; LiveRunShards polls every 2s with auto-stop on terminal; rerun-failed flow wired with Next API proxy; six Vitest files covering helpers, queries, components, and timer behaviour |
 | **T-10-* GitHub** | ✅ all complete | webhook + Checks + Issues clients, RunObserver pattern in Manager, CheckObserver creates/updates/finalizes, top-3 cluster Markdown summary, schema migration 003 for check-run linkage |

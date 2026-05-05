@@ -14,14 +14,15 @@ The repo is driven by `Makefile`. All commands assume the working dir is the rep
 
 ```bash
 make build              # compile all 7 services into bin/
-make test               # full test suite with -race -count=1 (unit only by default)
-make test-short         # -short flag, faster local loop
-make test-integration   # -tags=integration, requires Docker (testcontainers spins up Postgres + MinIO)
+make test               # full test suite with -race -count=1 -timeout 120s (unit only by default)
+make test-short         # -short flag, -timeout 60s, faster local loop
+make test-integration   # -tags=integration, -timeout 10m, requires Docker (testcontainers spins up Postgres + MinIO)
 make lint               # golangci-lint v2.x; v1.x configs are rejected
 make fmt                # gofmt + goimports (-local github.com/teo-dev/teo)
 make licenses           # blocks AGPL/GPL transitively (go-licenses)
 make proto              # regenerate internal/proto/teov1/*.pb.go via buf (requires buf + protoc-gen-go + protoc-gen-go-grpc)
 make all                # lint + test + build
+make help               # enumerate every Makefile target
 ```
 
 Single-package or single-test runs:
@@ -54,7 +55,7 @@ pytest
 
 The `make migrate` target is a leftover no-op stub from before E-02 landed — **don't trust it**. Migrations are run via the CLI: `bin/teo migrate up` / `bin/teo migrate status` (driven by `internal/migrate`).
 
-**Windows:** the Makefile pins `SHELL := /usr/bin/env bash`, so `make` requires bash (Git Bash or WSL). From raw PowerShell, fall back to the underlying tooling directly: `go build ./cmd/<svc>`, `go test -race -count=1 ./...`, `golangci-lint run ./...`.
+**Windows:** the Makefile pins `SHELL := /usr/bin/env bash`, so `make` requires bash (Git Bash or WSL). From raw PowerShell, fall back to the underlying tooling directly: `go build ./cmd/<svc>`, `go test -race -count=1 ./...`, `golangci-lint run ./...`. Built binaries land in `bin/` with a `.exe` suffix — the CLI is `bin/teo.exe migrate up`, not `bin/teo migrate up`.
 
 ## Toolchain pins (these matter)
 

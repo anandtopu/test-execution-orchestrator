@@ -16,8 +16,13 @@ import (
 func graphqlHandler(pool *pgxpool.Pool) http.Handler {
 	schema := buildSchema(pool)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if auth.PrincipalFrom(r.Context()) == nil {
+		p := auth.PrincipalFrom(r.Context())
+		if p == nil {
 			writeProblem(w, http.StatusUnauthorized, "Unauthorized", "authentication required")
+			return
+		}
+		if len(p.Roles) == 0 {
+			writeProblem(w, http.StatusForbidden, "Forbidden", "principal has no role")
 			return
 		}
 		var req struct {
@@ -196,6 +201,9 @@ func buildSchema(pool *pgxpool.Pool) graphql.Schema {
 					"runId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 				},
 				Resolve: func(p graphql.ResolveParams) (any, error) {
+					if err := requireMutationRole(p.Context); err != nil {
+						return nil, err
+					}
 					runID, _ := p.Args["runId"].(string)
 					if runID == "" {
 						return nil, errInvalidRunID

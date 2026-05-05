@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/teo-dev/teo/internal/auth"
 	"github.com/teo-dev/teo/internal/cost"
 )
 
@@ -18,6 +19,21 @@ var errInvalidRunID = errors.New("runId is required")
 
 // errNoFailures is returned by rerunFailed when the parent run has nothing to retry.
 var errNoFailures = errors.New("parent run has no failed tests to rerun")
+
+// errForbiddenMutation is returned when an authenticated principal lacks the
+// engineer/admin role required to invoke a state-changing mutation.
+var errForbiddenMutation = errors.New("forbidden: requires engineer or admin role")
+
+// requireMutationRole gates state-changing GraphQL fields. The /graphql route
+// handler is responsible for returning 401 on missing principals (this helper
+// returns the same forbidden envelope as a defense-in-depth fallback).
+func requireMutationRole(ctx context.Context) error {
+	p := auth.PrincipalFrom(ctx)
+	if p == nil || !p.HasRole(auth.RoleEngineer, auth.RoleAdmin) {
+		return errForbiddenMutation
+	}
+	return nil
+}
 
 func queryRuns(ctx context.Context, pool *pgxpool.Pool, first int) ([]map[string]any, error) {
 	rows, err := pool.Query(ctx, `
