@@ -285,14 +285,18 @@ func (a *Agent) recordResult(ctx context.Context, runID, shardID string, r adapt
         SELECT repo_id FROM teo.runs WHERE id = $1
     `, runID).Scan(&repoID)
 
-	fingerprint := r.Test.Path + "::" + r.Test.Name + "::" + r.Test.ParamsHash
+	// Fingerprint folds in the AST signature (S-14-01 / S-06-01): a test whose
+	// body changes gets a distinct identity (and fresh flake history) rather than
+	// silently inheriting the old body's stats. Always 4 parts so the format is
+	// stable even when astSig is empty (jest, or an adapter that couldn't parse).
+	fingerprint := r.Test.Path + "::" + r.Test.Name + "::" + r.Test.ParamsHash + "::" + r.Test.ASTSignature
 	var testID string
 	err := a.Pool.QueryRow(ctx, `
-        INSERT INTO teo.tests (repo_id, fingerprint, path, name, params_hash, runner, status)
-        VALUES ($1, $2, $3, $4, $5, $6, 'active')
+        INSERT INTO teo.tests (repo_id, fingerprint, path, name, params_hash, ast_signature, runner, status)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, 'active')
         ON CONFLICT (repo_id, fingerprint) DO UPDATE SET last_seen = now()
         RETURNING id
-    `, repoID, fingerprint, r.Test.Path, r.Test.Name, r.Test.ParamsHash, a.Adapter.Name()).Scan(&testID)
+    `, repoID, fingerprint, r.Test.Path, r.Test.Name, r.Test.ParamsHash, r.Test.ASTSignature, a.Adapter.Name()).Scan(&testID)
 	if err != nil {
 		a.Logger.Error("upsert test failed", "err", err)
 		return

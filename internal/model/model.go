@@ -31,10 +31,16 @@ const (
 
 // TestEntry is one test in a manifest.
 type TestEntry struct {
-	Path       string   `json:"path"`
-	Name       string   `json:"name"`
-	ParamsHash string   `json:"params_hash,omitempty"`
-	Tags       []string `json:"tags,omitempty"`
+	Path       string `json:"path"`
+	Name       string `json:"name"`
+	ParamsHash string `json:"params_hash,omitempty"`
+	// ASTSignature is a normalized hash of the test function's body, computed at
+	// discovery (go/ast for Go, the ast module for pytest; empty for runners
+	// without AST support, e.g. jest at v1.0). It is folded into the test
+	// fingerprint so a body change yields a distinct identity, and persisted to
+	// teo.tests.ast_signature for future move/rename linking. S-14-01 / S-06-01.
+	ASTSignature string   `json:"ast_signature,omitempty"`
+	Tags         []string `json:"tags,omitempty"`
 }
 
 // TestManifest is the runner-specific list of tests submitted with a run.

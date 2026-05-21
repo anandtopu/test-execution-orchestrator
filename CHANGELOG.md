@@ -8,6 +8,17 @@ For a finer-grained per-FR / per-epic implementation status, see [`progress.md`]
 
 ## [Unreleased]
 
+### Added — AST-signature fingerprints + `teo discover` (#3, #4)
+
+Continues the 2026-05-20 backlog-reconciliation fixes: tests now carry a normalized AST signature so a body change yields a distinct test identity (and fresh flake history) instead of silently inheriting the old body's stats.
+
+- **Go AST signature (#3, S-14-01 AC4).** `pkg/adapter/gotest/astsig.go` parses each package's test files via `go/ast` (located through `go list -f`) and hashes the normalized function body — stable across reformatting and comment edits, changing when the logic changes. Attached to `model.TestEntry.ASTSignature` during `Discover`.
+- **Python AST signature (#4, T-06-01-03).** `pkg/adapter/pytest/astsig.go` runs an embedded `ast`-module helper over the discovered files, hashing each test's body (module-level `test_*` functions and `test_*` methods of `Test*` classes, keyed to match pytest nodeids). Best-effort: empty signature if no Python interpreter is present. Jest stays signature-less (deferred to v1.5 per S-14-02 AC3).
+- **Fingerprint + persistence.** The worker fingerprint is now `path::name::paramsHash::astSig`. `model.TestEntry.ASTSignature` and `nats.DispatchTest.ASTSignature` carry it through both worker claim paths (Postgres SKIP-LOCKED and NATS dispatch); migration **006** adds `teo.tests.ast_signature` with a partial index for future move/rename linking.
+- **`teo discover --runner <r> [dir]` (closes S-06-01 AC1).** New CLI that runs a runner adapter's discovery (computing AST signatures) and emits a manifest JSON for the `manifest` field of `POST /api/v1/runs` — the production producer of fingerprints. Previously there was no `teo discover` command and `Discover` had no non-test caller.
+
+Verification: `go build ./...` clean; `go test ./...` green (Go AST tests incl. an end-to-end temp-module case; Python AST tests run against the local interpreter); `golangci-lint run` 0 issues on the new/edited files. A live `teo discover --runner go ./internal/version` emits populated `ast_signature` values.
+
 ### Added — Backlog reconciliation fixes: replay CLI, log-tail viewer, OIDC sign-in (#1, #5, #6)
 
 A 2026-05-20 code audit found 12 backlog items marked ✅ in `progress.md` that were not wired in code (see the "Backlog reconciliation" section there). Three of them are now implemented:

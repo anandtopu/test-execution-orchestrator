@@ -24,6 +24,9 @@ import (
 type Adapter struct {
 	// Bin is the pytest executable; defaults to "pytest".
 	Bin string
+	// PyBin is the Python interpreter used for AST-signature extraction;
+	// defaults to trying "python3" then "python".
+	PyBin string
 }
 
 // New returns a configured pytest adapter.
@@ -41,7 +44,18 @@ func (a *Adapter) Discover(ctx context.Context, workdir string) ([]model.TestEnt
 	if err != nil {
 		return nil, fmt.Errorf("pytest collect: %w (stderr: %s)", err, stderrOf(err))
 	}
-	return parseCollect(out), nil
+	entries := parseCollect(out)
+
+	// Attach AST signatures (S-06-01 / T-06-01-03). Best-effort: if Python is
+	// unavailable the entries keep an empty signature and discovery still works.
+	if sigs := a.astSignatures(ctx, workdir, distinctPaths(entries)); sigs != nil {
+		for i := range entries {
+			if byName, ok := sigs[entries[i].Path]; ok {
+				entries[i].ASTSignature = byName[entries[i].Name]
+			}
+		}
+	}
+	return entries, nil
 }
 
 // parseCollect handles the one-line-per-test format from `pytest -q --collect-only`.

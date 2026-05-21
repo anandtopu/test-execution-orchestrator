@@ -46,6 +46,10 @@ func (a *Adapter) Discover(ctx context.Context, workdir string) ([]model.TestEnt
 		}
 	}
 
+	// Parse test sources once for AST signatures (S-14-01 AC4). Best-effort:
+	// an empty map just means tests carry an empty signature.
+	sigs := a.astSignatures(ctx, workdir)
+
 	var tests []model.TestEntry
 	for _, pkg := range packages {
 		cmd := exec.CommandContext(ctx, a.bin(), "test", "-list", ".", pkg)
@@ -63,7 +67,7 @@ func (a *Adapter) Discover(ctx context.Context, workdir string) ([]model.TestEnt
 			if !strings.HasPrefix(t, "Test") && !strings.HasPrefix(t, "Benchmark") && !strings.HasPrefix(t, "Example") {
 				continue
 			}
-			tests = append(tests, model.TestEntry{Path: pkg, Name: t})
+			tests = append(tests, model.TestEntry{Path: pkg, Name: t, ASTSignature: sigs[pkg+"::"+t]})
 		}
 	}
 	return tests, nil

@@ -80,10 +80,11 @@ func (a *Agent) handleMessage(ctx context.Context, msg jetstream.Msg) {
 	tests := make([]model.TestEntry, 0, len(d.Tests))
 	for _, t := range d.Tests {
 		tests = append(tests, model.TestEntry{
-			Path:       t.Path,
-			Name:       t.Name,
-			ParamsHash: t.ParamsHash,
-			Tags:       t.Tags,
+			Path:         t.Path,
+			Name:         t.Name,
+			ParamsHash:   t.ParamsHash,
+			ASTSignature: t.ASTSignature,
+			Tags:         t.Tags,
 		})
 	}
 	a.Logger.Info("nats dispatch claimed", "shard", d.ShardID, "tests", len(tests))

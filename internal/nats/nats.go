@@ -35,10 +35,11 @@ type ShardDispatch struct {
 
 // DispatchTest is a slim TestEntry shape inside a dispatch message.
 type DispatchTest struct {
-	Path       string   `json:"path"`
-	Name       string   `json:"name"`
-	ParamsHash string   `json:"params_hash,omitempty"`
-	Tags       []string `json:"tags,omitempty"`
+	Path         string   `json:"path"`
+	Name         string   `json:"name"`
+	ParamsHash   string   `json:"params_hash,omitempty"`
+	ASTSignature string   `json:"ast_signature,omitempty"`
+	Tags         []string `json:"tags,omitempty"`
 }
 
 // Connect opens a NATS connection and a JetStream context.

@@ -375,10 +375,11 @@ func (m *Manager) publishShards(ctx context.Context, tx pgx.Tx, runID string, pl
 		}
 		for _, t := range a.Tests {
 			dispatch.Tests = append(dispatch.Tests, teonats.DispatchTest{
-				Path:       t.Entry.Path,
-				Name:       t.Entry.Name,
-				ParamsHash: t.Entry.ParamsHash,
-				Tags:       t.Entry.Tags,
+				Path:         t.Entry.Path,
+				Name:         t.Entry.Name,
+				ParamsHash:   t.Entry.ParamsHash,
+				ASTSignature: t.Entry.ASTSignature,
+				Tags:         t.Entry.Tags,
 			})
 		}
 		if err := teonats.Publish(ctx, m.JS, teonats.SubjShardsDispatch, dispatch); err != nil {
