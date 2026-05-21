@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -20,6 +21,8 @@ import (
 	"github.com/teo-dev/teo/internal/db"
 	teogithub "github.com/teo-dev/teo/internal/github"
 	"github.com/teo-dev/teo/internal/grpcsvc"
+	"github.com/teo-dev/teo/internal/logstore"
+	"github.com/teo-dev/teo/internal/oidc"
 	"github.com/teo-dev/teo/internal/resultpipeline"
 	"github.com/teo-dev/teo/internal/version"
 )
@@ -72,6 +75,22 @@ func main() {
 		apiOpts = append(apiOpts, api.WithClickHouseConn(chConn))
 	}
 
+	// Per-test log retrieval (S-09-03 / FR-703-704). Gated on TEO_S3_BUCKET
+	// being explicitly set — config defaults the bucket name, so checking the
+	// raw env (as the worker does) is what tells us logs are actually stored.
+	// Without it, /api/v1/runs/{id}/tests/{execId}/log returns 501.
+	if os.Getenv("TEO_S3_BUCKET") != "" {
+		store, err := logstore.NewS3(ctx, cfg.S3Region, cfg.S3Endpoint, cfg.S3Bucket)
+		if err != nil {
+			logger.Error("logstore init failed", "err", err)
+			os.Exit(1)
+		}
+		apiOpts = append(apiOpts, api.WithLogPresigner(store))
+		logger.Info("per-test log endpoint enabled", "bucket", cfg.S3Bucket)
+	} else {
+		logger.Warn("TEO_S3_BUCKET not set; per-test log endpoint will return 501")
+	}
+
 	// GitHub webhook receiver (FR-901..904). Only mounted when the secret is
 	// configured; without it, /webhooks/github returns 503 instead of
 	// silently accepting unverified traffic.
@@ -85,6 +104,37 @@ func main() {
 		logger.Info("github webhook enabled", "path", "/webhooks/github")
 	} else {
 		logger.Warn("TEO_GITHUB_WEBHOOK_SECRET not set; /webhooks/github will return 503")
+	}
+
+	// OIDC sign-in (FR-801, S-03-02). Enabled when issuer + client id are set.
+	// Discovery happens at startup; a misconfigured issuer fails fast rather
+	// than 500ing on the first sign-in attempt.
+	if cfg.OIDCIssuer != "" && cfg.OIDCClientID != "" {
+		// The redirect_uri must point at the API's own /auth/callback. In the
+		// standard same-origin deployment (UI + API behind one host, /auth/*
+		// proxied to the API) it can be derived from UIBaseURL; otherwise the
+		// operator sets TEO_OIDC_REDIRECT_URL explicitly to match the IdP.
+		redirect := cfg.OIDCRedirectURL
+		if redirect == "" && cfg.UIBaseURL != "" {
+			redirect = strings.TrimRight(cfg.UIBaseURL, "/") + "/auth/callback"
+		}
+		provider, err := oidc.NewProvider(ctx, oidc.Config{
+			IssuerURL:    cfg.OIDCIssuer,
+			ClientID:     cfg.OIDCClientID,
+			ClientSecret: cfg.OIDCClientSecret,
+			RedirectURL:  redirect,
+		}, nil)
+		if err != nil {
+			logger.Error("oidc discovery failed", "issuer", cfg.OIDCIssuer, "err", err)
+			os.Exit(1)
+		}
+		apiOpts = append(apiOpts,
+			api.WithOIDC(provider, cfg.UIBaseURL),
+			api.WithRoleResolver(api.DBRoleResolver(pool)),
+		)
+		logger.Info("oidc sign-in enabled", "issuer", cfg.OIDCIssuer, "redirect", redirect)
+	} else {
+		logger.Warn("TEO_OIDC_ISSUER/CLIENT_ID not set; /auth/* sign-in routes will return 503")
 	}
 
 	srv := api.New(api.Config{

@@ -25,6 +25,8 @@ func main() {
 		runMigrate(os.Args[2:])
 	case "digest":
 		runDigest(os.Args[2:])
+	case "replay":
+		runReplay(os.Args[2:])
 	case "doctor":
 		runDoctor(os.Args[2:])
 	case "help", "--help", "-h":
@@ -45,6 +47,7 @@ Usage:
 Commands:
   migrate     Apply database migrations
   digest      Render or send the owner digest (subcommands: dry-run)
+  replay      Re-run the scheduler for a run and verify the plan is deterministic
   doctor      Check connectivity to every TEO dependency
   version     Print build identity
   help        Print this help

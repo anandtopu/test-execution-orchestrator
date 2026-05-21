@@ -57,6 +57,39 @@ spec:
                   key: {{ .Values.auth.jwt.secretKey }}
             - name: TEO_JWT_TTL
               value: {{ .Values.auth.jwt.ttl | quote }}
+            {{- if .Values.storage.s3.bucket }}
+            - name: TEO_S3_BUCKET
+              value: {{ .Values.storage.s3.bucket | quote }}
+            - name: TEO_S3_REGION
+              value: {{ .Values.storage.s3.region | quote }}
+            {{- if .Values.storage.s3.endpoint }}
+            - name: TEO_S3_ENDPOINT
+              value: {{ .Values.storage.s3.endpoint | quote }}
+            {{- end }}
+            {{- end }}
+            {{- if and .Values.auth.oidc.enabled .Values.auth.oidc.issuerURL .Values.auth.oidc.clientID }}
+            - name: TEO_OIDC_ISSUER
+              value: {{ .Values.auth.oidc.issuerURL | quote }}
+            - name: TEO_OIDC_CLIENT_ID
+              value: {{ .Values.auth.oidc.clientID | quote }}
+            - name: TEO_OIDC_CLIENT_SECRET
+              {{- if .Values.auth.oidc.clientSecretName }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.auth.oidc.clientSecretName }}
+                  key: {{ .Values.auth.oidc.clientSecretKey }}
+              {{- else }}
+              value: {{ .Values.auth.oidc.clientSecret | quote }}
+              {{- end }}
+            {{- if .Values.auth.oidc.uiBaseURL }}
+            - name: TEO_UI_BASE_URL
+              value: {{ .Values.auth.oidc.uiBaseURL | quote }}
+            {{- end }}
+            {{- if .Values.auth.oidc.redirectURL }}
+            - name: TEO_OIDC_REDIRECT_URL
+              value: {{ .Values.auth.oidc.redirectURL | quote }}
+            {{- end }}
+            {{- end }}
           readinessProbe:
             httpGet: { path: /readyz, port: http }
             periodSeconds: 5

@@ -17,10 +17,33 @@ auth:
     secretKey: "jwt-secret"
     ttl: "1h"
   oidc:
+    # When enabled with issuerURL + clientID, the API mounts the /auth/* sign-in
+    # routes (FR-801, S-03-02). Otherwise those routes return 503.
     enabled: true
-    issuerURL: ""        # operator-supplied
+    issuerURL: ""        # operator-supplied, e.g. https://teo.example.com/dex
     clientID: ""
+    # Client secret: provide inline (clientSecret) OR reference an existing
+    # Secret (clientSecretName/clientSecretKey takes precedence if set).
     clientSecret: ""
+    clientSecretName: ""
+    clientSecretKey: "client-secret"
+    # External URL of the web UI; a successful sign-in redirects here. In the
+    # standard same-origin deployment the OIDC redirect_uri defaults to
+    # <uiBaseURL>/auth/callback; override with redirectURL if your topology
+    # differs (must match the IdP's registered redirect).
+    uiBaseURL: ""
+    redirectURL: ""
+
+# --- Object storage (per-test logs, plan archive) --------------------------
+# When bucket is set, the API can mint presigned URLs for per-test logs
+# (S-09-03 / FR-703-704); otherwise that endpoint returns 501. Credentials come
+# from the standard AWS chain (IRSA in-cluster). For the bundled MinIO, set
+# endpoint to the in-cluster service URL.
+storage:
+  s3:
+    bucket: ""           # e.g. teo-artifacts; empty disables the log endpoint
+    region: "us-east-1"
+    endpoint: ""         # set for MinIO / S3-compatible (enables path-style)
 
 # --- API gateway -----------------------------------------------------------
 api:

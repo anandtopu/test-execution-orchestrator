@@ -264,11 +264,7 @@ func (m *Manager) plan(ctx context.Context, tx pgx.Tx, runID string) error {
 
 	// Run the pure scheduler (timed for the teo_scheduler_plan_seconds histogram).
 	planStart := time.Now()
-	plan := scheduler.PlanFunc(tests, scheduler.FleetSnapshot{}, scheduler.Constraints{
-		TargetShardSeconds: 300,
-		MinShards:          1,
-		MaxShards:          50,
-	})
+	plan := scheduler.PlanFunc(tests, scheduler.FleetSnapshot{}, scheduler.DefaultConstraints())
 	if m.Metrics != nil {
 		m.Metrics.SchedulerPlans.Inc()
 		m.Metrics.SchedulerPlanSec.Observe(time.Since(planStart).Seconds())

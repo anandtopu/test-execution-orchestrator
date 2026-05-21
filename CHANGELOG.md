@@ -8,6 +8,16 @@ For a finer-grained per-FR / per-epic implementation status, see [`progress.md`]
 
 ## [Unreleased]
 
+### Added — Backlog reconciliation fixes: replay CLI, log-tail viewer, OIDC sign-in (#1, #5, #6)
+
+A 2026-05-20 code audit found 12 backlog items marked ✅ in `progress.md` that were not wired in code (see the "Backlog reconciliation" section there). Three of them are now implemented:
+
+- **`teo replay <run_id>` (#1, S-05-04 / FR-304).** New `cmd/teo/replay.go` reads the persisted `runs.meta.computed_plan`, reconstructs the scheduler inputs, and re-runs the pure scheduler to verify the plan is still deterministic (exit 1 + diff summary on mismatch; `--json` for scripting). New `scheduler.DefaultConstraints()` and `scheduler.Replay()` are shared by the live planning path (`internal/runmanager`) and the CLI so the two can't drift. Unit-tested in `internal/scheduler/replay_test.go`.
+- **UI per-test log-tail viewer (#5, S-09-03 / FR-703-704).** New `logstore.Presigner` + `S3.Presign` (presigned GET). API endpoint `GET /api/v1/runs/{id}/tests/{execId}/log` returns a short-lived presigned URL, ownership-checked via the run join (no IDOR) and returning 501 when S3 isn't configured. Next.js BFF route `/api/logs` proxies the tail of that URL via HTTP suffix-Range (so the browser needs no S3 reachability); `LogTail` client component (with "Load earlier" pagination) + a `runs/[id]/tests/[execId]` page host it. Wired into `cmd/api` (gated on `TEO_S3_BUCKET`) and the Helm api deployment (`storage.s3.*`). Tested on both sides.
+- **OIDC sign-in flow + JWT refresh (#6, S-03-02 / FR-801).** New dependency-free `internal/oidc` package: discovery, authorization-code exchange, and RS256 ID-token verification against the IdP's JWKS (built on net/http + crypto/rsa + the already-vendored golang-jwt). API routes `/auth/login`, `/auth/callback`, `/auth/logout`, `/auth/session`, `/auth/refresh` mint a TEO HS256 JWT into an httpOnly `teo_session` cookie on success; the auth middleware now also reads that cookie. New `/login` page + `SessionNav` header widget. Configurable via `auth.oidc.*` Helm values (issuer, clientID, client secret, UI base URL) wired into the api deployment. Unit-tested with an in-process fake IdP (full RS256/JWKS round-trip).
+
+Verification: `go build ./...` clean; `go test ./...` green incl. the new `internal/oidc` package (26 testable packages); `golangci-lint run` 0 issues on the touched packages; `web` typecheck clean + 48 Vitest tests green (incl. new `LogTail` + `SessionNav` suites).
+
 ### Added — Post-v1.0 unit coverage sweep (gotest/jest/quarantine + db/audit/predictor)
 
 Closes the named coverage gaps from the v1.0.0 resume callout — the testable surface of every backend package now has unit tests, even where the DB-backed paths remain integration-tier.

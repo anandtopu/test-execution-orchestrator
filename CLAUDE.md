@@ -69,7 +69,7 @@ The `make migrate` target is a leftover no-op stub from before E-02 landed — *
 ```
 cmd/{teo,api,run-manager,scheduler,result-pipeline,predictor,worker}   # one binary per dir
 internal/                                                               # all production Go code (private)
-pkg/adapter/{pytest,gotest,jest}                                        # runner-adapter SPI (E-14)
+pkg/adapter/{adapter.go,template/,pytest,gotest,jest}                   # runner-adapter SPI (E-14); adapter.go is the interface, template/ is the copy-me starting point for a new adapter
 proto/teov1/*.proto                                                     # gRPC contract; generated → internal/proto/teov1
 migrations/{postgres,clickhouse}/NNN_*.{up,down}.sql                    # forward-only, numbered
 deploy/helm/teo/                                                        # umbrella chart, vendored subcharts

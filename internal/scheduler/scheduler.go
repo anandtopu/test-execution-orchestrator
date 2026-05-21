@@ -6,8 +6,10 @@
 package scheduler
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
+	"encoding/json"
 	"sort"
 
 	"github.com/teo-dev/teo/internal/model"
@@ -52,6 +54,58 @@ type Plan struct {
 }
 
 const planVersion = "lpt-v1"
+
+// DefaultConstraints returns the planning knobs the Run Manager uses for every
+// run. Both the live planning path (internal/runmanager) and the offline
+// `teo replay` determinism check call this, so the two can never drift: a replay
+// is only meaningful if it re-runs the scheduler with the exact constraints that
+// produced the stored plan.
+func DefaultConstraints() Constraints {
+	return Constraints{
+		TargetShardSeconds: 300,
+		MinShards:          1,
+		MaxShards:          50,
+	}
+}
+
+// Replay reconstructs the scheduler inputs from a previously computed plan and
+// re-runs PlanFunc with the given constraints, returning the recomputed plan and
+// whether it is byte-for-byte identical to stored (i.e. the scheduler is still
+// deterministic for this input). It backs `teo replay <run_id>` (FR-304, S-05-04).
+//
+// The reconstruction is faithful because PlanFunc's output depends only on each
+// test's Entry (path/name/params/tags), PredictedMS, and IsQuarantined — all of
+// which survive a round-trip through the stored Plan. Input ordering does not
+// matter: PlanFunc sorts internally with a stable hash tie-break. The 50ms floor
+// is idempotent because the stored durations were already floored when first
+// planned.
+func Replay(stored Plan, c Constraints) (recomputed Plan, deterministic bool) {
+	tests := make([]Test, 0, len(stored.QuarantineLane))
+	for _, a := range stored.Assignments {
+		for _, t := range a.Tests {
+			t.IsQuarantined = false
+			tests = append(tests, t)
+		}
+	}
+	for _, t := range stored.QuarantineLane {
+		t.IsQuarantined = true
+		tests = append(tests, t)
+	}
+	recomputed = PlanFunc(tests, FleetSnapshot{}, c)
+	return recomputed, plansEqual(stored, recomputed)
+}
+
+// plansEqual compares two plans by their canonical JSON encoding. The scheduler
+// guarantees a deterministic shape (sorted assignments, stable tie-breaks), so
+// equal inputs must round-trip to equal JSON.
+func plansEqual(a, b Plan) bool {
+	aj, err1 := json.Marshal(a)
+	bj, err2 := json.Marshal(b)
+	if err1 != nil || err2 != nil {
+		return false
+	}
+	return bytes.Equal(aj, bj)
+}
 
 // Plan partitions tests across shards using the LPT heuristic, ordered longest-first
 // within each shard. Quarantined tests are routed to a separate non-blocking lane.

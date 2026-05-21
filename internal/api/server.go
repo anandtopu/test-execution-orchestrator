@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 
 	"github.com/teo-dev/teo/internal/audit"
 	"github.com/teo-dev/teo/internal/auth"
+	"github.com/teo-dev/teo/internal/logstore"
 	"github.com/teo-dev/teo/internal/metrics"
 )
 
@@ -28,15 +30,20 @@ type Config struct {
 
 // Server wires the HTTP router for the TEO API.
 type Server struct {
-	cfg            Config
-	pool           *pgxpool.Pool
-	cache          *apiKeyCache
-	jwt            *auth.JWTIssuer
-	audit          *audit.Logger
-	metrics        *metrics.Registry
-	spans          SpanQuerier
-	githubWebhook  http.Handler // nil when no secret is configured
-	mux            *chi.Mux
+	cfg           Config
+	pool          *pgxpool.Pool
+	cache         *apiKeyCache
+	jwt           *auth.JWTIssuer
+	audit         *audit.Logger
+	metrics       *metrics.Registry
+	spans         SpanQuerier
+	logPresigner  logstore.Presigner // nil when S3 isn't configured
+	githubWebhook http.Handler       // nil when no secret is configured
+	oidc          oidcAuthenticator  // nil when OIDC isn't configured
+	uiBaseURL     string             // where the callback redirects the browser
+	cookieSecure  bool               // set Secure on session cookies (https UIs)
+	roleResolver  RoleResolver       // maps an OIDC identity to TEO roles
+	mux           *chi.Mux
 }
 
 // New constructs a Server. If reg is nil a fresh metrics.Registry is created
@@ -94,6 +101,41 @@ func WithClickHouseConn(conn chdriver.Conn) Option {
 	}
 }
 
+// WithLogPresigner wires the per-test log endpoint
+// (GET /api/v1/runs/{id}/tests/{execId}/log). When nil, that route returns 501.
+func WithLogPresigner(p logstore.Presigner) Option {
+	return func(s *Server) {
+		if p != nil {
+			s.logPresigner = p
+		}
+	}
+}
+
+// WithOIDC enables the sign-in routes (/auth/login, /auth/callback, ...). The
+// uiBaseURL is where a successful callback redirects the browser; its scheme
+// also decides whether session cookies are marked Secure. When this option is
+// absent the /auth/* routes return 503.
+func WithOIDC(provider oidcAuthenticator, uiBaseURL string) Option {
+	return func(s *Server) {
+		if provider != nil {
+			s.oidc = provider
+			s.uiBaseURL = uiBaseURL
+			s.cookieSecure = strings.HasPrefix(uiBaseURL, "https")
+		}
+	}
+}
+
+// WithRoleResolver overrides how an authenticated OIDC identity is mapped to TEO
+// roles (default: everyone gets RoleEngineer). cmd/api wires a DB-backed
+// resolver that reads teo.user_roles.
+func WithRoleResolver(r RoleResolver) Option {
+	return func(s *Server) {
+		if r != nil {
+			s.roleResolver = r
+		}
+	}
+}
+
 // WithGitHubWebhook mounts an HMAC-verifying receiver at /webhooks/github.
 // When the option isn't supplied, the route returns 404 — so an operator who
 // hasn't configured TEO_GITHUB_WEBHOOK_SECRET can't accidentally accept
@@ -126,8 +168,21 @@ func (s *Server) routes() {
 		r.Route("/runs", func(r chi.Router) {
 			runs.Routes(r)
 			r.Get("/{id}/export", exportHandler(s.pool, s.spans))
+			r.Get("/{id}/tests/{execId}/log", logURLHandler(s.pool, s.logPresigner))
 		})
 		r.Get("/quarantine/restore", quarantineRestoreHandler(s.pool))
+	})
+
+	// OIDC sign-in (FR-801, S-03-02). Always mounted; when OIDC isn't
+	// configured the handlers return 503 so an operator can tell "not set up"
+	// from "broken". /auth/session and /auth/refresh work off the JWT the
+	// callback issued, so they don't depend on the provider being present.
+	r.Route("/auth", func(r chi.Router) {
+		r.Get("/login", s.oidcLogin)
+		r.Get("/callback", s.oidcCallback)
+		r.Post("/logout", s.oidcLogout)
+		r.Get("/session", s.session)
+		r.Post("/refresh", s.refresh)
 	})
 
 	// GraphQL read API for the Web UI (FR-701..706).

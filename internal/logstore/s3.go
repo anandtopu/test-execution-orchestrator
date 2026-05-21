@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -11,14 +12,15 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
-// S3 is the production Uploader. It wraps the AWS SDK v2 transfermanager
-// `Client.PutObject` which auto-promotes to multipart upload above
-// `MultipartUploadThreshold` (16MB by default). For TEO logs that means small
-// captures land as a single PUT, while a chatty test that streams hundreds of
-// MB still uploads in parallel parts.
+// S3 is the production Uploader (and Presigner). It wraps the AWS SDK v2
+// transfermanager `Client.PutObject` which auto-promotes to multipart upload
+// above `MultipartUploadThreshold` (16MB by default). For TEO logs that means
+// small captures land as a single PUT, while a chatty test that streams
+// hundreds of MB still uploads in parallel parts.
 type S3 struct {
 	bucket string
 	tm     *transfermanager.Client
+	client *s3.Client // retained for presigning (transfermanager doesn't expose it)
 }
 
 // NewS3 builds an S3 Uploader. region is required (the SDK demands one even
@@ -45,7 +47,7 @@ func NewS3(ctx context.Context, region, endpoint, bucket string) (*S3, error) {
 		}
 	})
 	tm := transfermanager.New(s3Client)
-	return &S3{bucket: bucket, tm: tm}, nil
+	return &S3{bucket: bucket, tm: tm, client: s3Client}, nil
 }
 
 // Upload satisfies the Uploader contract. The transfermanager handles the
@@ -61,4 +63,24 @@ func (s *S3) Upload(ctx context.Context, key string, body io.Reader, _ int64) er
 		return fmt.Errorf("logstore: upload %s: %w", key, err)
 	}
 	return nil
+}
+
+// Presign returns a time-limited GET URL for the object at key, satisfying the
+// Presigner interface. The URL is signed with the same credential chain used
+// for uploads; callers (the API log endpoint) choose ttl. Range requests
+// against the returned URL are honored by S3/MinIO, which is how the viewer
+// fetches just the tail of a large log.
+func (s *S3) Presign(ctx context.Context, key string, ttl time.Duration) (string, error) {
+	if key == "" {
+		return "", fmt.Errorf("logstore: empty key")
+	}
+	ps := s3.NewPresignClient(s.client)
+	out, err := ps.PresignGetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(key),
+	}, s3.WithPresignExpires(ttl))
+	if err != nil {
+		return "", fmt.Errorf("logstore: presign %s: %w", key, err)
+	}
+	return out.URL, nil
 }

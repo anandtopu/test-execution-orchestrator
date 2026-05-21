@@ -12,8 +12,22 @@ package logstore
 
 import (
 	"context"
+	"errors"
 	"io"
+	"time"
 )
+
+// ErrPresignUnavailable is returned by a Presigner that cannot mint URLs
+// (e.g. the Noop store, or when S3 isn't configured). Handlers map it to 501.
+var ErrPresignUnavailable = errors.New("logstore: presign not available")
+
+// Presigner mints a time-limited URL that grants read access to a single
+// object without exposing AWS credentials. The UI log-tail viewer (FR-703/704,
+// S-09-03) uses this so the browser can fetch a test's captured log directly
+// (or via the Next.js BFF proxy) rather than streaming bytes through the API.
+type Presigner interface {
+	Presign(ctx context.Context, key string, ttl time.Duration) (string, error)
+}
 
 // Uploader stores a log blob at the given key.
 //

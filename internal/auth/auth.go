@@ -211,21 +211,31 @@ func decodeArgon(s string) (salt, derived []byte, err error) {
 // avoid hashing on every request (cache the lookup with bounded TTL).
 type Resolver func(ctx context.Context, prefix, display string) (*Principal, error)
 
+// SessionCookie is the httpOnly cookie the OIDC callback sets, carrying the TEO
+// JWT so a browser is authenticated on subsequent requests without a header.
+const SessionCookie = "teo_session"
+
 // Middleware returns an HTTP middleware that authenticates the request via
-// either a JWT (Authorization: Bearer ...) or API key (same header, but with
-// a `teo_*` prefix). Anonymous requests are passed through; downstream
-// handlers enforce auth requirements.
+// either a JWT (Authorization: Bearer ..., or the teo_session cookie) or an API
+// key (Authorization header with a `teo_*` prefix). Anonymous requests are
+// passed through; downstream handlers enforce auth requirements.
 func Middleware(jwtIssuer *JWTIssuer, resolveAPIKey Resolver) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authz := r.Header.Get("Authorization")
-			if authz == "" {
+			var tok string
+			if authz := r.Header.Get("Authorization"); authz != "" {
+				tok = strings.TrimPrefix(authz, "Bearer ")
+				tok = strings.TrimPrefix(tok, "bearer ")
+				tok = strings.TrimSpace(tok)
+			} else if c, err := r.Cookie(SessionCookie); err == nil {
+				// Cookie tokens are always JWTs (never API keys), so they fall
+				// through to the jwtIssuer.Verify branch below.
+				tok = strings.TrimSpace(c.Value)
+			}
+			if tok == "" {
 				next.ServeHTTP(w, r)
 				return
 			}
-			tok := strings.TrimPrefix(authz, "Bearer ")
-			tok = strings.TrimPrefix(tok, "bearer ")
-			tok = strings.TrimSpace(tok)
 
 			ctx := r.Context()
 			if strings.HasPrefix(tok, "teo_") {

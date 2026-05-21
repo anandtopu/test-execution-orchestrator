@@ -23,6 +23,14 @@ type Common struct {
 	JWTSecret            string
 	JWTTTL               time.Duration
 	GitHubWebhookSecret  string // HMAC secret for inbound webhooks (FR-904)
+
+	// OIDC sign-in (FR-801, S-03-02). When OIDCIssuer + OIDCClientID are set,
+	// the API mounts the /auth/* sign-in routes; otherwise they return 503.
+	OIDCIssuer       string
+	OIDCClientID     string
+	OIDCClientSecret string
+	OIDCRedirectURL  string // must match the IdP's registered redirect; default derived from UIBaseURL
+	UIBaseURL        string // where a successful sign-in redirects the browser
 }
 
 // LoadCommon reads the common env vars.
@@ -42,6 +50,11 @@ func LoadCommon() Common {
 		JWTSecret:           getEnv("TEO_JWT_SECRET", ""),
 		JWTTTL:              getDuration("TEO_JWT_TTL", time.Hour),
 		GitHubWebhookSecret: getEnv("TEO_GITHUB_WEBHOOK_SECRET", ""),
+		OIDCIssuer:          getEnv("TEO_OIDC_ISSUER", ""),
+		OIDCClientID:        getEnv("TEO_OIDC_CLIENT_ID", ""),
+		OIDCClientSecret:    getEnv("TEO_OIDC_CLIENT_SECRET", ""),
+		OIDCRedirectURL:     getEnv("TEO_OIDC_REDIRECT_URL", ""),
+		UIBaseURL:           getEnv("TEO_UI_BASE_URL", ""),
 	}
 }
 
