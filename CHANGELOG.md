@@ -8,6 +8,16 @@ For a finer-grained per-FR / per-epic implementation status, see [`progress.md`]
 
 ## [Unreleased]
 
+### Added — Assignment plan archived to S3 (#2)
+
+Closes the last functional gap from the 2026-05-20 backlog reconciliation (S-05-04 AC1 / FR-304).
+
+- **Run Manager S3 archive.** After planning, the Run Manager uploads the computed plan to `runs/<id>/plan.json` via the new `Manager.PlanStore` (`logstore.Uploader`) and the shared `runmanager.PlanObjectKey` helper. Best-effort — the plan also lives in `runs.meta.computed_plan`, so a transient S3 failure logs a warning instead of failing the run. Wired in `cmd/run-manager` (gated on `TEO_S3_BUCKET`) and the Helm run-manager deployment (`storage.s3.*`).
+- **Read-back.** New `logstore.S3.Download` (GetObject) plus **`teo replay --from-s3 --s3-bucket=…`**, which reads the archived plan and runs the same determinism check as the Postgres path (default unchanged).
+- **Lint config.** Added `cancelled` to the misspell `ignore-rules` in `.golangci.yml` — it's TEO's domain spelling (the `teo.runs` status enum is `cancelled`), so `locale: US` was wrongly flagging legitimate comments.
+
+Verification: `go build ./...` clean; `go test ./...` green incl. the new `runmanager` plan-archive unit tests (key/body, no-store no-op, error-swallow); MinIO download round-trip added to the logstore integration suite; `golangci-lint run` 0 issues on the touched packages. `teo replay --from-s3` round-trips a real archived plan.
+
 ### Added — AST-signature fingerprints + `teo discover` (#3, #4)
 
 Continues the 2026-05-20 backlog-reconciliation fixes: tests now carry a normalized AST signature so a body change yields a distinct test identity (and fresh flake history) instead of silently inheriting the old body's stats.

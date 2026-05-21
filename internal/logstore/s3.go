@@ -65,6 +65,20 @@ func (s *S3) Upload(ctx context.Context, key string, body io.Reader, _ int64) er
 	return nil
 }
 
+// Download fetches the whole object at key. Used by `teo replay --from-s3` to
+// read an archived assignment plan (runs/<id>/plan.json, S-05-04).
+func (s *S3) Download(ctx context.Context, key string) ([]byte, error) {
+	out, err := s.client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("logstore: download %s: %w", key, err)
+	}
+	defer out.Body.Close()
+	return io.ReadAll(out.Body)
+}
+
 // Presign returns a time-limited GET URL for the object at key, satisfying the
 // Presigner interface. The URL is signed with the same credential chain used
 // for uploads; callers (the API log endpoint) choose ttl. Range requests

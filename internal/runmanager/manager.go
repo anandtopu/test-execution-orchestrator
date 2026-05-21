@@ -1,6 +1,7 @@
 package runmanager
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/nats-io/nats.go/jetstream"
 
+	"github.com/teo-dev/teo/internal/logstore"
 	teometrics "github.com/teo-dev/teo/internal/metrics"
 	"github.com/teo-dev/teo/internal/model"
 	teonats "github.com/teo-dev/teo/internal/nats"
@@ -28,6 +30,7 @@ type Manager struct {
 	Logger    *slog.Logger
 	Metrics   *teometrics.Registry // optional; nil = no-op
 	Observers []RunObserver        // notified after every successful state transition
+	PlanStore logstore.Uploader    // optional: archives runs/<id>/plan.json to S3 (S-05-04 AC1)
 
 	PollInterval        time.Duration
 	BudgetCheckInterval time.Duration
@@ -283,6 +286,10 @@ func (m *Manager) plan(ctx context.Context, tx pgx.Tx, runID string) error {
     `, runID, planJSON); err != nil {
 		return err
 	}
+	// Durable S3 archive of the plan (S-05-04 AC1). Best-effort: the plan also
+	// lives in runs.meta.computed_plan, so a transient S3 failure must not fail
+	// the run. Idempotent — same key, overwritten if planning re-runs.
+	m.archivePlan(ctx, runID, planJSON)
 
 	for _, a := range plan.Assignments {
 		shardID := uuid.New().String()
@@ -308,6 +315,29 @@ func (m *Manager) plan(ctx context.Context, tx pgx.Tx, runID string) error {
 	m.Logger.Info("run planned", "run", runID, "shards", len(plan.Assignments),
 		"makespan_ms", plan.MakespanPredictedMS)
 	return nil
+}
+
+// PlanObjectKey is the S3 key under which a run's assignment plan is archived.
+// Shared so the Run Manager (writer) and `teo replay --from-s3` (reader) agree.
+func PlanObjectKey(runID string) string {
+	return "runs/" + runID + "/plan.json"
+}
+
+// archivePlan uploads the computed plan JSON to S3 under PlanObjectKey. No-op
+// when no PlanStore is wired (dev/CI). Best-effort: a failure is logged, not
+// returned, because the plan also lives in runs.meta.computed_plan.
+func (m *Manager) archivePlan(ctx context.Context, runID string, planJSON []byte) {
+	if m.PlanStore == nil {
+		return
+	}
+	key := PlanObjectKey(runID)
+	upCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	if err := m.PlanStore.Upload(upCtx, key, bytes.NewReader(planJSON), int64(len(planJSON))); err != nil {
+		m.Logger.Warn("plan archive failed", "run", runID, "key", key, "err", err)
+		return
+	}
+	m.Logger.Info("plan archived", "run", runID, "key", key)
 }
 
 func (m *Manager) dispatch(ctx context.Context, tx pgx.Tx, runID string) error {

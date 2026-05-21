@@ -140,6 +140,32 @@ func TestS3Upload_OverwritesPreviousObjectAtSameKey(t *testing.T) {
 	}
 }
 
+// Download must read back exactly what Upload wrote (backs `teo replay --from-s3`).
+func TestS3Download_RoundTrip(t *testing.T) {
+	_, up, _ := makeBucketAndUploader(t)
+
+	const key = "runs/run-9/plan.json"
+	want := []byte(`{"Assignments":[],"Version":"lpt-v1"}`)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := up.Upload(ctx, key, bytes.NewReader(want), int64(len(want))); err != nil {
+		t.Fatalf("upload: %v", err)
+	}
+	got, err := up.Download(ctx, key)
+	if err != nil {
+		t.Fatalf("download: %v", err)
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("download mismatch:\n got=%q\nwant=%q", got, want)
+	}
+
+	// A missing key must error rather than return empty bytes.
+	if _, err := up.Download(ctx, "runs/does-not-exist/plan.json"); err == nil {
+		t.Error("download of a missing key should error")
+	}
+}
+
 // fetch GetObject + ReadAll wrapped in a t.Helper so failure messages point at
 // the calling test line, not at fetch.
 func fetch(t *testing.T, c *s3.Client, bucket, key string) []byte {

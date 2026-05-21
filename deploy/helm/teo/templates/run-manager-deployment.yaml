@@ -31,6 +31,16 @@ spec:
                   key: dsn
             - name: TEO_NATS_URL
               value: "nats://{{ .Release.Name }}-nats:4222"
+            {{- if .Values.storage.s3.bucket }}
+            - name: TEO_S3_BUCKET
+              value: {{ .Values.storage.s3.bucket | quote }}
+            - name: TEO_S3_REGION
+              value: {{ .Values.storage.s3.region | quote }}
+            {{- if .Values.storage.s3.endpoint }}
+            - name: TEO_S3_ENDPOINT
+              value: {{ .Values.storage.s3.endpoint | quote }}
+            {{- end }}
+            {{- end }}
           resources:
             {{- toYaml .Values.runManager.resources | nindent 12 }}
           securityContext:

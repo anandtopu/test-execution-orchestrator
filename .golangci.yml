@@ -99,6 +99,11 @@ linters:
 
     misspell:
       locale: US
+      # "cancelled" (British) is TEO's domain spelling — it's baked into the
+      # teo.runs status enum (migrations + SQL), so comments referencing the
+      # status legitimately use it. Don't let locale: US flag it.
+      ignore-rules:
+        - cancelled
 
   exclusions:
     # Generated files (protoc-gen-go output, etc.) — also auto-detected via the

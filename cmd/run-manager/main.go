@@ -12,6 +12,7 @@ import (
 	"github.com/teo-dev/teo/internal/config"
 	"github.com/teo-dev/teo/internal/db"
 	"github.com/teo-dev/teo/internal/github"
+	"github.com/teo-dev/teo/internal/logstore"
 	"github.com/teo-dev/teo/internal/metrics"
 	teonats "github.com/teo-dev/teo/internal/nats"
 	"github.com/teo-dev/teo/internal/predictor"
@@ -59,6 +60,21 @@ func main() {
 		Metrics:             reg,
 		PollInterval:        time.Second,
 		BudgetCheckInterval: 5 * time.Second,
+	}
+
+	// Durable S3 archive of each run's assignment plan (S-05-04 AC1). Gated on
+	// TEO_S3_BUCKET being explicitly set (config defaults the bucket name). The
+	// plan still lives in Postgres, so this is best-effort.
+	if os.Getenv("TEO_S3_BUCKET") != "" {
+		store, err := logstore.NewS3(ctx, cfg.S3Region, cfg.S3Endpoint, cfg.S3Bucket)
+		if err != nil {
+			logger.Error("logstore init failed", "err", err)
+			os.Exit(1)
+		}
+		mgr.PlanStore = store
+		logger.Info("plan archive enabled", "bucket", cfg.S3Bucket)
+	} else {
+		logger.Warn("TEO_S3_BUCKET not set; assignment plans won't be archived to S3")
 	}
 
 	// NATS is best-effort; falling back to Postgres claim if unavailable.

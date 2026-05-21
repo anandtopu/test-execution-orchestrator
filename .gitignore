@@ -14,6 +14,8 @@ web/node_modules/
 *.out
 coverage.out
 coverage.html
+coverage/
+*.lcov
 
 # Go
 vendor/
@@ -40,10 +42,29 @@ Thumbs.db
 # Helm
 *.tgz
 
+# Node / Next.js (web)
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+.turbo/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
 # Local development
 .venv/
 __pycache__/
 *.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Transient CI / build-failure sweep artifacts (see CLAUDE.md)
+build_failures.txt
 
 # Secrets
 *.pem
