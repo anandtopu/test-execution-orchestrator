@@ -34,6 +34,10 @@ The PRD §7 (Predictor) and §6 (#3 failure-first ordering) describe a model tha
 - Brier score on `flake_classifier`; reject if Brier > heuristic baseline.
 - Champion/challenger: every nightly retrain produces a candidate; gating job validates against holdout before promoting.
 
+## Implementation note (v1.0)
+
+The serve path ships over **HTTP** (`POST <TEO_PREDICTOR_ML_URL>/v1/predict`), not the gRPC `Predictor` contract described above. The Run Manager call is in-cluster and low-QPS, and the mandatory Go-heuristic fallback makes the wire format non-load-bearing — so HTTP was chosen to avoid the proto/codegen overhead for one RPC. The fallback property is honored exactly as decided: `internal/predictor.Fallback` tries the ML client first and reverts to the Go `Heuristic` on timeout / connection error / non-200 / decode error / length mismatch (and the Run Manager only constructs the ML client when `TEO_PREDICTOR_ML_URL` is set). The history source was also corrected to Postgres `teo.test_executions` — the same table the heuristic reads — keyed by `path::name`, eliminating train/serve feature skew. See `docs/architecture/api-design.md` §1 and the `ml-predictor` CHANGELOG entry. This divergence is intentional and does not reopen the gRPC decision; the proto service is retained for a future migration if QPS warrants it.
+
 ## Alternatives considered
 - **Heuristic predictor only at v1.0** (the old scope cut). Rejected per ADR-0012 revision.
 - **Neural net (PyTorch).** Rejected: training cost, dependency footprint, no measurable lift over GBT for tabular data.

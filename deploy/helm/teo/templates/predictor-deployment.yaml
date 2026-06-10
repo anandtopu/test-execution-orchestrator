@@ -107,6 +107,13 @@ spec:
                 secretKeyRef:
                   name: {{ .Release.Name }}-clickhouse-creds
                   key: dsn
+            # Postgres is read only for repo-id resolution (teo.repos). Scope the
+            # role read-only to keep this service's blast radius narrow.
+            - name: TEO_POSTGRES_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-postgres-creds
+                  key: dsn
             - name: TEO_S3_BUCKET
               value: {{ .Values.minio.enabled | ternary (printf "%s-models" .Release.Name) "" | quote }}
           readinessProbe:

@@ -31,6 +31,17 @@ spec:
                   key: dsn
             - name: TEO_NATS_URL
               value: "nats://{{ .Release.Name }}-nats:4222"
+            {{- if .Values.predictor.ml.enabled }}
+            # Point the Run Manager at the Python LightGBM service. The Go
+            # Fallback tries this URL first and reverts to the heuristic on any
+            # failure, so a down predictor-ml never breaks scheduling.
+            - name: TEO_PREDICTOR_ML_URL
+              value: "http://{{ .Release.Name }}-predictor-ml:8000"
+            {{- if .Values.predictor.ml.client.timeout }}
+            - name: TEO_PREDICTOR_ML_TIMEOUT
+              value: {{ .Values.predictor.ml.client.timeout | quote }}
+            {{- end }}
+            {{- end }}
             {{- if .Values.storage.s3.bucket }}
             - name: TEO_S3_BUCKET
               value: {{ .Values.storage.s3.bucket | quote }}

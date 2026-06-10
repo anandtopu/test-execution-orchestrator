@@ -21,6 +21,37 @@ spec:
                 - name: TEO_POSTGRES_DSN
                   valueFrom: { secretKeyRef: { name: {{ .Release.Name }}-postgres-creds, key: dsn } }
 {{- end }}
+{{- if .Values.backfillClusters.enabled }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Release.Name }}-backfill-clusters
+spec:
+  schedule: {{ .Values.backfillClusters.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: backfill-clusters
+              image: {{ include "teo.image" (dict "Values" .Values "Chart" .Chart "repo" "result-pipeline" "imageTag" "") }}
+              args:
+                - "backfill-clusters"
+                {{- if .Values.backfillClusters.since }}
+                - "--since"
+                - {{ .Values.backfillClusters.since | quote }}
+                {{- end }}
+              env:
+                - name: TEO_POSTGRES_DSN
+                  valueFrom: { secretKeyRef: { name: {{ .Release.Name }}-postgres-creds, key: dsn } }
+                - name: TEO_CLICKHOUSE_DSN
+                  valueFrom: { secretKeyRef: { name: {{ .Release.Name }}-clickhouse-creds, key: dsn } }
+{{- end }}
 {{- if .Values.quarantine.enabled }}
 ---
 apiVersion: batch/v1

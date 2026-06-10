@@ -62,7 +62,17 @@ What you must populate per `TestEntry`:
 | `ParamsHash` | Hash of parametrization values for parametrized tests; empty otherwise | only if the runner supports parametrization |
 | `Tags` | Free-form labels (e.g. pytest marks); not used by the scheduler in v1.0 | optional |
 
-The composite **fingerprint** the worker stores is `Path + "::" + Name + "::" + ParamsHash` (see `internal/worker/worker.go:recordResult`). That triple must be unique for a logically-distinct test, and it must be **stable** across runs — the flake detector and quarantine machinery key on it. Reuse of the underlying fixture file path is fine; collisions on `(Path, Name, ParamsHash)` are not.
+The composite **fingerprint** the worker stores is `Path + "::" + Name + "::" + ParamsHash + "::" + ASTSignature` (see `internal/worker/worker.go:recordResult`). That tuple must be unique for a logically-distinct test, and it must be **stable** across runs — the flake detector and quarantine machinery key on it. Reuse of the underlying fixture file path is fine; collisions on `(Path, Name, ParamsHash, ASTSignature)` are not.
+
+### `ASTSignature` (rename-resilient identity, ADR-0010)
+
+`ASTSignature` is an optional fifth component: a stable hash of the test's *normalized body* (not its location). It makes identity survive file renames/moves (path changes, signature doesn't → history preserved) and split when the body materially changes (new assertions / restructured logic → fresh identity, fresh flake history). It's computed during `Discover` and attached to each `TestEntry.ASTSignature`; the worker carries it through both claim paths (Postgres SKIP-LOCKED and NATS `DispatchTest.ASTSignature`) and migration 006 persists it to `teo.tests.ast_signature`.
+
+- **`pkg/adapter/gotest`** parses each package's test files via `go/ast` (`astsig.go`) and hashes the normalized function body. Stable across reformatting/comment edits.
+- **`pkg/adapter/pytest`** runs an embedded `ast`-module helper (`astsig.go`) keyed by bare pytest qualname (`test_x`, `TestClass::test_y` — no `[param]` suffix). Attachment goes through the pure `attachSignatures` helper, which looks the signature up by `stripParams(entry.Name)`, so every parametrized variant (`test_x[case1]`, `test_x[case2]`) inherits its base function body's signature while still differing by `ParamsHash`.
+- **`pkg/adapter/jest`** ships `ASTSignature` empty — deferred to v1.5 per S-14-02 AC3. Path + name + params only.
+
+A new adapter MAY leave `ASTSignature` empty (path+FQN+params fingerprinting still works); populate it only if you have a cheap, deterministic body normalizer for your language. Empty is a no-op tail on the fingerprint, not a collision risk.
 
 If discovery is impossible without running the framework (Jest can't list `it()` blocks without execution), enumerate at the **file level** with a sentinel `Name`, and let `Execute` emit a `Result` per real test it finds — that's what `pkg/adapter/jest` does.
 
@@ -105,7 +115,7 @@ The worker (`internal/worker/worker.go`) handles everything below. Don't duplica
 |---|---|---|
 | Log redaction (AWS keys, JWTs, high-entropy) | worker | `worker.uploadLog` calls `a.redactor.String(...)` |
 | S3 log upload (multipart > 16MB) | worker | `worker.uploadLog` → `internal/logstore` |
-| Test fingerprint composition | worker | `worker.recordResult`: `Path + "::" + Name + "::" + ParamsHash` |
+| Test fingerprint composition | worker | `worker.recordResult`: `Path + "::" + Name + "::" + ParamsHash + "::" + ASTSignature` |
 | `tests` / `test_executions` Postgres writes | worker | `worker.recordResult` |
 | OTel span emission | result-pipeline / worker telemetry layer | not the adapter's job |
 | Retry on flake | run manager + scheduler | re-shards with `attempt+1` |
@@ -149,6 +159,7 @@ A new adapter is ready to merge when:
 - [ ] Subprocess paths come from `tests[i].Path` / `tests[i].Name` — no further sanitization, gosec G204 is exempted at the package level.
 - [ ] Unit tests against fixtures in a `testdata/` directory; no live network, no real container spin-up.
 - [ ] If parametrized tests are supported, `ParamsHash` is populated and stable across runs given the same parameter values.
+- [ ] `ASTSignature` is either left empty (path+FQN+params identity) or populated by a deterministic body normalizer that is stable across reformatting/comments and changes only with the test logic (see ADR-0010; gotest/pytest reference impls in `astsig.go`).
 
 ## Getting started
 
@@ -162,4 +173,5 @@ Wire it on the worker by registering an instance with whatever runner-routing th
 - `pkg/adapter/pytest/pytest.go` — full-featured: structured report file, parametrization, fallback path
 - `pkg/adapter/gotest/gotest.go` — streaming events, sub-test handling, regex-based selector composition
 - `pkg/adapter/jest/jest.go` — discovery-at-file-level, per-test results synthesized at execution
+- `pkg/adapter/gotest/astsig.go` / `pkg/adapter/pytest/astsig.go` — AST-signature computation (ADR-0010); pytest's `attachSignatures` shows the bare-qualname lookup that decouples signature attachment from the `[param]` suffix
 - `internal/worker/worker.go` — `executeShard` / `recordResult` / `uploadLog` show how the worker drives an adapter

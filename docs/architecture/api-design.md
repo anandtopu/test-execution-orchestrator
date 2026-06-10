@@ -9,9 +9,11 @@ Three surfaces: **gRPC** (worker traffic, internal), **REST** (CI integrations, 
 
 ## 1. gRPC services (internal + worker plane)
 
-Protos live in `proto/teo/v1/`. Wire compatibility = backward-compat additive only. Breaking changes require a `v2` package.
+Protos live in `proto/teov1/` (flat layout; the Protobuf package stays `teo.v1`, wire-compatible). Generated code lands in `internal/proto/teov1/` via `make proto`. Wire compatibility = backward-compat additive only. Breaking changes require a `v2` package.
 
 ### `Runs` service
+
+**Implementation status (`runs-grpc`):** `CreateRun`, `GetRun`, and `CancelRun` are wired in `internal/grpcsvc/runs.go` (`RunsService` embeds `teov1.UnimplementedRunsServer`) over the shared transport-agnostic `internal/runsvc.Service` — the same intake/validation/idempotency core HTTP (`internal/api/runs.go`) and GraphQL use, so the three transports can't drift. Domain errors map to gRPC codes (validation→`InvalidArgument`, missing repo/run→`NotFound`, idempotency conflict on a different commit→`AlreadyExists`, else→`Internal` with the raw error logged server-side). The Runs RPCs require auth via `grpcsvc.AuthUnaryInterceptor` (`authorization` metadata, same primitives as the HTTP middleware) and reject unauthenticated callers with `codes.Unauthenticated`; the internal `Workers` dispatch RPCs stay open. `StreamRunEvents` is declared but **not yet implemented** (no UI/CLI consumer at v1.0). Registered in `cmd/api/main.go` next to `WorkersService`.
 ```proto
 service Runs {
   rpc CreateRun(CreateRunRequest) returns (Run);
@@ -93,6 +95,9 @@ enum TestOutcome { PASSED=0; FAILED=1; SKIPPED=2; ERRORED=3; TIMED_OUT=4; }
 ```
 
 ### `Predictor` service
+
+**Implementation status (`ml-predictor`, FR-607):** the Run Manager calls the Python LightGBM service over **HTTP** (`POST <TEO_PREDICTOR_ML_URL>/v1/predict`, snake_case JSON) via `internal/predictor.MLClient`, not the gRPC `Predictor` contract below — a deliberate, documented divergence from ADR-0019 (the call is in-cluster, low-QPS, and the Go heuristic fallback makes the wire format non-load-bearing). `internal/predictor.Fallback` tries ML first and reverts to the always-on Go `Heuristic` on any failure, so the system runs with the Python service down (the ADR-0019 non-negotiable). The proto service is retained for a future migration. The gRPC contract:
+
 ```proto
 service Predictor {
   rpc Predict(PredictRequest) returns (PredictResponse);
@@ -193,6 +198,17 @@ type Run {
 ```
 
 Pagination is Relay-style (`Connection`/`Edge`/`PageInfo`).
+
+### UI-observability fields (`graphql-schema-fields`)
+
+The redesigned marquee UI (Clusters spatial map, Flakes sparklines, Run-detail predictor-calibration overlay) is served by **additive** fields on the existing types — no migration, every value computed server-side from existing Postgres tables. The hand-written SDL at `/graphql/schema` (`internal/api/server.go`) and the resolvers (`internal/api/graphql.go` / `graphql_resolvers.go`) carry them:
+
+- **`FailureCluster`** gains spatial-map coordinates `x`/`y`/`r` (`computeClusterLayout`: x = last_seen newest→left, y = log-scaled occurrences, r = blast-radius px), `category` (`classifyClusterCategory` keyword heuristic — panic/timeout/network/race/assertion, parity with the web `classifyCategory` in `web/src/lib/teo-adapt.ts`), `stackFingerprint`, and `affectedRuns` (distinct-run subquery over `test_executions.failure_cluster_id`). x/y/r are presentation-only and relative to the returned page.
+- **`FlakeRecord`** gains `wilsonUpper`, `spark` (last-20 P/F/S outcomes, chronological, one batched `test_id = ANY($1::uuid[])` query), `status`, `durationMeanMs`, plus `quarantinedAt` (RFC3339, null when not quarantined — `COALESCE(fr.quarantined_at, t.quarantined_at)`) and `ownerTeam`.
+- **`Run`** gains `predictor { mae rho modelVersion p50DeltaMs p95DeltaMs sampleCount confidence }` (`queryRunPredictor`, computed from finished shards; `modelVersion` reads `runs.meta->>'predictor_model'`, falls back to `heuristic`; null for <2 finished shards). The same values are also exposed as flat `predictorMae`/`predictorRho`/`modelVersion` Run fields (memoized per request via `cachedRunPredictor`) for the calibration overlay.
+- **`Shard`** gains `deltaMs` (actual−predicted) plus `predictionConfidence`/`modelVersion`; the per-shard confidence/model_version resolve to **null** until a future migration adds `teo.shards.prediction_confidence`/`model_version` columns (`queryShards` does not SELECT them yet — they do not light up automatically).
+
+The web consumers are `web/src/lib/queries.ts` (named operations) and the prop-driven `web/src/components/teo/{Clusters,Flakes}.tsx` + `RunDetailScreen` screens, which adapt the rows through the pure `web/src/lib/teo-adapt.ts` (`adaptClusters`/`adaptFlakes`/`adaptRun`/`adaptStatus`). All four marquee screens render from GraphQL — the `teo-data.ts` MOCK is no longer imported by any `web/src/app/` route.
 
 ---
 

@@ -51,7 +51,7 @@ pip install -e .[dev]
 pytest
 ```
 
-`teo` CLI subcommands (built into `bin/teo`): `migrate up|status`, `digest dry-run --user=<email>`, `doctor [--json]`, `version`, `help`. `teo doctor` exercises connectivity to every TEO dependency in parallel; useful for diagnosing local/staging brokenness.
+`teo` CLI subcommands (built into `bin/teo`): `migrate up|status`, `digest dry-run --user=<email>`, `discover --runner <r> [dir]`, `replay <run_id> [--from-s3] [--json]`, `doctor [--json]`, `version`, `help`. `teo doctor` exercises connectivity to every TEO dependency in parallel; useful for diagnosing local/staging brokenness. `teo discover` runs a runner adapter and emits a manifest JSON with AST signatures populated (the production producer of test fingerprints); `teo replay` re-runs the scheduler against a stored plan and verifies determinism (exit 1 on mismatch).
 
 The `make migrate` target is a leftover no-op stub from before E-02 landed — **don't trust it**. Migrations are run via the CLI: `bin/teo migrate up` / `bin/teo migrate status` (driven by `internal/migrate`).
 

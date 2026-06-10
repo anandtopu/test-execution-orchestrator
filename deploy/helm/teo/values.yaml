@@ -105,6 +105,12 @@ predictor:
     training:
       schedule: "0 2 * * *"  # nightly at 02:00 UTC
       historySource: clickhouse
+    # Run-Manager -> predictor-ml HTTP client (E-12 / FR-607). When ml.enabled is
+    # true the chart injects TEO_PREDICTOR_ML_URL into the run-manager so it wraps
+    # the heuristic in the ML Fallback. The timeout bounds each predict call and
+    # therefore the time a slow ML endpoint can hold the planning DB transaction.
+    client:
+      timeout: "3s"
 
 # --- Worker pool (Karpenter; ADR-0006, ADR-0020) ---------------------------
 workers:
@@ -225,6 +231,15 @@ tags:
 flakeJob:
   enabled: true
   schedule: "0 1 * * *"
+# Re-clusters historical failures that arrived via the OTLP ingest path and were
+# never back-linked to a failure_clusters row (T-07-02-03). Disabled by default
+# because it is the only result-pipeline cron that needs ClickHouse in addition
+# to Postgres (stack traces live in span_events). Enable once the
+# <release>-clickhouse-creds Secret (key 'dsn') exists.
+backfillClusters:
+  enabled: false
+  schedule: "30 2 * * *"
+  since: "720h"   # bound the scan to ~30d (matches span_events TTL); "" = all history
 quarantine:
   enabled: true
   schedule: "*/15 * * * *"
