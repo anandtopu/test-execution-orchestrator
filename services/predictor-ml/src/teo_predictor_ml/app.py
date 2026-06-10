@@ -13,7 +13,7 @@ import time
 import numpy as np
 from fastapi import FastAPI
 
-from .features import FeatureRow, empty
+from .features import FeatureRow, from_history
 from .models import (
     HealthResponse,
     PredictRequest,
@@ -21,6 +21,7 @@ from .models import (
     Prediction,
 )
 from .registry import ModelRegistry, from_env
+from .repo import TestHistory, history_for_repo, resolve_repo_id
 
 log = logging.getLogger(__name__)
 
@@ -64,7 +65,11 @@ def predict(req: PredictRequest) -> PredictResponse:
             out.append(_cold_start(t))
         return PredictResponse(predictions=out, used_fallback=True, used_model_version="cold-start")
 
-    rows = np.array([_features_for(t).as_array() for t in req.tests])
+    # Prefetch the per-repo 30-day history once and reuse it across every test so
+    # we issue a single Postgres query, not one per test. A failed fetch yields
+    # {} → every test falls back to a zero-feature (cold-start-ish) row.
+    history = _history_for_repo(repo_id)
+    rows = np.array([_features_for(t, history).as_array() for t in req.tests])
     durations = model.duration_regressor.predict(rows)
     flake_probs = model.flake_classifier.predict(rows)
     for i, t in enumerate(req.tests):
@@ -94,14 +99,34 @@ def _cold_start(t):
     )
 
 
-def _features_for(_t) -> FeatureRow:
-    # In production we'd query ClickHouse for per-test history. For now we emit
-    # zero features and let the model's bias term carry the prediction. This is
-    # explicit so feature extraction can be added incrementally without
-    # changing the gRPC contract.
-    return empty()
+def _features_for(t, history: dict[str, TestHistory] | None = None) -> FeatureRow:
+    """Build the feature vector for one test from the prefetched repo history.
+
+    A test present in ``history`` gets its rolling p50/p95/std/fail-rate; an
+    absent test (or any test when ``history`` is empty because the fetch failed)
+    gets a zero history row, and the model's bias term carries the prediction.
+
+    Always routed through ``from_history`` with the (possibly empty) map so an
+    absent test produces an IDENTICAL feature vector regardless of whether other
+    tests in the same batch had history — the model input is deterministic.
+    """
+    return from_history(t, history or {})
 
 
-def _resolve_repo_id(_full_name: str) -> str | None:
-    """Return the repo UUID. In a real deployment we read from Postgres."""
-    return None
+def _resolve_repo_id(full_name: str) -> str | None:
+    """Resolve the repo UUID via Postgres (TEO_POSTGRES_DSN).
+
+    Returns None when no DSN is configured / the repo is unknown / the query
+    fails — all genuine cold-start triggers.
+    """
+    return resolve_repo_id(full_name)
+
+
+def _history_for_repo(repo_id: str) -> dict[str, TestHistory]:
+    """Fetch the per-repo 30-day test history from Postgres (TEO_POSTGRES_DSN).
+
+    Sourced from teo.test_executions, the same table the always-on Go heuristic
+    reads, so ML and heuristic features agree. Returns {} on any failure so the
+    handler degrades to cold-start, never a 500.
+    """
+    return history_for_repo(repo_id)
