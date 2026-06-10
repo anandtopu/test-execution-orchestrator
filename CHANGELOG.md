@@ -8,6 +8,15 @@ For a finer-grained per-FR / per-epic implementation status, see [`progress.md`]
 
 ## [Unreleased]
 
+### Added — Leader-election 2-replica integration/chaos test (`leader-election-test`, #12 / S-04-02 / T-04-02-03)
+
+Closes the last open reconciliation item (#12): the per-run `pg_try_advisory_xact_lock` coordination (ADR-0013) had production code but no 2-replica lease/takeover test.
+
+- **New `internal/runmanager/leader_election_integration_test.go`** (`//go:build integration`, `internal/testpg`) with a `zeroPredictor` stub so `plan()` runs DB-free:
+  - `TestLeaderElection_LockHeldBlocksSecondReplica` — deterministic core. Replica A holds the per-run advisory lock in an open tx (same `runIDLockKey` the Manager uses); replica B's `tryHandle` is then a no-op (run stays `pending`, 0 shards); after A's tx rolls back (lease ends) B takes over and plans the run to `dispatching`.
+  - `TestLeaderElection_ConcurrentReplicasConvergeWithoutDuplicateShards` — chaos test. 4 replicas (own Managers, shared pool, barrier-synced) hammer `reconcileOnce` against one pending run; it converges to `running` exactly once with no duplicate `(run_id,index)` shards. Race-free by design: the lock and the `pending→planning` UPDATE commit atomically, so a competitor never observes `status='pending'` with the lock free (MVCC).
+- **Executed green against real Postgres via testcontainers** (Docker available this run) — both tests pass; the full runmanager integration suite stays green. No production-code, proto, or migration changes.
+
 ### Added — ClickHouse span-ingest load-test harness + p99 numbers (`clickhouse-loadtest`, #10 / S-02-03 / T-02-03-02)
 
 Closes gap-closeout row 10: the OTLP span-ingest write path (`internal/resultpipeline/otlp.go` `OTLPReceiver.writeSpans`, native `conn.PrepareBatch`) had no load test or documented throughput/p99 numbers.
