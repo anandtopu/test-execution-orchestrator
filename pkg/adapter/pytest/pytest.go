@@ -49,13 +49,25 @@ func (a *Adapter) Discover(ctx context.Context, workdir string) ([]model.TestEnt
 	// Attach AST signatures (S-06-01 / T-06-01-03). Best-effort: if Python is
 	// unavailable the entries keep an empty signature and discovery still works.
 	if sigs := a.astSignatures(ctx, workdir, distinctPaths(entries)); sigs != nil {
-		for i := range entries {
-			if byName, ok := sigs[entries[i].Path]; ok {
-				entries[i].ASTSignature = byName[entries[i].Name]
-			}
-		}
+		attachSignatures(entries, sigs)
 	}
 	return entries, nil
+}
+
+// attachSignatures populates entries[i].ASTSignature from sigs (keyed
+// map[path]map[qualname]signature). The Python helper keys signatures by BARE
+// pytest qualnames ("test_foo" / "TestBar::test_baz") with no "[param]" suffix,
+// so the lookup is keyed on stripParams(entry.Name): every parametrized variant
+// inherits its base function body's signature regardless of whether Name still
+// carries the "[param]" suffix. For non-parametrized names stripParams is a
+// no-op. Factored out of Discover so the keying contract is unit-testable
+// without spawning Python (see pytest_test.go).
+func attachSignatures(entries []model.TestEntry, sigs map[string]map[string]string) {
+	for i := range entries {
+		if byName, ok := sigs[entries[i].Path]; ok {
+			entries[i].ASTSignature = byName[stripParams(entries[i].Name)]
+		}
+	}
 }
 
 // parseCollect handles the one-line-per-test format from `pytest -q --collect-only`.

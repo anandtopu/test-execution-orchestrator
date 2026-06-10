@@ -48,7 +48,12 @@ func TestRunTypeExposesShardsAndFailedCount(t *testing.T) {
 	if !ok || runT == nil {
 		t.Fatal("Run type not found")
 	}
-	for _, f := range []string{"id", "shards", "failedTestCount", "preemptionCount", "totalDurationMs"} {
+	for _, f := range []string{
+		"id", "shards", "failedTestCount", "preemptionCount", "totalDurationMs",
+		// ui-home-calibration: flat run-level predictor aggregates the home
+		// adapter reads first (before falling back to the nested predictor object).
+		"predictorMae", "predictorRho", "modelVersion",
+	} {
 		if runT.Fields()[f] == nil {
 			t.Errorf("Run.%s missing", f)
 		}
@@ -61,9 +66,122 @@ func TestShardTypeExposesExpectedFields(t *testing.T) {
 	if !ok || st == nil {
 		t.Fatal("Shard type not found")
 	}
-	for _, f := range []string{"id", "index", "status", "predictedDurationMs", "actualDurationMs", "testCount", "workerId"} {
+	for _, f := range []string{
+		"id", "index", "status", "predictedDurationMs", "actualDurationMs", "testCount", "workerId", "deltaMs",
+		// ui-home-calibration: per-shard calibration metadata for the home overlay.
+		"predictionConfidence", "modelVersion",
+	} {
 		if st.Fields()[f] == nil {
 			t.Errorf("Shard.%s missing", f)
+		}
+	}
+}
+
+func TestRunPredictorTypeExposesFields(t *testing.T) {
+	schema := buildSchema(nil)
+	pt, ok := schema.Type("RunPredictor").(*graphql.Object)
+	if !ok || pt == nil {
+		t.Fatal("RunPredictor type not found")
+	}
+	for _, f := range []string{"mae", "rho", "modelVersion", "p50DeltaMs", "p95DeltaMs", "sampleCount", "confidence"} {
+		if pt.Fields()[f] == nil {
+			t.Errorf("RunPredictor.%s missing", f)
+		}
+	}
+	// Run must expose predictor wired to this type.
+	runT := schema.Type("Run").(*graphql.Object)
+	if runT.Fields()["predictor"] == nil {
+		t.Error("Run.predictor missing")
+	}
+}
+
+func TestFailureClusterTypeExposesFields(t *testing.T) {
+	schema := buildSchema(nil)
+	ct, ok := schema.Type("FailureCluster").(*graphql.Object)
+	if !ok || ct == nil {
+		t.Fatal("FailureCluster type not found")
+	}
+	for _, f := range []string{"id", "representativeMessage", "x", "y", "r", "category", "stackFingerprint", "affectedRuns"} {
+		if ct.Fields()[f] == nil {
+			t.Errorf("FailureCluster.%s missing", f)
+		}
+	}
+}
+
+func TestFlakeRecordTypeExposesFields(t *testing.T) {
+	schema := buildSchema(nil)
+	ft, ok := schema.Type("FlakeRecord").(*graphql.Object)
+	if !ok || ft == nil {
+		t.Fatal("FlakeRecord type not found")
+	}
+	// quarantinedAt + ownerTeam are the ui-clusters-flakes additions; the prior
+	// fields are asserted alongside them to lock in the additive guarantee.
+	for _, f := range []string{
+		"testId", "testPath", "testName", "flakeRate", "wilsonLower", "wilsonUpper",
+		"sampleSize", "category", "spark", "status", "durationMeanMs",
+		"quarantinedAt", "ownerTeam",
+	} {
+		if ft.Fields()[f] == nil {
+			t.Errorf("FlakeRecord.%s missing", f)
+		}
+	}
+}
+
+// TestFlakeRecordResolvesNewFieldsFromMapSource proves the quarantinedAt/ownerTeam
+// resolvers read the snake_case keys queryFlakes emits, and that the pre-existing
+// fields still resolve unchanged from the same stub source (additive guarantee).
+func TestFlakeRecordResolvesNewFieldsFromMapSource(t *testing.T) {
+	schema := buildSchema(nil)
+	flakeT := schema.Type("FlakeRecord").(*graphql.Object)
+	queryRoot := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Q",
+		Fields: graphql.Fields{
+			"f": &graphql.Field{
+				Type: flakeT,
+				Resolve: func(_ graphql.ResolveParams) (any, error) {
+					return map[string]any{
+						"test_id":          "t-abc",
+						"path":             "pkg/foo_test.go",
+						"name":             "TestFoo",
+						"flake_rate":       0.2,
+						"wilson_lower":     0.1,
+						"wilson_upper":     0.35,
+						"sample_size":      100,
+						"category":         "race",
+						"spark":            "PPFPPPPPPPPPPPPPPPPP",
+						"status":           "quarantined",
+						"duration_mean_ms": 1500,
+						"quarantined_at":   "2026-06-01T00:00:00Z",
+						"owner_team":       "@teo-dev/platform",
+					}, nil
+				},
+			},
+		},
+	})
+	s, err := graphql.NewSchema(graphql.SchemaConfig{Query: queryRoot})
+	if err != nil {
+		t.Fatal(err)
+	}
+	res := graphql.Do(graphql.Params{
+		Schema:        s,
+		Context:       context.Background(),
+		RequestString: `{ f { testId testPath wilsonUpper status durationMeanMs quarantinedAt ownerTeam } }`,
+	})
+	if len(res.Errors) > 0 {
+		t.Fatalf("graphql errors: %v", res.Errors)
+	}
+	out, _ := json.Marshal(res.Data)
+	for _, want := range []string{
+		`"testId":"t-abc"`,
+		`"testPath":"pkg/foo_test.go"`,
+		`"wilsonUpper":0.35`,
+		`"status":"quarantined"`,
+		`"durationMeanMs":1500`,
+		`"quarantinedAt":"2026-06-01T00:00:00Z"`,
+		`"ownerTeam":"@teo-dev/platform"`,
+	} {
+		if !strings.Contains(string(out), want) {
+			t.Errorf("response missing %q; got: %s", want, string(out))
 		}
 	}
 }
@@ -95,6 +213,75 @@ func TestSchemaHandlerStillReturnsSDL(t *testing.T) {
 	for _, want := range []string{"type Query", "type Run", "type FailureCluster", "type FlakeRecord"} {
 		if !strings.Contains(body, want) {
 			t.Errorf("schema body missing %q", want)
+		}
+	}
+}
+
+// sdlTypeFields extracts the field names declared inside `type <name> { ... }`
+// in the hand-written SDL body. Best-effort line parser (field names are the
+// leading identifier before a ':') — good enough to diff field SETS against the
+// programmatic schema.
+func sdlTypeFields(sdl, typeName string) map[string]bool {
+	out := map[string]bool{}
+	start := strings.Index(sdl, "type "+typeName+" {")
+	if start < 0 {
+		return out
+	}
+	body := sdl[start:]
+	open := strings.Index(body, "{")
+	closeIdx := strings.Index(body, "}")
+	if open < 0 || closeIdx < 0 || closeIdx < open {
+		return out
+	}
+	for _, line := range strings.Split(body[open+1:closeIdx], "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		// field name is the token up to the first '(' (args) or ':'.
+		name := line
+		if i := strings.IndexAny(name, "(:"); i >= 0 {
+			name = name[:i]
+		}
+		name = strings.TrimSpace(name)
+		if name != "" {
+			out[name] = true
+		}
+	}
+	return out
+}
+
+// TestSDLAgreesWithProgrammaticSchema guards the published SDL (schemaHandler)
+// against the programmatic schema (buildSchema) drifting apart — a field added
+// to one but forgotten in the other would ship a wrong contract to codegen
+// consumers with no other failing test. We diff field SETS for the read types
+// the UI depends on.
+func TestSDLAgreesWithProgrammaticSchema(t *testing.T) {
+	rr := httptest.NewRecorder()
+	schemaHandler().ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/graphql/schema", nil))
+	sdl := rr.Body.String()
+
+	schema := buildSchema(nil)
+	for _, typeName := range []string{"Run", "Shard", "RunPredictor", "FailureCluster", "FlakeRecord"} {
+		obj, ok := schema.Type(typeName).(*graphql.Object)
+		if !ok || obj == nil {
+			t.Fatalf("programmatic schema missing type %q", typeName)
+		}
+		sdlFields := sdlTypeFields(sdl, typeName)
+		if len(sdlFields) == 0 {
+			t.Fatalf("SDL has no fields parsed for type %q", typeName)
+		}
+		// Every programmatic field must be in the SDL.
+		for f := range obj.Fields() {
+			if !sdlFields[f] {
+				t.Errorf("%s.%s present in buildSchema but missing from published SDL", typeName, f)
+			}
+		}
+		// Every SDL field must be in the programmatic schema.
+		for f := range sdlFields {
+			if obj.Fields()[f] == nil {
+				t.Errorf("%s.%s present in published SDL but missing from buildSchema", typeName, f)
+			}
 		}
 	}
 }

@@ -5,6 +5,8 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/teo-dev/teo/internal/model"
 )
 
 // Problem is an RFC 7807 error body.
@@ -16,11 +18,10 @@ type Problem struct {
 	Errors []FieldError `json:"errors,omitempty"`
 }
 
-// FieldError reports a single validation issue.
-type FieldError struct {
-	Field   string `json:"field"`
-	Message string `json:"message"`
-}
+// FieldError reports a single validation issue. It is an alias for
+// model.FieldError so the shared run-intake service (internal/runsvc) and the
+// HTTP layer agree on the wire shape without an import cycle.
+type FieldError = model.FieldError
 
 // nolint:unused // used by handlers in the same package
 func writeProblem(w http.ResponseWriter, status int, title, detail string, fieldErrs ...FieldError) {

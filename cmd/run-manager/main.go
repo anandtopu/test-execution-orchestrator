@@ -53,9 +53,32 @@ func main() {
 		_ = stopMetrics(shutCtx)
 	}()
 
+	// Predictor: the Go heuristic is always present (ADR-0019). When
+	// TEO_PREDICTOR_ML_URL is set, wrap it in a Fallback that tries the Python
+	// LightGBM service first and transparently reverts to the heuristic on any
+	// failure (timeout / connection error / non-200 / decode / length mismatch),
+	// incrementing teo_predictor_fallback_total. Nothing hard-fails if the ML
+	// service is down — the heuristic carries the load.
+	heuristic := predictor.NewHeuristic(pool)
+	var pred predictor.Predictor = heuristic
+	if cfg.PredictorMLURL != "" {
+		ml := predictor.NewMLClient(cfg.PredictorMLURL, cfg.PredictorMLTimeout)
+		ml.Logger = logger
+		// Server-side cold-start (200 + used_fallback=true) is invisible to the
+		// Fallback wrapper, so count it separately to surface MAE-drift degradation.
+		ml.OnServerColdStart = reg.PredictorServerColdStart.Inc
+		fb := predictor.NewFallback(ml, heuristic, logger)
+		fb.OnFallback = reg.PredictorFallback.Inc
+		pred = fb
+		logger.Info("ml predictor enabled with heuristic fallback",
+			"url", cfg.PredictorMLURL, "timeout", cfg.PredictorMLTimeout)
+	} else {
+		logger.Info("TEO_PREDICTOR_ML_URL not set; using heuristic predictor")
+	}
+
 	mgr := &runmanager.Manager{
 		Pool:                pool,
-		Predictor:           predictor.NewHeuristic(pool),
+		Predictor:           pred,
 		Logger:              logger,
 		Metrics:             reg,
 		PollInterval:        time.Second,

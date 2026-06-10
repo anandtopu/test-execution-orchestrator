@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net"
 	"net/http"
@@ -15,8 +16,11 @@ import (
 	"google.golang.org/grpc"
 	_ "google.golang.org/grpc/encoding/proto"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/teo-dev/teo/internal/api"
 	"github.com/teo-dev/teo/internal/audit"
+	"github.com/teo-dev/teo/internal/auth"
 	"github.com/teo-dev/teo/internal/config"
 	"github.com/teo-dev/teo/internal/db"
 	teogithub "github.com/teo-dev/teo/internal/github"
@@ -24,6 +28,7 @@ import (
 	"github.com/teo-dev/teo/internal/logstore"
 	"github.com/teo-dev/teo/internal/oidc"
 	"github.com/teo-dev/teo/internal/resultpipeline"
+	"github.com/teo-dev/teo/internal/runsvc"
 	"github.com/teo-dev/teo/internal/version"
 )
 
@@ -137,6 +142,12 @@ func main() {
 		logger.Warn("TEO_OIDC_ISSUER/CLIENT_ID not set; /auth/* sign-in routes will return 503")
 	}
 
+	// Shared run-intake service: one instance backs both the HTTP/GraphQL
+	// gateway and the gRPC Runs service so the two transports share one code
+	// path (CreateRun/GetRun/CancelRun).
+	runSvc := &runsvc.Service{Pool: pool, Audit: &audit.Logger{Pool: pool}}
+	apiOpts = append(apiOpts, api.WithRunService(runSvc))
+
 	srv := api.New(api.Config{
 		JWTSecret: cfg.JWTSecret,
 		JWTTTL:    cfg.JWTTTL,
@@ -154,12 +165,27 @@ func main() {
 		logger.Error("grpc listen failed", "err", err)
 		os.Exit(1)
 	}
-	grpcSrv := grpc.NewServer()
+	// The Runs gRPC RPCs are state-mutating (create/cancel runs), so — unlike
+	// the internal worker-dispatch RPCs — they MUST be authenticated. Install a
+	// unary interceptor that validates the same JWT/API-key credentials the HTTP
+	// middleware accepts and rejects unauthenticated callers on the Runs methods
+	// with codes.Unauthenticated. The Workers RPCs remain open (internal traffic).
+	jwtIssuer := &auth.JWTIssuer{
+		Secret: []byte(cfg.JWTSecret),
+		TTL:    cfg.JWTTTL,
+		Issuer: "teo",
+	}
+	grpcSrv := grpc.NewServer(
+		grpc.UnaryInterceptor(grpcsvc.AuthUnaryInterceptor(jwtIssuer, grpcAPIKeyResolver(pool))),
+	)
 	grpcsvc.Register(grpcSrv, &grpcsvc.WorkersService{
 		Pool:    pool,
 		Audit:   &audit.Logger{Pool: pool},
 		Cluster: &resultpipeline.Cluster{Pool: pool},
 	})
+	// Runs gRPC service (CreateRun/GetRun/CancelRun) over the same shared
+	// run-intake service as HTTP. Auth is enforced by AuthUnaryInterceptor above.
+	grpcsvc.RegisterRuns(grpcSrv, &grpcsvc.RunsService{Svc: runSvc})
 
 	go func() {
 		logger.Info("http listening", "addr", cfg.HTTPListenAddr)
@@ -182,4 +208,35 @@ func main() {
 	shutCtx, shutCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer shutCancel()
 	_ = httpSrv.Shutdown(shutCtx)
+}
+
+// grpcAPIKeyResolver returns an auth.Resolver that verifies a teo_* API key
+// against teo.api_keys, mirroring the HTTP gateway's resolveAPIKey (minus the
+// in-process cache, which is owned by the HTTP server). Used by the gRPC auth
+// interceptor so CI clients can authenticate run RPCs with an API key.
+func grpcAPIKeyResolver(pool *pgxpool.Pool) auth.Resolver {
+	return func(ctx context.Context, prefix, display string) (*auth.Principal, error) {
+		var (
+			id     string
+			hash   string
+			scopes []string
+		)
+		err := pool.QueryRow(ctx, `
+            SELECT id, hash, scopes FROM teo.api_keys
+            WHERE prefix = $1 AND revoked_at IS NULL
+              AND (expires_at IS NULL OR expires_at > now())
+        `, prefix).Scan(&id, &hash, &scopes)
+		if err != nil {
+			return nil, err
+		}
+		if _, ok := auth.VerifyAPIKey(display, hash); !ok {
+			return nil, errors.New("api key verification failed")
+		}
+		return &auth.Principal{
+			APIKeyID: id,
+			Roles:    []auth.Role{auth.RoleEngineer},
+			Scopes:   scopes,
+			IsAPIKey: true,
+		}, nil
+	}
 }

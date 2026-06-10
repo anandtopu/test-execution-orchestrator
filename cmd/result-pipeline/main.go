@@ -7,10 +7,14 @@
 //	result-pipeline owner-digest     send the weekly per-author digest
 //	result-pipeline flake-recompute  run the nightly Wilson-interval flake job
 //	result-pipeline quarantine-sweep run the auto-quarantine sweeper
+//	result-pipeline backfill-clusters re-cluster historical failures that the
+//	                                  live OTLP path left unlinked (requires
+//	                                  both Postgres and ClickHouse)
 package main
 
 import (
 	"context"
+	"flag"
 	"log/slog"
 	"net"
 	"os"
@@ -74,6 +78,8 @@ func main() {
 		runQuarantineSLASweep(ctx, pool, logger)
 	case "unquarantine-proposals":
 		runUnquarantineProposals(ctx, pool, logger)
+	case "backfill-clusters":
+		runBackfillClusters(ctx, cfg, pool, logger)
 	default:
 		logger.Error("unknown subcommand", "name", subcommand)
 		os.Exit(2)
@@ -156,6 +162,46 @@ func runFlakeRecompute(ctx context.Context, pool *pgxpool.Pool, logger *slog.Log
 	job := &flake.Job{Pool: pool, Logger: logger}
 	if err := job.Run(ctx); err != nil {
 		logger.Error("flake-recompute failed", "err", err)
+		os.Exit(1)
+	}
+}
+
+// runBackfillClusters re-clusters historical failures that arrived via OTLP and
+// were therefore never back-linked to a failure_clusters row. It is the first
+// cron entry point that needs ClickHouse (the stack traces live in span_events,
+// not Postgres), so it opens a dedicated ClickHouse connection.
+//
+//	result-pipeline backfill-clusters [--since <dur>] [--dry-run]
+func runBackfillClusters(ctx context.Context, cfg config.Common, pool *pgxpool.Pool, logger *slog.Logger) {
+	fs := flag.NewFlagSet("backfill-clusters", flag.ContinueOnError)
+	since := fs.Duration("since", 0, "only re-cluster failures started within this window (0 = all history)")
+	dryRun := fs.Bool("dry-run", false, "compute fingerprints but do not upsert clusters or assign executions")
+	if err := fs.Parse(os.Args[2:]); err != nil {
+		logger.Error("backfill-clusters flag parse failed", "err", err)
+		os.Exit(2)
+	}
+
+	if cfg.ClickHouseDSN == "" {
+		logger.Error("TEO_CLICKHOUSE_DSN required for backfill-clusters (stack traces live in ClickHouse span_events)")
+		os.Exit(1)
+	}
+	chConn, err := db.OpenClickHouseConn(ctx, cfg.ClickHouseDSN)
+	if err != nil {
+		logger.Error("clickhouse open failed", "err", err)
+		os.Exit(1)
+	}
+	defer func() { _ = chConn.Close() }()
+
+	b := &resultpipeline.Backfiller{
+		Execs:   resultpipeline.PGExecSource{Pool: pool},
+		Stacks:  resultpipeline.CHStackSource{CH: chConn},
+		Cluster: &resultpipeline.Cluster{Pool: pool},
+		Logger:  logger,
+		DryRun:  *dryRun,
+		Since:   *since,
+	}
+	if _, err := b.Run(ctx); err != nil {
+		logger.Error("backfill-clusters failed", "err", err)
 		os.Exit(1)
 	}
 }

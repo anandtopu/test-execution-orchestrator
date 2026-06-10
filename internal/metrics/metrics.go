@@ -37,10 +37,11 @@ type Registry struct {
 	SchedulerPlans   prometheus.Counter
 
 	// Predictor
-	PredictorRequests  prometheus.Counter
-	PredictorColdStart prometheus.Counter
-	PredictorFallback  prometheus.Counter
-	PredictorMAE       prometheus.Gauge
+	PredictorRequests        prometheus.Counter
+	PredictorColdStart       prometheus.Counter
+	PredictorFallback        prometheus.Counter
+	PredictorServerColdStart prometheus.Counter
+	PredictorMAE             prometheus.Gauge
 
 	// Result pipeline
 	CHInserts        prometheus.Counter
@@ -98,7 +99,11 @@ func New() *Registry {
 	})
 	r.PredictorFallback = prometheus.NewCounter(prometheus.CounterOpts{
 		Name: "teo_predictor_fallback_total",
-		Help: "Predictor invocations that fell through from ML to the heuristic.",
+		Help: "Predictor invocations that fell through from ML to the heuristic (client-side: timeout/non-200/decode/length-mismatch).",
+	})
+	r.PredictorServerColdStart = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "teo_predictor_server_coldstart_total",
+		Help: "ML predict calls where the server returned 200 but self-reported used_fallback=true (server-side cold-start, e.g. MAE drift / model not loaded).",
 	})
 	r.PredictorMAE = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "teo_predictor_mae",
@@ -123,7 +128,7 @@ func New() *Registry {
 		r.HTTPDurationSec,
 		r.RunsActive, r.RunTransitions, r.RunsStuck,
 		r.SchedulerPlanSec, r.SchedulerPlans,
-		r.PredictorRequests, r.PredictorColdStart, r.PredictorFallback, r.PredictorMAE,
+		r.PredictorRequests, r.PredictorColdStart, r.PredictorFallback, r.PredictorServerColdStart, r.PredictorMAE,
 		r.CHInserts, r.CHInsertSec, r.CHInsertFailures,
 	)
 	return r

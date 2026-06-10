@@ -129,3 +129,32 @@ func (c *Cluster) UpsertCluster(ctx context.Context, repoID, stack, message stri
     `, id, repoID, fingerprint, message, normalized).Scan(&got)
 	return got, err
 }
+
+// ClusterFor resolves the failure cluster id for a stack WITHOUT incrementing
+// occurrences. It is the count-free counterpart to UpsertCluster, used by the
+// backfill job: those failures were already counted once at live OTLP ingest
+// (otlp.go Export -> UpsertCluster), so re-counting them during a back-link-only
+// pass would double-count and corrupt cluster ranking. If no row exists yet it
+// inserts one (occurrences defaults to 1 via the column default, representing
+// the single failure being linked); if a row already exists it returns the
+// existing id and only refreshes last_seen, leaving occurrences untouched.
+func (c *Cluster) ClusterFor(ctx context.Context, repoID, stack, message string) (string, error) {
+	if c == nil || c.Pool == nil {
+		return "", nil
+	}
+	fingerprint, normalized := FingerprintStack(stack)
+	if fingerprint == "" {
+		return "", nil
+	}
+	id := uuid.New().String()
+	var got string
+	err := c.Pool.QueryRow(ctx, `
+        INSERT INTO teo.failure_clusters
+            (id, repo_id, stack_fingerprint, representative_message, representative_stack)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (repo_id, stack_fingerprint) DO UPDATE
+        SET last_seen = now()
+        RETURNING id
+    `, id, repoID, fingerprint, message, normalized).Scan(&got)
+	return got, err
+}

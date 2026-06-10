@@ -84,6 +84,14 @@ type Run struct {
 	UpdatedAt       time.Time  `json:"updated_at"`
 }
 
+// FieldError reports a single request-validation issue. It lives in model so
+// both the HTTP layer (internal/api) and the shared run-intake service
+// (internal/runsvc) can reference it without an import cycle.
+type FieldError struct {
+	Field   string `json:"field"`
+	Message string `json:"message"`
+}
+
 // Shard is a worker assignment within a run.
 type Shard struct {
 	ID                  string      `json:"id"`

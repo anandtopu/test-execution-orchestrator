@@ -19,6 +19,7 @@ import (
 	"github.com/teo-dev/teo/internal/auth"
 	"github.com/teo-dev/teo/internal/logstore"
 	"github.com/teo-dev/teo/internal/metrics"
+	"github.com/teo-dev/teo/internal/runsvc"
 )
 
 // Config bundles API server configuration.
@@ -43,6 +44,7 @@ type Server struct {
 	uiBaseURL     string             // where the callback redirects the browser
 	cookieSecure  bool               // set Secure on session cookies (https UIs)
 	roleResolver  RoleResolver       // maps an OIDC identity to TEO roles
+	runSvc        *runsvc.Service    // shared run-intake logic; nil → built from pool/audit
 	mux           *chi.Mux
 }
 
@@ -78,6 +80,18 @@ func New(cfg Config, pool *pgxpool.Pool, opts ...Option) *Server {
 
 // Option is a functional option for New.
 type Option func(*Server)
+
+// WithRunService injects a shared run-intake service so the HTTP/GraphQL
+// gateway and the gRPC Runs service operate over one instance. When absent, the
+// RunsHandler builds an equivalent service from the server's pool and audit
+// logger.
+func WithRunService(svc *runsvc.Service) Option {
+	return func(s *Server) {
+		if svc != nil {
+			s.runSvc = svc
+		}
+	}
+}
 
 // WithMetrics injects an existing metrics registry (so callers can share it
 // across the API server and a separate /metrics listener).
@@ -164,7 +178,7 @@ func (s *Server) routes() {
 	r.Method("GET", "/metrics", s.metrics.Handler())
 
 	r.Route("/api/v1", func(r chi.Router) {
-		runs := &RunsHandler{Pool: s.pool, Audit: s.audit}
+		runs := &RunsHandler{Pool: s.pool, Audit: s.audit, Svc: s.runSvc}
 		r.Route("/runs", func(r chi.Router) {
 			runs.Routes(r)
 			r.Get("/{id}/export", exportHandler(s.pool, s.spans))
@@ -241,6 +255,38 @@ type Run {
   totalDurationMs: Int
   startedAt: String
   finishedAt: String
+  preemptionCount: Int
+  shards: [Shard!]
+  failedTestCount: Int
+  predictor: RunPredictor
+  predictorMae: Float
+  predictorRho: Float
+  modelVersion: String
+}
+
+type RunPredictor {
+  mae: Float
+  rho: Float
+  modelVersion: String
+  p50DeltaMs: Int
+  p95DeltaMs: Int
+  sampleCount: Int
+  confidence: Float
+}
+
+type Shard {
+  id: ID!
+  index: Int
+  status: String
+  workerId: String
+  predictedDurationMs: Int
+  actualDurationMs: Int
+  testCount: Int
+  startedAt: String
+  finishedAt: String
+  deltaMs: Int
+  predictionConfidence: Float
+  modelVersion: String
 }
 
 type FailureCluster {
@@ -250,6 +296,12 @@ type FailureCluster {
   occurrences: Int
   firstSeen: String
   lastSeen: String
+  x: Float
+  y: Float
+  r: Float
+  category: String
+  stackFingerprint: String
+  affectedRuns: Int
 }
 
 type FlakeRecord {
@@ -258,8 +310,14 @@ type FlakeRecord {
   testName: String
   flakeRate: Float
   wilsonLower: Float
+  wilsonUpper: Float
   sampleSize: Int
   category: String
+  spark: String
+  status: String
+  durationMeanMs: Int
+  quarantinedAt: String
+  ownerTeam: String
 }
 `))
 	})

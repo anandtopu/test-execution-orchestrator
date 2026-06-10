@@ -82,6 +82,55 @@ func (d *Daemon) Run(ctx context.Context) error {
 	return nil
 }
 
+// recentOutcomes fetches up to limit of the test's most-recent *per-run*
+// execution outcomes (one row per shard — the final retry attempt, so a flaky
+// test that retried within a run charts as a single bar, not one bar per
+// attempt), newest-run first, then reverses to OLDEST -> NEWEST for the chart.
+//
+// The JOIN to teo.shards present in unquarantine.go is deliberately omitted:
+// test_executions.shard_id is NOT NULL with a FK to shards(id), so the join can
+// neither add nor drop rows. Dropping it lets te_test_started_idx serve the
+// scan directly. We also do NOT cap to maxHistoryPoints here — the render side
+// owns the pass/fail cap after neutral filtering (see renderRunHistoryMermaid);
+// over-fetching keeps the most-recent N *pass/fail* runs reachable even when the
+// newest rows include skipped/interrupted non-results.
+func (d *Daemon) recentOutcomes(ctx context.Context, testID string, limit int) ([]string, error) {
+	rows, err := d.Pool.Query(ctx, `
+        SELECT outcome FROM (
+            SELECT DISTINCT ON (te.shard_id)
+                   te.shard_id, te.outcome, te.started_at
+            FROM teo.test_executions te
+            WHERE te.test_id = $1
+            ORDER BY te.shard_id, te.attempt DESC
+        ) final_attempts
+        ORDER BY final_attempts.started_at DESC
+        LIMIT $2
+    `, testID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("%w: recent outcomes for %s", err, testID)
+	}
+	defer rows.Close()
+
+	var desc []string // newest first
+	for rows.Next() {
+		var o string
+		if err := rows.Scan(&o); err != nil {
+			return nil, fmt.Errorf("%w: recent outcomes for %s", err, testID)
+		}
+		desc = append(desc, o)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("%w: recent outcomes for %s", err, testID)
+	}
+
+	// Reverse to oldest -> newest for the chart.
+	out := make([]string, len(desc))
+	for i, o := range desc {
+		out[len(desc)-1-i] = o
+	}
+	return out, nil
+}
+
 func (d *Daemon) quarantine(ctx context.Context, testID, repoFull, path, name string, rate float64, samples int) error {
 	tx, err := d.Pool.Begin(ctx)
 	if err != nil {
@@ -121,10 +170,20 @@ func (d *Daemon) quarantine(ctx context.Context, testID, repoFull, path, name st
 		return tx.Commit(ctx)
 	}
 
+	// Best-effort run-history fetch for the Mermaid diagram (S-15-02 AC1).
+	// Never block issue creation on this: degrade to an empty slice on error.
+	// Over-fetch (3x) so neutral (skipped/interrupted) runs among the most
+	// recent rows don't starve the render-side pass/fail cap of maxHistoryPoints.
+	outcomes, err := d.recentOutcomes(ctx, testID, maxHistoryPoints*3)
+	if err != nil {
+		d.Logger.Warn("recent outcomes fetch failed", "test", testID, "err", err)
+		outcomes = nil
+	}
+
 	number, url := 0, ""
 	if d.IssueOpener != nil {
 		title := fmt.Sprintf("[TEO] Flaky test quarantined: %s", name)
-		body := buildIssueBody(path, name, rate, samples)
+		body := buildIssueBody(path, name, rate, samples, outcomes)
 		number, url, err = d.IssueOpener.Open(ctx, repoFull, title, body, nil, []string{"teo", "flaky", "auto-generated"})
 		if err != nil {
 			d.Logger.Warn("issue create failed", "err", err)
@@ -140,7 +199,7 @@ func (d *Daemon) quarantine(ctx context.Context, testID, repoFull, path, name st
 	return tx.Commit(ctx)
 }
 
-func buildIssueBody(path, name string, rate float64, samples int) string {
+func buildIssueBody(path, name string, rate float64, samples int, outcomes []string) string {
 	var b strings.Builder
 	b.WriteString("## Flaky test detected\n\n")
 	fmt.Fprintf(&b, "- **Path:** `%s`\n", path)
@@ -154,6 +213,9 @@ func buildIssueBody(path, name string, rate float64, samples int) string {
 	b.WriteString("1. Investigate the failure pattern in TEO's failure clusters page.\n")
 	b.WriteString("2. Common causes: order-dependent state, async/timing, network, randomness, env-dependent.\n")
 	b.WriteString("3. Once fixed, click 'Restore from quarantine' in the TEO UI.\n\n")
+	b.WriteString("## Recent run history\n\n")
+	b.WriteString(renderRunHistoryMermaid(outcomes))
+	b.WriteString("\n")
 	b.WriteString("---\n")
 	b.WriteString("_This issue was created automatically by [TEO](https://github.com/teo-dev/teo)._\n")
 	return b.String()

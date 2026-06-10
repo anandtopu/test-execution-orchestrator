@@ -9,20 +9,29 @@ import (
 
 // Common holds settings shared by every service.
 type Common struct {
-	Env                  string // dev | staging | prod
-	LogLevel             string // debug | info | warn | error
-	OTLPEndpoint         string // for self-emitted spans (dogfood)
-	HTTPListenAddr       string
-	GRPCListenAddr       string
-	PostgresDSN          string
-	ClickHouseDSN        string
-	NATSURL              string
-	S3Endpoint           string
-	S3Bucket             string
-	S3Region             string
-	JWTSecret            string
-	JWTTTL               time.Duration
-	GitHubWebhookSecret  string // HMAC secret for inbound webhooks (FR-904)
+	Env                 string // dev | staging | prod
+	LogLevel            string // debug | info | warn | error
+	OTLPEndpoint        string // for self-emitted spans (dogfood)
+	HTTPListenAddr      string
+	GRPCListenAddr      string
+	PostgresDSN         string
+	ClickHouseDSN       string
+	NATSURL             string
+	S3Endpoint          string
+	S3Bucket            string
+	S3Region            string
+	JWTSecret           string
+	JWTTTL              time.Duration
+	GitHubWebhookSecret string // HMAC secret for inbound webhooks (FR-904)
+
+	// ML predictor (E-12 / FR-607). When PredictorMLURL is set, the Run Manager
+	// wraps the Heuristic in a Fallback that tries the Python LightGBM service at
+	// this base URL first and falls back to the heuristic on any failure. When
+	// unset, the heuristic is used directly (the v1.0 default). PredictorMLTimeout
+	// bounds each ML call — and, because planning runs in-transaction, the time a
+	// slow ML endpoint can hold a DB transaction open.
+	PredictorMLURL     string
+	PredictorMLTimeout time.Duration
 
 	// OIDC sign-in (FR-801, S-03-02). When OIDCIssuer + OIDCClientID are set,
 	// the API mounts the /auth/* sign-in routes; otherwise they return 503.
@@ -50,6 +59,8 @@ func LoadCommon() Common {
 		JWTSecret:           getEnv("TEO_JWT_SECRET", ""),
 		JWTTTL:              getDuration("TEO_JWT_TTL", time.Hour),
 		GitHubWebhookSecret: getEnv("TEO_GITHUB_WEBHOOK_SECRET", ""),
+		PredictorMLURL:      getEnv("TEO_PREDICTOR_ML_URL", ""),
+		PredictorMLTimeout:  getDuration("TEO_PREDICTOR_ML_TIMEOUT", 3*time.Second),
 		OIDCIssuer:          getEnv("TEO_OIDC_ISSUER", ""),
 		OIDCClientID:        getEnv("TEO_OIDC_CLIENT_ID", ""),
 		OIDCClientSecret:    getEnv("TEO_OIDC_CLIENT_SECRET", ""),

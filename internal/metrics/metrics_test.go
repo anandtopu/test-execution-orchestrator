@@ -24,6 +24,7 @@ var expectedMetricNames = []string{
 	"teo_predictor_predict_total",
 	"teo_predictor_cold_start_total",
 	"teo_predictor_fallback_total",
+	"teo_predictor_server_coldstart_total",
 	"teo_predictor_mae",
 	"teo_clickhouse_inserts_total",
 	"teo_clickhouse_insert_seconds",
@@ -43,6 +44,7 @@ func TestRegistryExposesAllExpectedMetrics(t *testing.T) {
 	r.PredictorRequests.Inc()
 	r.PredictorColdStart.Inc()
 	r.PredictorFallback.Inc()
+	r.PredictorServerColdStart.Inc()
 	r.PredictorMAE.Set(0)
 	r.CHInserts.Inc()
 	r.CHInsertSec.Observe(0)

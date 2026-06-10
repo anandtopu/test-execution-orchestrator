@@ -53,6 +53,50 @@ func TestIssuesCreatePostsCorrectPayload(t *testing.T) {
 	}
 }
 
+func TestIssuesCreatePreservesMermaidFence(t *testing.T) {
+	// Regression guard for the auto-quarantine run-history visualization
+	// (gap [quarantine-mermaid]): a fenced ```mermaid xychart-beta block must
+	// survive JSON-marshalling and reach the GitHub API byte-for-byte. If the
+	// transport ever HTML-escaped or otherwise mangled the body, the fence would
+	// break and GitHub would render raw text instead of a chart.
+	const mermaid = "## Recent run history\n\n```mermaid\nxychart-beta\n    bar [1, 0, 1]\n```\n"
+
+	var rawBody string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		rawBody = string(b)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(Issue{Number: 99, HTMLURL: "https://example.test/issues/99", State: "open"})
+	}))
+	defer srv.Close()
+
+	c := NewIssuesClient("test-token")
+	c.BaseURL = srv.URL
+	if _, err := c.Create(context.Background(), "owner/repo", IssueRequest{
+		Title: "[TEO] Flaky test quarantined", Body: mermaid,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// The literal fence-opening sequence must appear verbatim in the wire body.
+	if !strings.Contains(rawBody, "```mermaid\\nxychart-beta") {
+		t.Errorf("raw request body lost the mermaid fence; got: %s", rawBody)
+	}
+	// The bar series must survive too (no escaping of brackets/commas).
+	if !strings.Contains(rawBody, "bar [1, 0, 1]") {
+		t.Errorf("raw request body lost the bar series; got: %s", rawBody)
+	}
+	// Decoding the JSON must round-trip back to the exact mermaid block.
+	var sent IssueRequest
+	if err := json.Unmarshal([]byte(rawBody), &sent); err != nil {
+		t.Fatalf("wire body is not valid JSON: %v", err)
+	}
+	if sent.Body != mermaid {
+		t.Errorf("body mutated in transit:\nwant: %q\ngot:  %q", mermaid, sent.Body)
+	}
+}
+
 func TestIssuesCommentSendsBody(t *testing.T) {
 	var receivedBody string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -132,7 +132,7 @@ linters:
       # OTLP timestamp conversions (uint64 nanos ↔ int64 / int8 status codes)
       # use the canonical proto-encoding pattern; explicit overflow checks
       # would add noise without catching real bugs at this layer.
-      - path: (internal/api/export\.go|internal/resultpipeline/otlp\.go|internal/runmanager/manager\.go)
+      - path: (internal/api/export\.go|internal/resultpipeline/otlp\.go|internal/runmanager/manager\.go|internal/grpcsvc/runs\.go)
         text: "G115:"
 
 # In v2 schema, gofmt + goimports moved out of `linters` into a separate
