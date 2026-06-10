@@ -10,22 +10,51 @@ import { StatusBadge, Kpi } from './atoms';
 import { Icon } from './Icons';
 import { ShardsPanel, PredictorAccuracy, FailureClustersPreview, FleetPanel } from './RunGantt';
 import { fmt } from '@/lib/teo-format';
+import { isLive } from '@/lib/format';
 import { TEO_DATA, type Run, type Shard, type Cluster } from '@/lib/teo-data';
 
 type RunTab = 'shards' | 'tests' | 'failures' | 'logs' | 'trace' | 'plan';
 
-export function RunDetailScreen() {
-  const { run, shards, clusters } = TEO_DATA;
+export interface RunDetailScreenProps {
+  /** Adapted run-level view model (teo-adapt.adaptRun output). */
+  run?: Run;
+  /** Adapted shard view models. */
+  shards?: Shard[];
+  /** Failure clusters for the preview panel. */
+  clusters?: Cluster[];
+}
+
+// RunDetailScreen renders the marquee live-run surface. It now reads from props
+// fed by the home Server Component (real GraphQL data adapted via teo-adapt);
+// the TEO_DATA mock remains the default ONLY so any import-time/Storybook usage
+// without props still renders the design.
+export function RunDetailScreen({
+  run = TEO_DATA.run,
+  shards = TEO_DATA.shards,
+  clusters = TEO_DATA.clusters,
+}: RunDetailScreenProps = {}) {
   const [tab, setTab] = useState<RunTab>('shards');
   const [selectedShard, setSelectedShard] = useState<number | null>(null);
   const [hoverShard, setHoverShard] = useState<number | null>(null);
 
-  // Live elapsed counter (ticks while we're "running")
+  // Live elapsed counter. Two correctness rules now that data is live:
+  //   (1) Resync to the server-recomputed elapsedSec whenever LiveRunDetail
+  //       re-fetches and passes a fresh run prop — useState's initializer only
+  //       runs on mount, so without this effect the polled value is ignored and
+  //       the local counter drifts.
+  //   (2) Only tick locally while the run is live; once it reaches a terminal
+  //       status the elapsed must freeze on the real total duration instead of
+  //       counting up forever.
   const [elapsed, setElapsed] = useState(run.elapsedSec);
   useEffect(() => {
+    setElapsed(run.elapsedSec);
+  }, [run.elapsedSec]);
+  const live = isLive(run.status);
+  useEffect(() => {
+    if (!live) return;
     const id = setInterval(() => setElapsed((e) => e + 1), 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [live]);
 
   // Bound the Gantt timeline at max(shard end OR current elapsed)
   const tEnd = useMemo(() => {
@@ -44,7 +73,7 @@ export function RunDetailScreen() {
     <div>
       <RunHeader run={run} elapsed={elapsed} />
       <KpiStrip run={run} shards={shards} />
-      <RunTabs tab={tab} setTab={setTab} clusters={clusters} run={run} />
+      <RunTabs tab={tab} setTab={setTab} clusters={clusters} run={run} shardCount={shards.length} />
       <div className="page-pad" style={{ paddingTop: 16 }}>
         {tab === 'shards' && (
           <div className="section-grid">
@@ -128,6 +157,7 @@ function RunHeader({ run, elapsed }: { run: Run; elapsed: number }) {
 function KpiStrip({ run, shards }: { run: Run; shards: Shard[] }) {
   const done = shards.filter((s) => s.end != null).length;
   const failed = shards.filter((s) => s.status === 'fail').length;
+  const preempted = shards.filter((s) => s.status === 'preempt').length;
   // Time-to-first-fail
   const failShard = shards.find((s) => s.status === 'fail');
   const ttffSec = failShard ? failShard.end : null;
@@ -153,7 +183,7 @@ function KpiStrip({ run, shards }: { run: Run; shards: Shard[] }) {
               <span style={{ color: 'var(--sr-fg-muted)', fontSize: 16 }}> / {shards.length}</span>
             </>
           }
-          sub={<>{failed} failed · 1 preempt</>}
+          sub={<>{failed} failed · {preempted} preempt</>}
         />
         <Kpi label="p95 shard" value={fmt.duration(run.p95ShardSec)} sub={<>vs predicted {fmt.duration(run.predictedTotalSec)}</>} />
         <Kpi label="TTFF" value={ttffSec != null ? fmt.duration(ttffSec) : '—'} sub={<>failure-first ordering hit</>} />
@@ -171,10 +201,11 @@ function KpiStrip({ run, shards }: { run: Run; shards: Shard[] }) {
         />
         <Kpi
           label="Predictor MAE"
-          value={`${run.predictor.mae}s`}
+          value={`${run.predictor.mae.toFixed(1)}s`}
           sub={
             <>
-              ρ {run.predictor.rho} · lgbm-{run.predictor.modelVersion.slice(-8)}
+              ρ {run.predictor.rho.toFixed(2)}
+              {run.predictor.modelVersion ? <> · {run.predictor.modelVersion.slice(-12)}</> : null}
             </>
           }
         />
@@ -188,14 +219,16 @@ function RunTabs({
   setTab,
   clusters,
   run,
+  shardCount,
 }: {
   tab: RunTab;
   setTab: (t: RunTab) => void;
   clusters: Cluster[];
   run: Run;
+  shardCount: number;
 }) {
   const tabs: { id: RunTab; label: string; count?: number }[] = [
-    { id: 'shards', label: 'Shards', count: 24 },
+    { id: 'shards', label: 'Shards', count: shardCount },
     { id: 'tests', label: 'Tests', count: run.testCount },
     { id: 'failures', label: 'Failures', count: clusters.length },
     { id: 'logs', label: 'Logs' },

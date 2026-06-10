@@ -14,6 +14,12 @@ export interface Shard {
   testCount: number;
   startedAt?: string | null;
   finishedAt?: string | null;
+  // ui-home-calibration: per-shard calibration metadata (null until the sibling
+  // migration adds teo.shards.prediction_confidence + model_version) so the
+  // Gantt is a true predicted-vs-observed view, not an `actual ?? predicted`
+  // fallback.
+  predictionConfidence?: number | null;
+  modelVersion?: string | null;
 }
 
 export interface LiveRun {
@@ -65,8 +71,10 @@ export function LiveRunShards({ initial, pollMs = 2000, fetcher = defaultFetcher
   }, [run.id, run.status, pollMs, fetcher]);
 
   const shards = run.shards ?? [];
+  // Scale to the longer of predicted/actual across all shards so the predicted
+  // band and the actual bar are both visible against a single calibrated axis.
   const maxMs = Math.max(
-    ...shards.map((s) => s.actualDurationMs ?? s.predictedDurationMs),
+    ...shards.map((s) => Math.max(s.actualDurationMs ?? 0, s.predictedDurationMs)),
     1,
   );
 
@@ -83,6 +91,9 @@ export function LiveRunShards({ initial, pollMs = 2000, fetcher = defaultFetcher
           durationMs={s.actualDurationMs ?? s.predictedDurationMs}
           maxMs={maxMs}
           testCount={s.testCount}
+          predictedDurationMs={s.predictedDurationMs}
+          actualDurationMs={s.actualDurationMs}
+          predictionConfidence={s.predictionConfidence}
         />
       ))}
     </div>

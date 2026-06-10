@@ -42,9 +42,18 @@ export function shortSha(sha: string | undefined | null): string {
   return sha.slice(0, 7);
 }
 
-/** A run is "live" (UI should poll) when its status is not terminal. */
+/**
+ * A run is "live" (UI should poll) when its status is not terminal.
+ *
+ * The terminal set must match internal/model.RunStatus exactly. Note the
+ * backend constant is RunCancelled = "canceled" (single L) while the SQL in
+ * runsvc writes 'cancelled' (double L) — both spellings are treated as terminal
+ * here, and 'lost' (a worker-lost terminal) is included too. Input is lowercased
+ * so an upstream uppercase value can't keep the home overlay polling forever.
+ */
 export function isLive(status: string): boolean {
-  return !['succeeded', 'failed', 'cancelled'].includes(status);
+  const s = (status ?? '').toLowerCase();
+  return !['succeeded', 'failed', 'canceled', 'cancelled', 'lost'].includes(s);
 }
 
 /**

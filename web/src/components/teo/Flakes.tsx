@@ -9,7 +9,7 @@ import { useState, useMemo } from 'react';
 import { Chip, StatusBadge, Sparkline, Kpi } from './atoms';
 import { Icon } from './Icons';
 import { fmt, CAT_COLOR } from '@/lib/teo-format';
-import { TEO_DATA, type Flake } from '@/lib/teo-data';
+import { type Flake } from '@/lib/teo-data';
 
 type SortKey = keyof Flake;
 type SortDir = 'asc' | 'desc';
@@ -22,9 +22,7 @@ function cmpVal(v: unknown): string | number {
   return '';
 }
 
-export function FlakesScreen() {
-  const { flakes } = TEO_DATA;
-
+export function FlakesScreen({ flakes }: { flakes: Flake[] }) {
   const [sortKey, setSortKey] = useState<SortKey>('rate');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [catFilter, setCatFilter] = useState<string>('all');
@@ -64,7 +62,7 @@ export function FlakesScreen() {
     flagged: flakes.filter((f) => f.status === 'flagged').length,
     quarantined: flakes.filter((f) => f.status === 'quarantined').length,
     minutesCost: flakes.reduce((m, f) => m + f.durMean * f.samples * f.rate, 0) / 60,
-    wilsonMean: flakes.reduce((s, f) => s + f.wLo, 0) / flakes.length,
+    wilsonMean: flakes.length > 0 ? flakes.reduce((s, f) => s + f.wLo, 0) / flakes.length : 0,
   };
 
   const selected = flakes.find((f) => f.id === selectedId);

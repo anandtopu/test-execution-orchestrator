@@ -293,8 +293,14 @@ export function PredictorAccuracy({ run, shards }: { run: Run; shards: Shard[] }
       <div className="panel__head">
         <span className="panel__title">Predictor accuracy</span>
         <span className="mono" style={{ fontSize: 11, color: 'var(--sr-fg-muted)' }}>
-          MAE <span style={{ color: 'var(--sr-fg)' }}>{run.predictor.mae}s</span> · ρ{' '}
-          <span style={{ color: 'var(--sr-fg)' }}>{run.predictor.rho}</span>
+          MAE <span style={{ color: 'var(--sr-fg)' }}>{run.predictor.mae.toFixed(1)}s</span> · ρ{' '}
+          <span style={{ color: 'var(--sr-fg)' }}>{run.predictor.rho.toFixed(2)}</span>
+          {run.predictor.modelVersion ? (
+            <>
+              {' · '}
+              <span style={{ color: 'var(--sr-fg)' }}>{run.predictor.modelVersion}</span>
+            </>
+          ) : null}
         </span>
       </div>
       <div className="panel__body">
@@ -310,6 +316,11 @@ export function PredictorAccuracy({ run, shards }: { run: Run; shards: Shard[] }
                 <div>
                   <div className="predict-line__label">
                     #{s.i.toString().padStart(2, '0')} · {s.tests} tests
+                    {s.confidence != null ? (
+                      <span style={{ marginLeft: 6, opacity: 0.7 }}>
+                        · conf {(s.confidence * 100).toFixed(0)}%
+                      </span>
+                    ) : null}
                   </div>
                   <div className="predict-line__bars" style={{ marginTop: 4 }}>
                     <div className="predict-line__bar-pred" style={{ width: `${predPct}%` }} />
@@ -345,10 +356,18 @@ export function PredictorAccuracy({ run, shards }: { run: Run; shards: Shard[] }
           }}
         >
           <div>
-            p50 delta <span style={{ color: 'var(--sr-pass)' }}>{(run.predictor.p50Delta * 100).toFixed(1)}%</span>
+            p50 delta{' '}
+            <span style={{ color: 'var(--sr-pass)' }}>
+              {run.predictor.p50Delta > 0 ? '+' : ''}
+              {(run.predictor.p50Delta * 100).toFixed(1)}%
+            </span>
           </div>
           <div>
-            p95 delta <span style={{ color: 'var(--sr-warn)' }}>+{(run.predictor.p95Delta * 100).toFixed(1)}%</span>
+            p95 delta{' '}
+            <span style={{ color: 'var(--sr-warn)' }}>
+              {run.predictor.p95Delta > 0 ? '+' : ''}
+              {(run.predictor.p95Delta * 100).toFixed(1)}%
+            </span>
           </div>
         </div>
       </div>

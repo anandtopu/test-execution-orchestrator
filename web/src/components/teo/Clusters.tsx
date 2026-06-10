@@ -9,7 +9,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { Chip, StatusBadge } from './atoms';
 import { Icon } from './Icons';
 import { CAT_COLOR } from '@/lib/teo-format';
-import { TEO_DATA, type Cluster, type ClusterCategory } from '@/lib/teo-data';
+import { type Cluster, type ClusterCategory } from '@/lib/teo-data';
 
 const MAP_CATEGORIES: ClusterCategory[] = ['assertion', 'timeout', 'panic', 'network', 'race'];
 
@@ -18,9 +18,8 @@ interface Edge {
   b: Cluster;
 }
 
-export function ClustersScreen() {
-  const { clusters } = TEO_DATA;
-  const [selectedId, setSelectedId] = useState<string>('fc-7e3a');
+export function ClustersScreen({ clusters }: { clusters: Cluster[] }) {
+  const [selectedId, setSelectedId] = useState<string>(clusters[0]?.id ?? '');
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<'all' | ClusterCategory>('all');
 
@@ -31,7 +30,12 @@ export function ClustersScreen() {
 
   const selected = clusters.find((c) => c.id === selectedId) || clusters[0];
 
-  // Edges between related clusters
+  // Edges between related clusters.
+  // NB: every hook must run on every render (Rules of Hooks). `clusters` is a
+  // server-fetched prop that can legitimately flip empty<->non-empty on an
+  // in-place re-render (App Router soft-nav / revalidation / a future client
+  // poll), so the empty-state early return MUST stay below all hook calls — do
+  // not hoist it between `visible` and `edges`.
   const edges = useMemo(() => {
     const e: Edge[] = [];
     clusters.forEach((c) => {
@@ -44,6 +48,21 @@ export function ClustersScreen() {
     });
     return e;
   }, [clusters]);
+
+  if (clusters.length === 0) {
+    return (
+      <div className="page-pad">
+        <div className="panel">
+          <div className="panel__body" style={{ padding: 32, textAlign: 'center' }}>
+            <h1 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600 }}>Failure clusters</h1>
+            <p className="mono muted" style={{ margin: 0, fontSize: 12 }}>
+              No failure clusters in the last 30d.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="clusters-grid">

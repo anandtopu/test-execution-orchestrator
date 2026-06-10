@@ -215,6 +215,28 @@ body {
   cursor: pointer;
 }
 
+/* Session widget (email + Sign out, or a Sign in link). Unlike the legacy
+   .topbar__user avatar circle, this is a normal-flow inline-flex text
+   container so multi-character content is fully visible, not clipped into a
+   28px gradient bubble. */
+.topbar__session {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 320px;
+  font-size: 12px;
+  color: var(--sr-fg, inherit);
+  white-space: nowrap;
+}
+.topbar__session :where(span, a, button) {
+  font-size: 12px;
+}
+.topbar__session [data-testid="session-user"] > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
 .content {
   grid-row: 2;
   grid-column: 2;

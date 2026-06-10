@@ -11,12 +11,23 @@ interface BadgeMeta {
 const STATUS_MAP: Record<string, BadgeMeta> = {
   pass: { cls: 'badge--pass', label: 'PASS' },
   passed: { cls: 'badge--pass', label: 'PASSED' },
+  // Backend run-status vocabulary (internal/model.RunStatus): a finished run
+  // reports 'succeeded', and adaptRun passes run.status through raw — without
+  // these entries the marquee header mislabels every completed run as a gray
+  // 'SUCCEEDED' skip-chip instead of a green pass badge.
+  succeeded: { cls: 'badge--pass', label: 'SUCCEEDED' },
   fail: { cls: 'badge--fail', label: 'FAIL' },
   failed: { cls: 'badge--fail', label: 'FAILED' },
+  lost: { cls: 'badge--fail', label: 'LOST' },
   running: { cls: 'badge--run', label: 'RUNNING' },
   queued: { cls: 'badge--info', label: 'QUEUED' },
+  pending: { cls: 'badge--info', label: 'PENDING' },
   preempt: { cls: 'badge--warn', label: 'PREEMPT' },
   preempted: { cls: 'badge--warn', label: 'PREEMPTED' },
+  // The model spells this 'canceled' (single L); SQL/isLive use 'cancelled'
+  // (double L). Map both spellings until the vocabulary is reconciled.
+  canceled: { cls: 'badge--skip', label: 'CANCELED' },
+  cancelled: { cls: 'badge--skip', label: 'CANCELLED' },
   skip: { cls: 'badge--skip', label: 'SKIP' },
   skipped: { cls: 'badge--skip', label: 'SKIPPED' },
   quarantined: { cls: 'badge--quar', label: 'QUARANTINED' },

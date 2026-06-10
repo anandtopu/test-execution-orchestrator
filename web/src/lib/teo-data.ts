@@ -65,6 +65,12 @@ export interface Shard {
   start: number;
   end: number | null;
   worker: string;
+  // ui-home-calibration: per-shard predictor calibration metadata threaded
+  // through from RunByIdQuery (predictionConfidence/modelVersion). Optional so
+  // the mock fixture and graceful-degradation path (null backend columns) both
+  // type-check; the Predictor overlay renders an em-dash when absent.
+  confidence?: number | null;
+  modelVersion?: string | null;
 }
 
 export type ClusterCategory =

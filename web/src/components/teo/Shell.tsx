@@ -11,6 +11,7 @@ import Link from 'next/link';
 import type { Route } from 'next';
 import { usePathname } from 'next/navigation';
 import { Icon } from './Icons';
+import { SessionNav } from '@/components/SessionNav';
 import { TEO_DATA } from '@/lib/teo-data';
 
 type Theme = 'light' | 'dark' | 'contrast';
@@ -138,8 +139,8 @@ function Topbar({
         <input className="topbar__search" placeholder="Search tests, runs, clusters…" />
         <span className="topbar__kbd">⌘K</span>
       </div>
-      <div className="topbar__user" title="Marco Pereira">
-        MP
+      <div className="topbar__session">
+        <SessionNav />
       </div>
     </header>
   );

@@ -29,6 +29,18 @@ export const RunByIdQuery = /* GraphQL */ `
       startedAt
       finishedAt
       failedTestCount
+      predictorMae
+      predictorRho
+      modelVersion
+      predictor {
+        mae
+        rho
+        modelVersion
+        p50DeltaMs
+        p95DeltaMs
+        sampleCount
+        confidence
+      }
       shards {
         id
         index
@@ -39,6 +51,9 @@ export const RunByIdQuery = /* GraphQL */ `
         testCount
         startedAt
         finishedAt
+        deltaMs
+        predictionConfidence
+        modelVersion
       }
     }
   }
@@ -53,6 +68,12 @@ export const FailureClustersQuery = /* GraphQL */ `
       occurrences
       firstSeen
       lastSeen
+      x
+      y
+      r
+      category
+      stackFingerprint
+      affectedRuns
     }
   }
 `;
@@ -65,8 +86,14 @@ export const FlakesQuery = /* GraphQL */ `
       testName
       flakeRate
       wilsonLower
+      wilsonUpper
       sampleSize
       category
+      spark
+      status
+      durationMeanMs
+      quarantinedAt
+      ownerTeam
     }
   }
 `;

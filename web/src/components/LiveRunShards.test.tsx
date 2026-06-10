@@ -12,6 +12,9 @@ const seed: LiveRun = {
       status: 'running',
       predictedDurationMs: 5000,
       testCount: 10,
+      // ui-home-calibration: per-shard calibration metadata.
+      predictionConfidence: 0.78,
+      modelVersion: 'lightgbm-2026.06.01',
     },
     {
       id: 's-1',
@@ -19,6 +22,8 @@ const seed: LiveRun = {
       status: 'pending',
       predictedDurationMs: 8000,
       testCount: 12,
+      predictionConfidence: 0.64,
+      modelVersion: 'lightgbm-2026.06.01',
     },
   ],
 };
@@ -91,5 +96,43 @@ describe('<LiveRunShards />', () => {
   it('shows an empty-state when there are no shards', () => {
     render(<LiveRunShards initial={{ ...seed, shards: [] }} fetcher={vi.fn()} />);
     expect(screen.getByText('No shards yet.')).toBeInTheDocument();
+  });
+
+  // ui-home-calibration: a FINISHED shard must render the predicted band AND the
+  // actual bar as two DISTINCT elements — it is no longer a single
+  // `actual ?? predicted` bar. The seeded prediction confidence must also surface
+  // in the row when present.
+  it('renders both the predicted band and a distinct actual bar for a finished shard', () => {
+    const finished: LiveRun = {
+      ...seed,
+      shards: [
+        {
+          ...seed.shards[0],
+          status: 'succeeded',
+          predictedDurationMs: 5000,
+          actualDurationMs: 4200, // distinct from predicted → two visible widths
+        },
+      ],
+    };
+    render(<LiveRunShards initial={{ ...finished, status: 'succeeded' }} fetcher={vi.fn()} />);
+
+    // Two distinct testids: a predicted band and the actual bar.
+    const pred = screen.getByTestId('gantt-pred-0') as HTMLElement;
+    const bar = screen.getByTestId('gantt-bar-0') as HTMLElement;
+    expect(pred).toBeInTheDocument();
+    expect(bar).toBeInTheDocument();
+    // The predicted band is sized off the predicted ms (5000 == maxMs → 100%);
+    // the actual bar is sized off the actual ms (4200/5000 → 84%). They differ,
+    // proving it is a true predicted-vs-observed view, not one fused bar.
+    expect(pred.style.width).toBe('100%');
+    expect(bar.style.width).toBe('84%');
+    expect(pred.style.width).not.toBe(bar.style.width);
+  });
+
+  it('surfaces the prediction confidence in a shard row when present', () => {
+    render(<LiveRunShards initial={seed} fetcher={vi.fn()} />);
+    // predictionConfidence 0.78 → "conf 78%" rendered in its own testid.
+    const conf = screen.getByTestId('gantt-conf-0');
+    expect(conf).toHaveTextContent('conf 78%');
   });
 });
