@@ -8,6 +8,14 @@ For a finer-grained per-FR / per-epic implementation status, see [`progress.md`]
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-06-11
+
+First stable release. All 16 epics and the 12 reconciliation-audit items are
+closed; the full `-tags=integration` suite runs green (31 packages) and the
+ClickHouse 1M-row load test records p99 78.8 ms. The offline chart-render
+pre-check of the restore drill passes; the full cloud-based restore drill is
+deferred to a live environment (tracked in `docs/operations/restore-drill.md`).
+
 ### Added — Leader-election 2-replica integration/chaos test (`leader-election-test`, #12 / S-04-02 / T-04-02-03)
 
 Closes the last open reconciliation item (#12): the per-run `pg_try_advisory_xact_lock` coordination (ADR-0013) had production code but no 2-replica lease/takeover test.
