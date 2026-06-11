@@ -17,6 +17,56 @@ This drill exercises the same code paths a real disaster would hit. **Do not ski
 - [ ] Pick a target namespace (`teo-restore`) — never restore over the live `teo` namespace.
 - [ ] Have the operator-supplied secrets ready (`teo-jwt`, GitHub App key, OIDC client secret).
 
+## 0b. Chart-render pre-check (offline — no AWS/cluster needed)
+
+A cheap gate to run **before** you book cluster/AWS time: confirm the chart §4
+installs renders cleanly in the drill's exact configuration
+(`postgres.enabled=false`, `clickhouse.enabled=false`, since §2–§3 restore
+those stores externally). It catches template/values regressions that would
+otherwise blow up mid-drill, and needs nothing but `helm` + network.
+
+```bash
+helm repo add cloudnative-pg            https://cloudnative-pg.github.io/charts
+helm repo add nats                      https://nats-io.github.io/k8s/helm/charts
+helm repo add minio                     https://charts.min.io/
+helm repo add dex                       https://charts.dexidp.io
+helm repo add altinity-clickhouse-operator https://docs.altinity.com/clickhouse-operator/
+helm repo update
+helm dependency build deploy/helm/teo
+
+helm lint     deploy/helm/teo --set postgres.enabled=false --set clickhouse.enabled=false
+helm template teo deploy/helm/teo -n teo-restore \
+  --set postgres.enabled=false --set clickhouse.enabled=false > /tmp/teo-render.yaml
+```
+
+**Gate:** `helm lint` reports 0 failed, `helm template` exits 0 with no
+warnings, and the render contains the three core workloads:
+
+```bash
+grep -E 'name: (teo-api|teo-run-manager|teo-result-pipeline)$' /tmp/teo-render.yaml
+```
+
+Sanity-check that the disable flags did the right thing: there should be **no**
+CloudNativePG `Cluster` CR and **no** Altinity/ClickHouse-operator resources in
+the render, yet the workloads must still reference the externally-restored
+`teo-postgres-creds` secret (`secretKeyRef … key: dsn`) — that's the seam §4
+relies on.
+
+Clean up the vendored deps afterward (`helm dependency build` writes
+`charts/*.tgz` — already `.gitignore`d — plus a `Chart.lock`):
+
+```bash
+rm -rf deploy/helm/teo/charts deploy/helm/teo/Chart.lock
+```
+
+> **Scope:** this validates **chart rendering only** (§4). It does *not*
+> exercise the Postgres PITR (§2), ClickHouse restore (§3), or the live smoke
+> test (§5) — those need real AWS backups + a cluster and are the substance of
+> the drill. Passing this pre-check is necessary, not sufficient.
+>
+> _Last run: 2026-06-10 — green (helm v4.0.5; lint 0 failed, template exit 0,
+> all three workloads present, external creds wired)._
+
 ## 1. Provision a clean cluster (15 min)
 
 We assume EKS; adapt for any 1.29+ cluster.
