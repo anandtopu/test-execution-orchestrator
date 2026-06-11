@@ -87,7 +87,9 @@ sboms:
     documents:
       - "{{ .ArtifactName }}.cdx.json"
     cmd: syft
-    args: ["{{ .ArtifactPath }}", "-o", "cyclonedx-json={{ .Document }}"]
+    # syft args use goreleaser's literal $artifact/$document substitutions, NOT
+    # Go templates — {{ .Document }} fails with "map has no entry for key Document".
+    args: ["$artifact", "--output", "cyclonedx-json=$document"]
 
 # Cosign keyless signing for archives + checksums (the chart workflow signs
 # its own artifacts separately).
@@ -116,12 +118,12 @@ changelog:
       order: 999
 
 release:
-  github:
-    owner: teo-dev
-    name: teo
+  # No explicit github.owner/name — goreleaser auto-detects the repo from the
+  # Actions GITHUB_REPOSITORY / git remote. Hardcoding teo-dev/teo (the Go
+  # module path, not the GitHub repo) made publish target a repo the workflow
+  # token can't write to.
   draft: false
   prerelease: auto
   name_template: "v{{ .Version }}"
   header: |
-    See [`progress.md`](https://github.com/teo-dev/teo/blob/main/progress.md) for
-    the implementation status of this release.
+    See `progress.md` in this repository for the implementation status of this release.
