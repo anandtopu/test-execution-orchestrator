@@ -41,6 +41,7 @@ func (a *Adapter) Name() string { return "your-runner" }
 // no tests. Return an error only on infrastructure failure (binary missing,
 // workdir invalid).
 func (a *Adapter) Discover(ctx context.Context, workdir string) ([]model.TestEntry, error) {
+	//nolint:gosec // G204: adapter skeleton spawns the runner binary with caller-supplied args, same as the concrete pytest/gotest/jest adapters.
 	cmd := exec.CommandContext(ctx, a.bin(), "--list-tests" /* TODO: runner's enumeration flag */)
 	cmd.Dir = workdir
 	cmd.Env = os.Environ()
@@ -91,6 +92,7 @@ func (a *Adapter) Execute(ctx context.Context, workdir string, tests []model.Tes
 		args = append(args, t.Path /* TODO: + t.Name in your runner's nodeid format */)
 	}
 
+	//nolint:gosec // G204: adapter skeleton spawns the runner binary with caller-supplied args, same as the concrete pytest/gotest/jest adapters.
 	cmd := exec.CommandContext(ctx, a.bin(), args...)
 	cmd.Dir = workdir
 	cmd.Env = mergeEnv(os.Environ(), opts.Env)

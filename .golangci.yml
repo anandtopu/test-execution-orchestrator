@@ -47,8 +47,10 @@ linters:
         - (github.com/jackc/pgx/v5/pgxpool.Pool).Close
         # pgx Tx Rollback after a Commit returns ErrTxClosed by design — the
         # canonical pattern is `defer tx.Rollback(ctx)` and we don't act on
-        # the result.
+        # the result. database/sql's Tx (used by internal/migrate) is the same:
+        # a deferred Rollback that no-ops after Commit returns ErrTxDone.
         - (github.com/jackc/pgx/v5.Tx).Rollback
+        - (*database/sql.Tx).Rollback
         - (github.com/jackc/pgx/v5.Rows).Close
         - (github.com/ClickHouse/clickhouse-go/v2/lib/driver.Rows).Close
         - (*net/http.Server).Shutdown

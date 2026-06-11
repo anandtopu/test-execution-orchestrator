@@ -49,7 +49,7 @@ func TestShardDispatchJSONRoundTrip(t *testing.T) {
 		`"dispatched_at":"2026-05-05T12:00:00Z"`,
 	} {
 		if !contains(string(b), tag) {
-			t.Errorf("marshalled body missing %s: %s", tag, string(b))
+			t.Errorf("marshaled body missing %s: %s", tag, string(b))
 		}
 	}
 	var got ShardDispatch

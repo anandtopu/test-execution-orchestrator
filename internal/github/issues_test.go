@@ -56,7 +56,7 @@ func TestIssuesCreatePostsCorrectPayload(t *testing.T) {
 func TestIssuesCreatePreservesMermaidFence(t *testing.T) {
 	// Regression guard for the auto-quarantine run-history visualization
 	// (gap [quarantine-mermaid]): a fenced ```mermaid xychart-beta block must
-	// survive JSON-marshalling and reach the GitHub API byte-for-byte. If the
+	// survive JSON-marshaling and reach the GitHub API byte-for-byte. If the
 	// transport ever HTML-escaped or otherwise mangled the body, the fence would
 	// break and GitHub would render raw text instead of a chart.
 	const mermaid = "## Recent run history\n\n```mermaid\nxychart-beta\n    bar [1, 0, 1]\n```\n"
