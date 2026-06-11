@@ -89,9 +89,13 @@ func seed(t *testing.T, pool *pgxpool.Pool) seedIDs {
 	// is attached to cluster-2 so sf-2 has affected_runs == 1 (a distinct run).
 	run3ID := uuid.New().String()
 	shard3ID := uuid.New().String()
+	// created_at is pinned to the past too (not just started_at): queryRuns
+	// orders by created_at DESC, so a default now() here would sort this
+	// history run ahead of run2 and break the "first run is the running one"
+	// ordering assertions. It stays a real 3rd run in the list/cost counts.
 	mustExec(t, pool, `
-        INSERT INTO teo.runs (id, repo_id, commit_sha, branch, triggered_by, status, started_at, finished_at)
-        VALUES ($1, $2, 'feedface', 'main', 'test', 'succeeded', now() - interval '2 hours', now() - interval '2 hours' + interval '1 minute')
+        INSERT INTO teo.runs (id, repo_id, commit_sha, branch, triggered_by, status, started_at, finished_at, created_at)
+        VALUES ($1, $2, 'feedface', 'main', 'test', 'succeeded', now() - interval '2 hours', now() - interval '2 hours' + interval '1 minute', now() - interval '2 hours')
     `, run3ID, ids.repoID)
 	mustExec(t, pool, `
         INSERT INTO teo.shards (id, run_id, index, status, predicted_duration_ms, actual_duration_ms, test_count, worker_id)
@@ -109,10 +113,10 @@ func seed(t *testing.T, pool *pgxpool.Pool) seedIDs {
 		}
 		mustExec(t, pool, `
             INSERT INTO teo.test_executions (shard_id, test_id, attempt, outcome, duration_ms, failure_cluster_id, started_at, finished_at)
-            VALUES ($1, $2, 1, $3, $4, $6,
-                    now() - interval '2 hours' + ($5 || ' seconds')::interval,
-                    now() - interval '2 hours' + ($5 || ' seconds')::interval + interval '1 second')
-        `, shard3ID, ids.testID, outcome, 1000+i*10, i, clusterArg)
+            VALUES ($1, $2, $7, $3, $4, $6,
+                    now() - interval '2 hours' + ($5 * interval '1 second'),
+                    now() - interval '2 hours' + ($5 * interval '1 second') + interval '1 second')
+        `, shard3ID, ids.testID, outcome, 1000+i*10, i, clusterArg, i+1)
 	}
 
 	// flake_record so queryFlakes returns something. quarantined_at is set so the
@@ -283,15 +287,19 @@ func TestQueryCostSummary_AggregatesByWeek(t *testing.T) {
 		t.Fatalf("got %d weeks, want 1", len(got))
 	}
 	row := got[0]
-	if got, want := row["runs"].(int), 2; got != want {
+	// run1, run2 and the run3 sparkline-history run all land in the current
+	// week with started_at set; run3 carries zero spot/on-demand minutes so it
+	// adds a build to the count without changing total_cost or spot_share.
+	if got, want := row["runs"].(int), 3; got != want {
 		t.Errorf("runs = %v, want %v", got, want)
 	}
 	// 30+60 = 90 spot · 10+0 = 10 on-demand · cost = 90*0.01 + 10*0.05 = 1.40
 	if got := row["total_cost"].(float64); got < 1.39 || got > 1.41 {
 		t.Errorf("total_cost = %v, want ~1.40", got)
 	}
-	if got := row["cost_per_build"].(float64); got < 0.69 || got > 0.71 {
-		t.Errorf("cost_per_build = %v, want ~0.70", got)
+	// cost_per_build = 1.40 / 3 builds ≈ 0.467
+	if got := row["cost_per_build"].(float64); got < 0.46 || got > 0.47 {
+		t.Errorf("cost_per_build = %v, want ~0.467", got)
 	}
 	// Spot share = 90 / (90+10) = 0.90
 	if got := row["spot_share"].(float64); got < 0.89 || got > 0.91 {

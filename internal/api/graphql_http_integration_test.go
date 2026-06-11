@@ -70,9 +70,12 @@ func TestGraphQLEndpoint_Runs_HappyPath(t *testing.T) {
 	}
 	data := resp["data"].(map[string]any)
 	runs := data["runs"].([]any)
-	if len(runs) != 2 {
-		t.Fatalf("got %d runs, want 2", len(runs))
+	// run1 (failed), run2 (running), run3 (succeeded history run for sparklines).
+	if len(runs) != 3 {
+		t.Fatalf("got %d runs, want 3", len(runs))
 	}
+	// Ordered by created_at DESC; run2 (running) is the most recently created,
+	// run3's created_at is pinned 2h back so it sorts last (see seed).
 	first := runs[0].(map[string]any)
 	if first["status"] != "running" {
 		t.Errorf("first.status = %v, want running", first["status"])

@@ -83,13 +83,19 @@ func Start(t *testing.T) (conn chdriver.Conn, dsn string, cleanup func()) {
 		t.Fatalf("clickhouse mapped port: %v", err)
 	}
 
-	// Native driver DSN. clickhouse://user:pass@host:port/db is understood by
-	// both sql.Open("clickhouse", dsn) (migrate path) and the native
-	// clickhouse.Open via OpenClickHouseConn (write path).
+	// Two DSNs, same server. The MIGRATE connection must target a database that
+	// already exists: the `teo` database is created by 001_initial itself
+	// (CREATE DATABASE IF NOT EXISTS teo) and every table is fully qualified
+	// `teo.*`, so connecting the migrate driver to `teo` up front fails with
+	// "bad connection" (the database isn't there yet). Run migrations against
+	// the always-present `default` database; return the WRITE-path DSN/conn
+	// pointed at `teo`, where the migrations land span_events.
+	migrateDSN := fmt.Sprintf("clickhouse://%s:%s@%s:%s/%s",
+		DefaultUser, DefaultPassword, host, port.Port(), "default")
 	dsn = fmt.Sprintf("clickhouse://%s:%s@%s:%s/%s",
 		DefaultUser, DefaultPassword, host, port.Port(), DefaultDatabase)
 
-	if err := migrate.Up(migrate.ClickHouse, dsn, repoMigrationsDir()); err != nil {
+	if err := migrate.Up(migrate.ClickHouse, migrateDSN, repoMigrationsDir()); err != nil {
 		_ = testcontainers.TerminateContainer(container)
 		t.Fatalf("apply clickhouse migrations: %v", err)
 	}

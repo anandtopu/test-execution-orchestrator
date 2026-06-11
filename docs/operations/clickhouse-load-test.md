@@ -25,7 +25,10 @@ After all batches it computes:
 - **throughput** — total rows ÷ total insert wall-clock (rows/sec);
 - **p50 / p95 / p99** per-batch insert latency (`percentile`, nearest-rank);
 - and asserts `SELECT count() FROM teo.span_events` equals the total inserted
-  (the table is a plain `MergeTree`, so the count is exact).
+  (the table is a plain `MergeTree`, so the count is exact). `synthRows`
+  timestamps rows at `now()-24h` — comfortably inside the table's
+  `TTL toDate(start_time) + INTERVAL 30 DAY DELETE` so a merge can't reap them
+  mid-run (a fixed past date silently drops earlier batches).
 
 ## How to run it
 
@@ -72,14 +75,15 @@ disk-bound).
 
 | Date       | Machine / runner        | Rows    | Batch | Throughput (rows/s) | p50 batch | p95 batch | p99 batch |
 | ---------- | ----------------------- | ------- | ----- | ------------------- | --------- | --------- | --------- |
-| _not yet run_ | _CI testcontainers (TODO)_ | 1000000 | 5000  | _TODO_              | _TODO_    | _TODO_    | _TODO_    |
+| 2026-06-10 | local dev — Windows 11 + Docker Desktop, `clickhouse-server:24.8-alpine` | 1000000 | 5000  | 148085              | 23.7 ms   | 68.6 ms   | 78.8 ms   |
 
-> **Status:** the harness compiles and is correct (verified via
-> `go vet -tags=integration ./internal/testch/... ./internal/resultpipeline/...`)
-> but has **not been executed** — Docker is unavailable on the authoring
-> machine. The table above is intentionally left as `TODO` rather than
-> populated with fabricated numbers. Fill it in from the first CI
-> testcontainers run.
+> **Status:** executed green against a real ClickHouse via testcontainers on
+> 2026-06-10 (1M rows, exact `count()` match). Numbers above are per-5000-row
+> batch latencies from a developer laptop + Docker Desktop — treat them as a
+> ballpark, not an SLA; re-record from a representative CI runner for
+> regression tracking. Note: run **without** `-race` (the dev host has no cgo
+> toolchain); race instrumentation doesn't change insert latency materially but
+> CI on Linux should run the suite with `-race` per the Makefile.
 
 ## Related metrics
 

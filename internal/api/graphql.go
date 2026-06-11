@@ -140,7 +140,17 @@ func buildSchema(pool *pgxpool.Pool) graphql.Schema {
 					if id == "" {
 						return nil, nil
 					}
-					return cachedRunPredictor(p.Context, pool, m, id)
+					// Return an UNTYPED nil for the <2-finished-shards case.
+					// cachedRunPredictor returns a typed nil map[string]any there;
+					// handing that to graphql-go as `any` yields a non-nil
+					// interface, which it renders as an all-null object instead of
+					// a null predictor. Collapse it to a real nil so the field
+					// resolves to null per the documented contract.
+					pred, err := cachedRunPredictor(p.Context, pool, m, id)
+					if err != nil || pred == nil {
+						return nil, err
+					}
+					return pred, nil
 				},
 			},
 			// ui-home-calibration: flat run-level predictor aggregates so the home

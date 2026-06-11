@@ -104,8 +104,8 @@ func TestRecentOutcomesAndIssueBodyE2E(t *testing.T) {
 	for i, sh := range shards {
 		shardID := uuid.New().String()
 		execIT(t, pool, `
-            INSERT INTO teo.shards (id, run_id, index, status, test_count, started_at, finished_at)
-            VALUES ($1, $2, $3, 'succeeded', 1, $4, $4)
+            INSERT INTO teo.shards (id, run_id, index, status, predicted_duration_ms, test_count, started_at, finished_at)
+            VALUES ($1, $2, $3, 'succeeded', 1000, 1, $4, $4)
         `, shardID, runID, i, base.Add(sh.offset))
 		for _, e := range sh.entries {
 			execIT(t, pool, `
@@ -183,8 +183,8 @@ func TestQuarantineSweepE2E(t *testing.T) {
 	for i, s := range seeded {
 		shardID := uuid.New().String()
 		execIT(t, pool, `
-            INSERT INTO teo.shards (id, run_id, index, status, test_count, started_at, finished_at)
-            VALUES ($1, $2, $3, 'succeeded', 1, $4, $4)
+            INSERT INTO teo.shards (id, run_id, index, status, predicted_duration_ms, test_count, started_at, finished_at)
+            VALUES ($1, $2, $3, 'succeeded', 1000, 1, $4, $4)
         `, shardID, runID, i, base.Add(s.offset))
 		execIT(t, pool, `
             INSERT INTO teo.test_executions (shard_id, test_id, attempt, outcome, duration_ms, started_at, finished_at)

@@ -84,18 +84,32 @@ func percentile(durs []time.Duration, q float64) time.Duration {
 }
 
 // synthRows builds n deterministic-shaped synthetic span_events rows for the
-// load test. Each row carries a valid UUID test_id/run_id (so
-// parseUUIDOrZero round-trips a real value), a small attribute map, and a
-// realistic ~5ms span duration. Rows are built outside the timed region of
-// the load test so generation cost never pollutes the throughput/latency
-// numbers.
-func synthRows(n int) []rowSpan {
+// load test, numbered globally from `offset` (so successive batches produce
+// DISTINCT rows — trace_id/span_id/start_time are derived from the global
+// index, not a per-batch 0..n counter). Each row carries a valid UUID
+// test_id/run_id (so parseUUIDOrZero round-trips a real value), a small
+// attribute map, and a realistic ~5ms span duration. Rows are built outside
+// the timed region of the load test so generation cost never pollutes the
+// throughput/latency numbers.
+//
+// Global uniqueness matters: span_events' ORDER BY (run_id, trace_id,
+// start_time) means batches must not repeat the same index sequence.
+//
+// start_time MUST be recent. teo.span_events carries
+// `TTL toDate(start_time) + INTERVAL 30 DAY DELETE`, so any row older than 30
+// days is dropped the next time a merge touches its part — and every insert
+// triggers merges. A fixed past date (e.g. 2026-01-01) makes each new batch's
+// merge silently delete the previous batch's now-expired rows, so the table
+// only ever holds the latest batch. Anchoring at now()-24h keeps rows safely
+// inside the retention window (and not in the future) for the run's duration.
+func synthRows(offset, n int) []rowSpan {
 	if n <= 0 {
 		return nil
 	}
-	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	base := time.Now().Add(-24 * time.Hour)
 	rows := make([]rowSpan, 0, n)
-	for i := 0; i < n; i++ {
+	for j := 0; j < n; j++ {
+		i := offset + j
 		testID := uuid.New()
 		runID := uuid.New()
 		start := base.Add(time.Duration(i) * time.Millisecond)

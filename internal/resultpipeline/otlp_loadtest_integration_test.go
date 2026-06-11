@@ -44,8 +44,9 @@ func TestClickHouseSpanInsertLoad(t *testing.T) {
 			n = remaining
 		}
 		// Build rows BEFORE timing so generation cost never pollutes the
-		// throughput / latency numbers.
-		rows := synthRows(n)
+		// throughput / latency numbers. Number them globally from `inserted`
+		// so each batch is distinct (see synthRows).
+		rows := synthRows(inserted, n)
 
 		start := time.Now()
 		err := r.writeSpans(ctx, rows)
@@ -57,9 +58,12 @@ func TestClickHouseSpanInsertLoad(t *testing.T) {
 		inserted += n
 	}
 
-	// Exact count: span_events is a plain MergeTree, no row collapsing.
+	// Exact count: span_events is a plain MergeTree (no row collapsing), the
+	// inserts are synchronous, and synthRows timestamps rows inside the 30-day
+	// retention TTL so a merge can't reap them mid-test. count() must therefore
+	// equal exactly what we inserted.
 	var count uint64
-	require.NoError(t, conn.QueryRow(ctx,
+	require.NoError(t, conn.QueryRow(context.Background(),
 		`SELECT count() FROM teo.span_events`).Scan(&count))
 	require.Equal(t, uint64(total), count, "row count must equal total inserted")
 
@@ -85,7 +89,7 @@ func TestClickHouseHarnessSmoke(t *testing.T) {
 	r := &OTLPReceiver{CH: conn}
 	ctx := context.Background()
 
-	require.NoError(t, r.writeSpans(ctx, synthRows(1)))
+	require.NoError(t, r.writeSpans(ctx, synthRows(0, 1)))
 
 	var count uint64
 	require.NoError(t, conn.QueryRow(ctx,
