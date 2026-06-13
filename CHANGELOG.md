@@ -8,6 +8,17 @@ For a finer-grained per-FR / per-epic implementation status, see [`progress.md`]
 
 ## [Unreleased]
 
+### Fixed — release pipeline: bootstrap `gh-pages` before chart-releaser
+
+The `v1.0.0` Release run's `helm-publish` job failed at the final `cr index` step
+with `fatal: invalid reference: origin/gh-pages` — chart-releaser cannot update the
+charts index on a repo that has never had a `gh-pages` branch. GoReleaser (signed
+binaries + SBOMs) and the chart `.tgz` upload had already succeeded; only the pages
+index update failed. Added an idempotent "Ensure gh-pages branch exists" step to
+`.github/workflows/release.yml` that bootstraps an empty `index.yaml` + `.nojekyll`
+via a throwaway git worktree (leaving the build working tree untouched) when the
+branch is absent. No-op once `gh-pages` exists.
+
 ## [1.0.0] - 2026-06-11
 
 First stable release. All 16 epics and the 12 reconciliation-audit items are

@@ -41,6 +41,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
+      - name: Ensure gh-pages branch exists
+        # chart-releaser's `cr index` fails with "fatal: invalid reference:
+        # origin/gh-pages" if the pages branch has never been created. Bootstrap
+        # an empty index using git plumbing — builds the commit object directly and
+        # pushes it, so the build working tree (consumed by the helm package steps
+        # below) is never touched and no version-sensitive worktree flags are used.
+        run: |
+          if git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; then
+            echo "gh-pages already exists — nothing to bootstrap"
+            exit 0
+          fi
+          echo "Bootstrapping empty gh-pages branch for chart-releaser"
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          index_blob=$(printf 'apiVersion: v1\nentries: {}\n' | git hash-object -w --stdin)
+          nojekyll_blob=$(printf '' | git hash-object -w --stdin)
+          tree=$(printf '100644 blob %s\t.nojekyll\n100644 blob %s\tindex.yaml\n' \
+            "$nojekyll_blob" "$index_blob" | git mktree)
+          commit=$(git commit-tree "$tree" -m "chore: bootstrap gh-pages for chart-releaser")
+          git push origin "$commit:refs/heads/gh-pages"
       - uses: azure/setup-helm@v4
         with:
           version: v3.14.4
