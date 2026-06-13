@@ -1,0 +1,62 @@
+apiVersion: v1
+entries:
+  teo:
+  - annotations:
+      artifacthub.io/license: Apache-2.0
+    apiVersion: v2
+    appVersion: 1.0.0
+    created: "2026-06-13T14:44:23.3647555-05:00"
+    dependencies:
+    - alias: postgres
+      condition: postgres.enabled
+      name: cloudnative-pg
+      repository: https://cloudnative-pg.github.io/charts
+      tags:
+      - stateful
+      version: 0.22.1
+    - alias: clickhouse
+      condition: clickhouse.enabled
+      name: altinity-clickhouse-operator
+      repository: https://docs.altinity.com/clickhouse-operator/
+      tags:
+      - stateful
+      version: 0.24.5
+    - condition: nats.enabled
+      name: nats
+      repository: https://nats-io.github.io/k8s/helm/charts
+      tags:
+      - stateful
+      version: 1.2.8
+    - condition: minio.enabled
+      name: minio
+      repository: https://charts.min.io/
+      tags:
+      - stateful
+      version: 5.4.0
+    - condition: dex.enabled
+      name: dex
+      repository: https://charts.dexidp.io
+      tags:
+      - auth
+      version: 0.19.1
+    description: Test Execution Orchestrator — self-hosted control plane
+    digest: 3632fbce09e5baf6e997bf2c7a4213b927d7a2839d6013e5d8c8c7be99cb1dc6
+    home: https://github.com/teo-dev/teo
+    icon: https://raw.githubusercontent.com/teo-dev/teo/main/.github/teo-icon.png
+    keywords:
+    - testing
+    - ci
+    - orchestrator
+    - flaky-tests
+    kubeVersion: '>=1.29.0-0'
+    maintainers:
+    - email: maintainers@teo.dev
+      name: TEO maintainers
+    name: teo
+    sources:
+    - https://github.com/teo-dev/teo
+    type: application
+    urls:
+    - https://github.com/anandtopu/test-execution-orchestrator/releases/download/chart-1.0.0/teo-1.0.0.tgz
+    version: 1.0.0
+generated: "2026-06-13T14:44:23.3539272-05:00"
