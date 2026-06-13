@@ -96,12 +96,17 @@ sboms:
 signs:
   - cmd: cosign
     artifacts: checksum
+    # The "sign-blob" subcommand MUST be the first arg. If a flag (e.g. --yes)
+    # precedes it, cobra at the cosign root treats the flag as value-taking and
+    # swallows "sign-blob", then reads the artifact path as a bogus subcommand:
+    # `unknown command "dist/checksums.txt" for "cosign"`. Subcommand first,
+    # --yes last.
     args:
-      - "--yes"
       - "sign-blob"
       - "--output-signature=${artifact}.sig"
       - "--output-certificate=${artifact}.cert"
       - "${artifact}"
+      - "--yes"
     output: true
 
 changelog:
