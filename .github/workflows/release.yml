@@ -78,6 +78,14 @@ jobs:
         run: |
           mkdir -p .chartpkg
           helm package deploy/helm/teo --destination .chartpkg
+      - name: Configure git identity
+        # chart-releaser's `cr index` makes a commit on gh-pages; without a
+        # committer identity it dies with "fatal: empty ident name not allowed".
+        # The bootstrap step above only sets identity when it *creates* gh-pages
+        # (it early-exits once the branch exists), so set it unconditionally here.
+        run: |
+          git config --global user.name  "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
       - name: Update gh-pages index
         uses: helm/chart-releaser-action@v1.6.0
         with:
