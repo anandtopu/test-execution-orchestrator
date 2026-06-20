@@ -1,6 +1,6 @@
 # TEO — Engineering Tasks
 
-**Status:** Draft (revised 2026-04-30 with implementation status)
+**Status:** v1.0.0 shipped (tag `v1.0.0`, 2026-06-11); status refreshed 2026-06-20.
 **Implementation progress:** [`progress.md`](../../progress.md) is the canonical dashboard.
 
 Tasks are concrete enough to estimate (each ≤ 2 days). Each task references its parent story.
@@ -12,11 +12,11 @@ Tasks are concrete enough to estimate (each ≤ 2 days). Each task references it
 | **T-01-* Foundation** | ✅ all complete | Repo, Makefile, lint, CI, hygiene files all in place |
 | **T-02-* Migrations** | ✅ all complete | Pg + CH initial schemas applied via runner |
 | **T-03-* API gateway** | ✅ all complete | OIDC end-to-end test pending real Dex deployment |
-| **T-04-* Run Manager** | ✅ all complete | Leader-election chaos test runs locally; CI integration test pending |
+| **T-04-* Run Manager** | ✅ all complete | Leader-election chaos + integration test executed green against real Postgres (testcontainers, 2026-06-10) |
 | **T-05-* Scheduler** | ✅ all complete | LPT + property test against brute-force optimum land; plan-persist works |
-| **T-06-* Worker** | ✅ all complete | pytest adapter executes; redactor verified |
+| **T-06-* Worker** | 🟡 | pytest adapter executes; redactor verified; SIGTERM/graceful-cancel handler done (`cmd/worker/main.go`). **Open:** T-06-03-03 full kill-mid-test integration test (test-debt). |
 | **T-07-* Result pipeline** | ✅ all complete | OTLP receiver, failure clustering, and REST export endpoints (`GET /api/v1/runs/{id}/export?format={junit\|otlp}`) all wired and integration-tested |
-| **T-08-* Flake detection** | ✅ all complete | Wilson math verified against textbook |
+| **T-08-* Flake detection** | 🟡 | Wilson math verified against textbook; auto-quarantine + non-blocking lane done. **Open (S-08-03 manual quarantine):** T-08-03-01 operator `quarantine`/`unquarantine` GraphQL mutation + RBAC, T-08-03-03 UI button/modal — not implemented (only `rerunFailed` mutation + read-only quarantine display exist). Tracked for v1.1. |
 | **T-09-* Web UI** | ✅ all complete | All four pages migrated to GraphQL; LiveRunShards polls every 2s with auto-stop on terminal; rerun-failed flow wired with Next API proxy; six Vitest files covering helpers, queries, components, and timer behaviour |
 | **T-10-* GitHub** | ✅ all complete | webhook + Checks + Issues clients, RunObserver pattern in Manager, CheckObserver creates/updates/finalizes, top-3 cluster Markdown summary, schema migration 003 for check-run linkage |
 | **T-11-* Helm + ops** | ✅ all complete | Chart.yaml dependencies (5 subcharts, toggleable), pre-upgrade migration Job, 5 Grafana dashboard ConfigMaps with sidecar-discovery labels, PrometheusRule with 6 alerts + runbook docs, .goreleaser.yml, release.yml workflow with cosign + SBOM + chart-releaser, chart-testing config, restore drill runbook |

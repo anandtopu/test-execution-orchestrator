@@ -1,6 +1,6 @@
 # TEO — User Stories with Acceptance Criteria
 
-**Status:** Draft (revised 2026-04-30 with implementation status)
+**Status:** v1.0.0 shipped (tag `v1.0.0`, 2026-06-11); status column refreshed 2026-06-20 against code + the 2026-06-10 reconciliation.
 **Implementation progress:** [`progress.md`](../../progress.md) is the canonical dashboard.
 
 Format:
@@ -19,19 +19,19 @@ Definition of Done (applies to every story): see `docs/process/definition-of-don
 | Epic | Stories | Status |
 |---|---|---|
 | E-01 Foundation | S-01-01..03 | All ✅ |
-| E-02 Storage & migrations | S-02-01..03 | S-02-01..02 ✅; S-02-03 load-test ⏳ (needs CI testcontainers run) |
-| E-03 API gateway | S-03-01..04 | S-03-01 ✅; S-03-02 OIDC roundtrip 🟡 (Dex chart wired, sign-in UI swap pending); S-03-03 ✅; S-03-04 ✅ |
-| E-04 Run Manager | S-04-01..04 | All ✅ at code level; S-04-02 leader-election integration test ⏳ (needs CI Postgres) |
-| E-05 Scheduler | S-05-01..04 | S-05-01 ✅ (with property test); S-05-02 ✅; S-05-03 ✅; S-05-04 ✅ (plan persisted; replay CLI ⏳) |
-| E-06 Worker agent | S-06-01..04 | S-06-01 ✅; S-06-02 ✅; S-06-03 heartbeat-failure 🟡 (claim path correct; full kill-mid-test integration test ⏳); S-06-04 ✅ |
-| E-07 Result pipeline | S-07-01..03 | S-07-01 ✅ (OTLP receiver live); S-07-02 ✅; S-07-03 export endpoints ⏳ (functions exist; REST handler not yet wired) |
-| E-08 Flake detection | S-08-01..03 | S-08-01..02 ✅; S-08-03 manual quarantine UI 🟡 (mutation API exists; UI button pending UI swap) |
+| E-02 Storage & migrations | S-02-01..03 | S-02-01..02 ✅; S-02-03 load-test ✅ (executed green 2026-06-10: 1M rows, p99 78.8 ms — `internal/testch` + `otlp_loadtest_integration_test.go`) |
+| E-03 API gateway | S-03-01..04 | S-03-01 ✅; S-03-02 OIDC roundtrip ✅ (backend `/auth/*` + `teo_session` cookie; frontend `middleware.ts` + `SessionNav` wired 2026-06-10; end-to-end test vs a real Dex still pending a live deploy); S-03-03 ✅; S-03-04 ✅ |
+| E-04 Run Manager | S-04-01..04 | All ✅; S-04-02 leader-election integration/chaos test ✅ (executed green against real Postgres via testcontainers 2026-06-10) |
+| E-05 Scheduler | S-05-01..04 | S-05-01 ✅ (with property test); S-05-02 ✅; S-05-03 ✅; S-05-04 ✅ (plan persisted to Postgres + S3; `teo replay` CLI landed) |
+| E-06 Worker agent | S-06-01..04 | S-06-01 ✅; S-06-02 ✅; S-06-03 🟡 (SIGTERM/graceful-cancel handler done at `cmd/worker/main.go`; **full kill-mid-test integration test ⏳** — test-debt, see follow-ups); S-06-04 ✅ |
+| E-07 Result pipeline | S-07-01..03 | S-07-01 ✅ (OTLP receiver live); S-07-02 ✅ (+ failure-cluster backfill job); S-07-03 ✅ (JUnit + OTLP export REST endpoints wired + integration-tested) |
+| E-08 Flake detection | S-08-01..03 | S-08-01..02 ✅; **S-08-03 manual operator quarantine 🟡** — auto-quarantine + magic-link restore exist and the scheduler non-blocking lane (AC2) is done, but the operator-initiated GraphQL `quarantine`/`unquarantine` mutation (T-08-03-01) + UI button/modal (T-08-03-03, AC1/AC3) are **not implemented**. See follow-ups. |
 | E-09 Web UI | S-09-01..04 | S-09-01 ✅ (GraphQL); S-09-02 ✅ (Gantt + 2s polling that auto-stops on terminal); S-09-03 ✅ (failure clusters + flakes); S-09-04 ✅ (rerun-failed button + GraphQL mutation + Next API proxy) |
 | E-10 GitHub | S-10-01..03 | All ✅: install + webhook + HMAC verify, Check Run create on first transition, in-flight updates with shard counts, terminal finalize with conclusion + top-3 failure-cluster Markdown summary |
 | E-11 Helm + ops | S-11-01..06 | All ✅: chart + subchart vendoring + chart-testing CI matrix; pre-upgrade migration hook; 5 Grafana dashboards as ConfigMaps; 6 PrometheusRule alerts with runbook URLs + 6 runbook docs; goreleaser config + cosign signing + SBOM + chart-releaser publish; restore drill runbook |
-| E-12 ML predictor | S-12-01..04 | S-12-01..03 ✅; S-12-04 calibration UI overlay ⏳ |
+| E-12 ML predictor | S-12-01..04 | S-12-01..03 ✅; S-12-04 calibration UI overlay ✅ (predicted-vs-observed band on the run-detail Gantt, landed 2026-06-10) |
 | E-13 Karpenter + spot | S-13-01..05 | All ✅: NodePools + IMDS poller + Agent draining state machine + Run Manager reschedule sweep (with reshard manifest) + on-demand affinity for retries + preemption_count telemetry |
-| E-14 Adapters | S-14-01..03 | S-14-01..02 ✅; S-14-03 SPI doc ⏳ |
+| E-14 Adapters | S-14-01..03 | S-14-01..02 ✅; S-14-03 SPI doc ✅ (`docs/adapters/spi.md` + copy-and-fill skeleton at `pkg/adapter/template/`) |
 | E-15 Auto-quarantine | S-15-01..04 | All ✅: auto-transition (with broken-vs-flaky), GitHub Issues API client + dedupe-by-comment, SLA nudge sweeper (idempotent on `last_nudged_at`), magic-link un-quarantine restore endpoint |
 | E-16 Owner digest | S-16-01..03 | All ✅: aggregation + templates, SMTP + Slack + Multiplex senders, opt-out enforcement, `teo digest dry-run --user=<email>` CLI |
 
@@ -228,6 +228,7 @@ The detailed acceptance criteria per story appear below; statuses above match th
 - **AC2** A quarantined test runs but its outcome does not fail the run.
 - **AC3** UI clearly shows quarantined tests in a separate lane on the run timeline.
 - **Links:** FR-605, FR-606
+- **Status:** 🟡 **partial — open gap as of 2026-06-20.** AC2 ✅ (scheduler non-blocking quarantine lane, `internal/scheduler`). AC1/AC3 ⏳ **not implemented** — the GraphQL `Mutation` exposes only `rerunFailed` (`internal/api/graphql.go`), so there is **no operator-initiated `quarantine`/`unquarantine` mutation** (T-08-03-01) and **no UI button/modal** (T-08-03-03); `web/` only *renders* quarantine state from `quarantinedAt`. The only manual path today is the auto-quarantine proposer's single-use magic-link restore endpoint (`/api/v1/quarantine/restore?token=…`, S-15), which is not operator-initiated quarantine. **This is the one functional v1.0 backlog item `progress.md` does not track as a gap** (it covers only auto-quarantine FR-605/606/609). Tracked for v1.1.
 
 ---
 
