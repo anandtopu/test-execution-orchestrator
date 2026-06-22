@@ -59,7 +59,7 @@ A code-level audit of every story/task in `docs/backlog/{stories,tasks}.md` agai
 | ID | Epic | Status | Notes |
 |---|---|---|---|
 | **E-01** | Foundation: monorepo, CI, base services | ✅ | `go.mod`, `Makefile`, `.golangci.yml`, `.github/workflows/ci.yml`, all hygiene files. 7 service stubs compile. |
-| **E-02** | Postgres + ClickHouse schema + migrations | ✅ | Initial migration files for both stores. `internal/migrate` runner + `teo migrate` CLI subcommand. |
+| **E-02** | Postgres + ClickHouse schema + migrations | ✅ | Initial migration files for both stores. `internal/migrate` runner + `teo migrate` CLI subcommand. `migrate status` reports an explicit per-store `skipped (… not set)` line when a DSN is absent (no longer a silent exit-0 no-op; matches `teo doctor`'s skip convention — `563f561`). |
 | **E-03** | API gateway + auth + audit log | ✅ | chi-based REST (`/api/v1/runs` POST/GET/cancel), JWT (HS256) issuer, argon2id-hashed API keys with 30s revocation cache, audit middleware. RFC 7807 errors. |
 | **E-04** | Run Manager state machine + leader election | ✅ | 8-state machine with legality table. Per-run `pg_try_advisory_xact_lock` (ADR-0013). Budget enforcement loop. |
 | **E-05** | Scheduler (LPT) + heuristic predictor | ✅ | Pure-function `PlanFunc`, exclusivity tags, quarantine lane, deterministic tie-break, brute-force property test verifies makespan ≤ 4/3 × OPT over 30 random instances. |
