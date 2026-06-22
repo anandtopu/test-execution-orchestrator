@@ -102,6 +102,8 @@ func runMigrate(args []string) {
 				exit("postgres status failed: %v", err)
 			}
 			fmt.Printf("postgres:   version %d\n", v)
+		} else {
+			fmt.Println("postgres:   skipped (--postgres-dsn or TEO_POSTGRES_DSN not set)")
 		}
 		if *chDSN != "" {
 			v, err := migrate.Status(migrate.ClickHouse, *chDSN)
@@ -109,6 +111,8 @@ func runMigrate(args []string) {
 				exit("clickhouse status failed: %v", err)
 			}
 			fmt.Printf("clickhouse: version %d\n", v)
+		} else {
+			fmt.Println("clickhouse: skipped (--clickhouse-dsn or TEO_CLICKHOUSE_DSN not set)")
 		}
 	}
 }
