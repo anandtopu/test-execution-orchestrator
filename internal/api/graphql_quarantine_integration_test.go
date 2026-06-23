@@ -40,8 +40,8 @@ func TestQuarantineTransitionRoundTrip(t *testing.T) {
 	if got["status"] != "quarantined" {
 		t.Errorf("status = %v, want quarantined", got["status"])
 	}
-	if got["quarantine_reason"] != "flaky on CI" { // trimmed
-		t.Errorf("reason = %v, want trimmed 'flaky on CI'", got["quarantine_reason"])
+	if r, ok := got["quarantine_reason"].(*string); !ok || r == nil || *r != "flaky on CI" { // trimmed; nullable column → *string
+		t.Errorf("reason = %v, want trimmed 'flaky on CI'", derefStr(got["quarantine_reason"]))
 	}
 	if got["quarantined_at"] == nil {
 		t.Error("quarantined_at should be set on the returned row")
@@ -72,8 +72,8 @@ func TestQuarantineTransitionRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got2["quarantine_reason"] != "manual: operator quarantine" {
-		t.Errorf("default reason = %v", got2["quarantine_reason"])
+	if r, ok := got2["quarantine_reason"].(*string); !ok || r == nil || *r != "manual: operator quarantine" {
+		t.Errorf("default reason = %v", derefStr(got2["quarantine_reason"]))
 	}
 
 	// --- unquarantine the seeded (already quarantined) test ---
@@ -124,4 +124,13 @@ func TestQuarantineTransitionRoundTrip(t *testing.T) {
 	} else if again["status"] != "active" {
 		t.Errorf("idempotent unquarantine status = %v, want active", again["status"])
 	}
+}
+
+// derefStr renders a *string map value (nullable column) for error messages,
+// printing <nil> rather than a pointer address.
+func derefStr(v any) string {
+	if p, ok := v.(*string); ok && p != nil {
+		return *p
+	}
+	return "<nil>"
 }
