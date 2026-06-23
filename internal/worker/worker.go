@@ -213,13 +213,26 @@ func (a *Agent) tryClaimAndRun(ctx context.Context) error {
 //  2. Round-robin over the run-level manifest (E-02 default)
 func (a *Agent) loadTestsForShard(ctx context.Context, tx pgx.Tx, shardID string) ([]model.TestEntry, error) {
 	// (1) Per-shard reshard manifest, if present.
+	//
+	// NOTE: $1 and $2 are both the shard id but MUST be separate placeholders.
+	// $1 is a JSONB text key (`meta->'reshards'->$1`, which forces $1 :: text)
+	// while $2 is compared to the uuid `shards.id` column. Reusing a single $1
+	// gives Postgres conflicting type deductions for one parameter, so the query
+	// fails to plan — which previously aborted the surrounding tx and made the
+	// next query return a confusing 25P02 ("transaction is aborted") instead.
 	var reshardJSON []byte
 	err := tx.QueryRow(ctx, `
         SELECT r.meta->'reshards'->$1
         FROM teo.runs r
-        WHERE r.id = (SELECT run_id FROM teo.shards WHERE id = $1)
-    `, shardID).Scan(&reshardJSON)
-	if err == nil && len(reshardJSON) > 0 {
+        WHERE r.id = (SELECT run_id FROM teo.shards WHERE id = $2)
+    `, shardID, shardID).Scan(&reshardJSON)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		// A real error here has aborted the tx; surface it rather than falling
+		// through to query (2), which would then fail with 25P02 and mask the
+		// root cause.
+		return nil, err
+	}
+	if len(reshardJSON) > 0 {
 		if tests, err := decodeManifestTests(reshardJSON); err == nil && len(tests) > 0 {
 			return tests, nil
 		}
