@@ -14,7 +14,7 @@ Tasks are concrete enough to estimate (each ≤ 2 days). Each task references it
 | **T-03-* API gateway** | ✅ all complete | OIDC end-to-end test pending real Dex deployment |
 | **T-04-* Run Manager** | ✅ all complete | Leader-election chaos + integration test executed green against real Postgres (testcontainers, 2026-06-10) |
 | **T-05-* Scheduler** | ✅ all complete | LPT + property test against brute-force optimum land; plan-persist works |
-| **T-06-* Worker** | 🟡 | pytest adapter executes; redactor verified; SIGTERM/graceful-cancel handler done (`cmd/worker/main.go`). **Open:** T-06-03-03 full kill-mid-test integration test (test-debt). |
+| **T-06-* Worker** | ✅ all complete | pytest adapter executes; redactor verified; SIGTERM/graceful-cancel handler (`cmd/worker/main.go`); T-06-03-03 kill-mid-test integration test landed 2026-06-22 (`internal/worker/kill_mid_integration_test.go` — graceful shutdown, completed-work durability, idempotent report retry; runs in CI). |
 | **T-07-* Result pipeline** | ✅ all complete | OTLP receiver, failure clustering, and REST export endpoints (`GET /api/v1/runs/{id}/export?format={junit\|otlp}`) all wired and integration-tested |
 | **T-08-* Flake detection** | ✅ all complete | Wilson math verified against textbook; auto-quarantine + non-blocking lane done. S-08-03 manual quarantine landed 2026-06-22: T-08-03-01 `quarantineTest`/`unquarantineTest` mutations + engineer/admin RBAC + audit; T-08-03-03 `QuarantineControl` button/confirm in the Flakes detail sheet. |
 | **T-09-* Web UI** | ✅ all complete | All four pages migrated to GraphQL; LiveRunShards polls every 2s with auto-stop on terminal; rerun-failed flow wired with Next API proxy; six Vitest files covering helpers, queries, components, and timer behaviour |

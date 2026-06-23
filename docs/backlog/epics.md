@@ -33,12 +33,12 @@ Status legend: ✅ done · 🟡 scaffolded with named follow-up · ⏳ pending �
 
 ### Follow-ups remaining (post-v1.0)
 
-All 16 epics shipped at v1.0 scope. Open follow-ups:
+All 16 epics shipped at v1.0 scope. **Both named follow-ups are now closed (2026-06-22):**
 
-- ~~**S-08-03 — operator-initiated manual quarantine (E-08).**~~ ✅ **Done 2026-06-22** — `quarantineTest`/`unquarantineTest` GraphQL mutations (engineer/admin-gated, audit-logged) + `QuarantineControl` UI in the Flakes detail sheet. See the S-08-03 status note in [`stories.md`](stories.md#s-08-03-operator-can-quarantine-a-flaky-test).
-- **S-06-03 — kill-mid-test integration test (E-06).** 🟡 Test-debt only. The SIGTERM/graceful-cancel handler is implemented (`cmd/worker/main.go`); the full kill-worker-mid-test integration test is still to be written.
+- ~~**S-08-03 — operator-initiated manual quarantine (E-08).**~~ ✅ **Done** — `quarantineTest`/`unquarantineTest` GraphQL mutations (engineer/admin-gated, audit-logged) + `QuarantineControl` UI in the Flakes detail sheet. See the S-08-03 status note in [`stories.md`](stories.md#s-08-03-operator-can-quarantine-a-flaky-test).
+- ~~**S-06-03 — kill-mid-test integration test (E-06).**~~ ✅ **Done** — `internal/worker/kill_mid_integration_test.go` (graceful shutdown on mid-test cancel, completed-work durability, idempotent report retry). The SIGTERM/graceful-cancel handler was already wired at `cmd/worker/main.go`.
 
-Deferred-by-decision items (WebSocket subscriptions → v1.1, Jest AST fingerprint → v1.5, plus the ADR-0012 📦 list) are not counted here.
+No open backlog items remain. Deferred-by-decision items (WebSocket subscriptions → v1.1, Jest AST fingerprint → v1.5, plus the ADR-0012 📦 list) are out of v1.0 scope by decision, not open work.
 
 ---
 
