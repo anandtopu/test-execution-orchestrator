@@ -28,6 +28,15 @@ export interface LiveRun {
   shards: Shard[];
 }
 
+/** A subscriber opens a live stream of run snapshots and returns an unsubscribe
+ * function. onError is called when the stream can't be established or fails, so
+ * the caller can fall back to polling. */
+export type RunSubscriber = (
+  runId: string,
+  onData: (run: LiveRun) => void,
+  onError: () => void,
+) => () => void;
+
 export interface LiveRunShardsProps {
   /** Initial server-rendered run, used as the first render's source of truth. */
   initial: LiveRun;
@@ -35,6 +44,8 @@ export interface LiveRunShardsProps {
   pollMs?: number;
   /** Override fetch impl for tests; defaults to `window.fetch`. */
   fetcher?: (runId: string) => Promise<LiveRun | null>;
+  /** Override the live subscription for tests; defaults to a graphql-ws client. */
+  subscriber?: RunSubscriber;
 }
 
 /** Default fetcher: hits the same Next.js route prefix the page already uses,
@@ -49,15 +60,136 @@ async function defaultFetcher(runId: string): Promise<LiveRun | null> {
   return (await res.json()) as LiveRun;
 }
 
-/**
- * Renders the shard Gantt and refetches every `pollMs` while the run is live.
- * Polling stops automatically when the run reaches a terminal status.
- */
-export function LiveRunShards({ initial, pollMs = 2000, fetcher = defaultFetcher }: LiveRunShardsProps) {
-  const [run, setRun] = useState<LiveRun>(initial);
+const RUN_CHANGED_SUBSCRIPTION = `subscription RunChanged($id: ID!) {
+  runChanged(id: $id) {
+    id
+    status
+    shards {
+      id index status workerId predictedDurationMs actualDurationMs
+      testCount startedAt finishedAt predictionConfidence modelVersion
+    }
+  }
+}`;
 
+/** Same-origin WebSocket endpoint for GraphQL subscriptions. The teo_session
+ * cookie rides the upgrade automatically (httpOnly, same-origin), which is the
+ * supported auth path — browsers can't set an Authorization header on a WS. */
+function wsURL(): string | null {
+  const override = process.env.NEXT_PUBLIC_WS_URL;
+  if (override) return override;
+  if (typeof window === 'undefined') return null;
+  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${proto}//${window.location.host}/graphql/subscriptions`;
+}
+
+/** Default subscriber: a minimal graphql-transport-ws client over the native
+ * WebSocket (no extra dependency — it mirrors the protocol the API server
+ * implements). Calls onError (→ poll fallback) when WebSockets are unavailable
+ * or the stream errors, matching the repo's NATS-optional philosophy. */
+const defaultSubscriber: RunSubscriber = (runId, onData, onError) => {
+  const url = wsURL();
+  if (!url || typeof WebSocket === 'undefined') {
+    onError();
+    return () => {};
+  }
+  let closed = false;
+  let completed = false;
+  let ws: WebSocket;
+  try {
+    ws = new WebSocket(url, 'graphql-transport-ws');
+  } catch {
+    onError();
+    return () => {};
+  }
+  const opID = '1';
+  ws.onopen = () => ws.send(JSON.stringify({ type: 'connection_init' }));
+  ws.onmessage = (ev) => {
+    let msg: { type?: string; payload?: { data?: { runChanged?: LiveRun } } };
+    try {
+      msg = JSON.parse(ev.data as string);
+    } catch {
+      return;
+    }
+    switch (msg.type) {
+      case 'connection_ack':
+        ws.send(
+          JSON.stringify({
+            id: opID,
+            type: 'subscribe',
+            payload: { query: RUN_CHANGED_SUBSCRIPTION, variables: { id: runId } },
+          }),
+        );
+        break;
+      case 'next': {
+        const next = msg.payload?.data?.runChanged;
+        if (next && !closed) onData(next);
+        break;
+      }
+      case 'complete':
+        completed = true; // server ended the stream (terminal run) — not an error
+        break;
+      case 'error':
+        if (!closed) onError();
+        break;
+      case 'ping':
+        ws.send(JSON.stringify({ type: 'pong' }));
+        break;
+    }
+  };
+  ws.onerror = () => {
+    if (!closed) onError();
+  };
+  ws.onclose = () => {
+    if (!closed && !completed) onError();
+  };
+  return () => {
+    closed = true;
+    try {
+      ws.close();
+    } catch {
+      /* already closing */
+    }
+  };
+};
+
+/**
+ * Renders the shard Gantt and streams live updates while the run is non-terminal.
+ * It subscribes over WebSocket (graphql-ws) first and only falls back to polling
+ * every `pollMs` if the subscription can't be established or errors. Both stop
+ * automatically when the run reaches a terminal status.
+ */
+export function LiveRunShards({
+  initial,
+  pollMs = 2000,
+  fetcher = defaultFetcher,
+  subscriber = defaultSubscriber,
+}: LiveRunShardsProps) {
+  const [run, setRun] = useState<LiveRun>(initial);
+  const [wsFailed, setWsFailed] = useState(false);
+
+  // Preferred path: live WebSocket subscription.
   useEffect(() => {
     if (!isLive(run.status)) return;
+    let cancelled = false;
+    const unsubscribe = subscriber(
+      run.id,
+      (next) => {
+        if (!cancelled) setRun(next);
+      },
+      () => {
+        if (!cancelled) setWsFailed(true);
+      },
+    );
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [run.id, run.status, subscriber]);
+
+  // Fallback path: poll only when the subscription is unavailable.
+  useEffect(() => {
+    if (!isLive(run.status)) return;
+    if (!wsFailed) return;
     let cancelled = false;
     const id = setInterval(async () => {
       const next = await fetcher(run.id);
@@ -68,7 +200,7 @@ export function LiveRunShards({ initial, pollMs = 2000, fetcher = defaultFetcher
       cancelled = true;
       clearInterval(id);
     };
-  }, [run.id, run.status, pollMs, fetcher]);
+  }, [run.id, run.status, wsFailed, pollMs, fetcher]);
 
   const shards = run.shards ?? [];
   // Scale to the longer of predicted/actual across all shards so the predicted

@@ -26,6 +26,7 @@ import (
 	teogithub "github.com/teo-dev/teo/internal/github"
 	"github.com/teo-dev/teo/internal/grpcsvc"
 	"github.com/teo-dev/teo/internal/logstore"
+	teonats "github.com/teo-dev/teo/internal/nats"
 	"github.com/teo-dev/teo/internal/oidc"
 	"github.com/teo-dev/teo/internal/resultpipeline"
 	"github.com/teo-dev/teo/internal/runsvc"
@@ -140,6 +141,17 @@ func main() {
 		logger.Info("oidc sign-in enabled", "issuer", cfg.OIDCIssuer, "redirect", redirect)
 	} else {
 		logger.Warn("TEO_OIDC_ISSUER/CLIENT_ID not set; /auth/* sign-in routes will return 503")
+	}
+
+	// Core-NATS connection for GraphQL WebSocket subscriptions (FR-706,
+	// S-09-02). Best-effort: if NATS is unreachable, /graphql/subscriptions
+	// returns 501 and the UI falls back to polling.
+	if nc, _, err := teonats.Connect(cfg.NATSURL); err == nil {
+		defer nc.Close()
+		apiOpts = append(apiOpts, api.WithUISubscriptions(nc))
+		logger.Info("graphql subscriptions enabled", "nats", cfg.NATSURL)
+	} else {
+		logger.Warn("nats unavailable; graphql subscriptions disabled (UI will poll)", "err", err)
 	}
 
 	// Shared run-intake service: one instance backs both the HTTP/GraphQL

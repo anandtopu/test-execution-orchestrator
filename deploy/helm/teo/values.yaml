@@ -58,11 +58,21 @@ api:
   resources:
     requests: { cpu: "100m", memory: "256Mi" }
     limits:   { cpu: "1000m", memory: "1Gi" }
+  # GraphQL WebSocket subscriptions (FR-706, S-09-02). When enabled the API
+  # dials NATS and serves /graphql/subscriptions; the UI streams live run
+  # updates instead of polling. Disable to force the 2s-polling fallback (the
+  # endpoint then returns 501). Requires nats.enabled.
+  subscriptions:
+    enabled: true
   ingress:
     enabled: true
     className: alb
     host: teo.example.com
     tls: true
+    # WebSocket subscriptions are long-lived; raise the proxy idle timeout so the
+    # ALB/ingress doesn't drop /graphql/subscriptions mid-stream. The handler
+    # also sends graphql-ws ping/pong as a keepalive.
+    wsTimeoutSeconds: 3600
 
 # --- Run Manager (HA via Postgres advisory locks) --------------------------
 runManager:

@@ -1,6 +1,6 @@
 # E-09 Web UI — Implementation Strategy
 
-**Status:** ✅ All phases complete. Integration tests landed (testcontainers Postgres → 13 cases over resolvers + HTTP roundtrip). WebSocket subscriptions remain deferred to v1.1 by design.
+**Status:** ✅ All phases complete. Integration tests landed (testcontainers Postgres → 13 cases over resolvers + HTTP roundtrip). ~~WebSocket subscriptions remain deferred to v1.1 by design.~~ **Update (v1.1, 2026-06-23):** WebSocket subscriptions shipped — `/graphql/subscriptions` (`runChanged`) over `coder/websocket` with a core-NATS hint bus + Postgres-authoritative hub; the 2 s poll below is retained as the NATS-optional fallback. See §3.
 **Owner:** Frontend (with Backend support for resolver work)
 **Linked artifacts:** [`progress.md`](../../progress.md), [`docs/architecture/api-design.md`](../architecture/api-design.md), [ADR-0008](../adr/0008-graphql-api-surface.md)
 
@@ -38,7 +38,9 @@ Total: ~2.5 frontend-days + ~1 backend-day. Fits inside one sprint.
 
 ## 3. Strategy
 
-We do **not** add WebSocket subscriptions. Per ADR-0008 the GraphQL surface supports them, but for v1.0 we use **client-side polling at 2s** on the run-detail page (and only while the run is non-terminal). Polling is:
+> **v1.1 update (2026-06-23):** WebSocket subscriptions are now implemented (`/graphql/subscriptions`, `runChanged(id)`), hand-rolled `graphql-transport-ws` on `coder/websocket` over the programmatic `graphql-go/graphql` schema. The run-manager publishes a best-effort core-NATS hint (`teo.ui.run_changed`) per committed transition via a new `UINotifyObserver`; each API replica core-subscribes and an in-process hub re-reads the authoritative run from Postgres and pushes the full snapshot (no sticky sessions). The 2 s polling below is **retained as the fallback** (used when NATS is unconfigured → the endpoint 501s, or when the socket can't be established), so the reasons it was chosen for v1.0 still hold for the degraded path.
+
+For v1.0 we did **not** add WebSocket subscriptions. Per ADR-0008 the GraphQL surface supports them, but for v1.0 we used **client-side polling at 2s** on the run-detail page (and only while the run is non-terminal). Polling is:
 
 - Simpler to operate (no second listener / no sticky sessions / no JetStream→GraphQL bridge)
 - Sufficient for the 3-second freshness SLO in NFR-PERF-107
@@ -180,7 +182,7 @@ A reviewer can refuse merge if any of:
 
 ## 8. Out of scope (explicitly)
 
-- WebSocket / SSE subscriptions — deferred to v1.1
+- ~~WebSocket / SSE subscriptions — deferred to v1.1~~ ✅ delivered in v1.1 (2026-06-23); see §3
 - Playwright e2e — deferred to v1.1
 - Server-side GraphQL response caching — deferred; per-request is cheap enough at our scale
 - Internationalization, dark mode persistence, mobile layouts — not in v1.0

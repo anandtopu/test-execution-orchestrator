@@ -47,6 +47,12 @@ type Registry struct {
 	CHInserts        prometheus.Counter
 	CHInsertSec      prometheus.Histogram
 	CHInsertFailures prometheus.Counter
+
+	// GraphQL WebSocket subscriptions (FR-706, S-09-02). Active is the current
+	// number of open run subscriptions across all clients; Pushes counts every
+	// snapshot fanned out to a subscriber (NATS-hint- or safety-timer-driven).
+	GraphQLSubscriptionsActive prometheus.Gauge
+	GraphQLSubscriptionPushes  prometheus.Counter
 }
 
 // New constructs a Registry with all TEO collectors registered.
@@ -124,12 +130,22 @@ func New() *Registry {
 		Help: "ClickHouse insert operations that returned an error.",
 	})
 
+	r.GraphQLSubscriptionsActive = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "teo_graphql_subscriptions_active",
+		Help: "Current number of open GraphQL run subscriptions (WebSocket) across all clients.",
+	})
+	r.GraphQLSubscriptionPushes = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "teo_graphql_subscription_pushes_total",
+		Help: "Run snapshots fanned out to a subscription channel (NATS-hint- or safety-timer-driven).",
+	})
+
 	reg.MustRegister(
 		r.HTTPDurationSec,
 		r.RunsActive, r.RunTransitions, r.RunsStuck,
 		r.SchedulerPlanSec, r.SchedulerPlans,
 		r.PredictorRequests, r.PredictorColdStart, r.PredictorFallback, r.PredictorServerColdStart, r.PredictorMAE,
 		r.CHInserts, r.CHInsertSec, r.CHInsertFailures,
+		r.GraphQLSubscriptionsActive, r.GraphQLSubscriptionPushes,
 	)
 	return r
 }

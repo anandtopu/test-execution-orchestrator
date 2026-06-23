@@ -8,6 +8,33 @@ For a finer-grained per-FR / per-epic implementation status, see [`progress.md`]
 
 ## [Unreleased]
 
+### Added — GraphQL WebSocket subscriptions for live run updates (S-09-02 AC3 / T-09-02-02, FR-706)
+
+The run-detail Gantt now streams live updates over a WebSocket instead of only
+polling. The API serves a `graphql-transport-ws` endpoint at
+`/graphql/subscriptions` (`type Subscription { runChanged(id: ID!): Run }`),
+hand-rolled on `graphql-go/graphql` (no gqlgen) over `coder/websocket`. Auth
+reuses the existing `teo_session` cookie validated by the HTTP auth middleware —
+the supported path, since browsers can't set an `Authorization` header on a WS
+upgrade.
+
+Architecture: the run-manager publishes a best-effort core-NATS hint
+(`teo.ui.run_changed`) on every committed run transition (a new `UINotifyObserver`
+on the existing `RunObserver` contract); each API replica core-subscribes, and an
+in-process hub re-reads the authoritative run from Postgres and pushes the full
+snapshot. A 2s per-run safety re-read bounds freshness for intra-running shard
+progress, collapsing what were N client polls into one server read per run. Because
+every replica sees every hint, any replica can serve any subscription with no
+sticky sessions. Subscriptions complete when the run reaches a terminal status.
+
+NATS-optional and degrades gracefully: without `TEO_NATS_URL` the endpoint returns
+501 and the UI (`LiveRunShards`) silently falls back to its existing 2s polling;
+the same fallback triggers if the socket can't be established. New metrics
+`teo_graphql_subscriptions_active` and `teo_graphql_subscription_pushes_total`.
+Helm: `api.subscriptions.enabled` (default true) wires `TEO_NATS_URL` into the api
+deployment. This delivers the WebSocket surface ADR-0008 always specified and that
+the E-09 strategy explicitly deferred to v1.1.
+
 ### Fixed — release pipeline: bootstrap `gh-pages` before chart-releaser
 
 The `v1.0.0` Release run's `helm-publish` job failed at the final `cr index` step
