@@ -64,8 +64,11 @@ rm -rf deploy/helm/teo/charts deploy/helm/teo/Chart.lock
 > test (§5) — those need real AWS backups + a cluster and are the substance of
 > the drill. Passing this pre-check is necessary, not sufficient.
 >
-> _Last run: 2026-06-10 — green (helm v4.0.5; lint 0 failed, template exit 0,
-> all three workloads present, external creds wired)._
+> _Last run: 2026-06-22 — green (helm v4.0.5; lint 0 failed, template exit 0,
+> no warnings; teo-api/teo-run-manager/teo-result-pipeline all present; no CNPG
+> `Cluster` CR and no Altinity/ClickHouse-operator resources in the render;
+> external `teo-postgres-creds` `key: dsn` wired). §1–§7 (live PITR/CH restore/
+> smoke) not run this session — no AWS creds or staging cluster available._
 
 ## 1. Provision a clean cluster (15 min)
 
