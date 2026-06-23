@@ -17,6 +17,8 @@ Use **NATS JetStream 2.10**.
 **−** Smaller ecosystem than Kafka. We accept this; we are not building Kafka-Connect-style data integrations.
 **−** Less battle-tested at multi-PB scale. Not a v1 concern.
 
+**Note (v1.1):** the GraphQL subscriptions UI-hint subject `teo.ui.run_changed` (FR-706, ADR-0008) deliberately uses **core NATS, not JetStream** — it is published fire-and-forget and is *not* added to `EnsureStreams`. The hints are ephemeral and lossy by design: every API replica fans the message out in-process and re-reads authoritative state from Postgres, so a dropped hint self-heals and a persisted stream would only accumulate garbage and add ack latency.
+
 ## Alternatives considered
 - **Kafka (Strimzi).** Stronger at scale but materially heavier ops. Rejected.
 - **Redis Streams.** Less durable; consumer groups less ergonomic. Rejected.

@@ -206,7 +206,7 @@ Status legend: ✅ done · 🟡 scaffolded with named follow-up · ⏳ pending �
 
 ### S-09-02 Run timeline
 - T-09-02-01: Gantt chart component (`visx`). (1d)
-- T-09-02-02: Subscription wiring for live test events. (1d)
+- T-09-02-02: Subscription wiring for live test events. (1d) — ✅ **done (v1.1, 2026-06-23):** `/graphql/subscriptions` (`graphql-transport-ws` on `coder/websocket`) + run-manager core-NATS hint bus + Postgres-authoritative hub; UI streams via `LiveRunShards` with the 2s poll as fallback.
 - T-09-02-03: Test-row click → test detail. (0.5d)
 
 ### S-09-03 Test detail + clusters

@@ -57,6 +57,14 @@ spec:
                   key: {{ .Values.auth.jwt.secretKey }}
             - name: TEO_JWT_TTL
               value: {{ .Values.auth.jwt.ttl | quote }}
+            {{- if .Values.api.subscriptions.enabled }}
+            # GraphQL WebSocket subscriptions (FR-706, S-09-02): the API
+            # core-subscribes to the run-changed hint bus and pushes live run
+            # updates at /graphql/subscriptions. Without this URL the endpoint
+            # returns 501 and the UI falls back to 2s polling.
+            - name: TEO_NATS_URL
+              value: "nats://{{ .Release.Name }}-nats:4222"
+            {{- end }}
             {{- if .Values.storage.s3.bucket }}
             - name: TEO_S3_BUCKET
               value: {{ .Values.storage.s3.bucket | quote }}

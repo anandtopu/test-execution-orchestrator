@@ -109,6 +109,10 @@ func main() {
 			mgr.JS = js
 			logger.Info("nats connected", "url", cfg.NATSURL)
 		}
+		// Publish best-effort UI hints on every run transition so API gateways
+		// can push live updates over GraphQL subscriptions (FR-706, S-09-02).
+		// Core-NATS, independent of the JetStream dispatch stream above.
+		mgr.Observers = append(mgr.Observers, &runmanager.UINotifyObserver{Conn: nc, Logger: logger})
 	} else {
 		logger.Warn("nats unavailable; using postgres-only dispatch", "err", err)
 	}

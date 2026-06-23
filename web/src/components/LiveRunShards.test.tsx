@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, render, screen } from '@testing-library/react';
-import { LiveRunShards, type LiveRun } from './LiveRunShards';
+import { LiveRunShards, type LiveRun, type RunSubscriber } from './LiveRunShards';
 
 const seed: LiveRun = {
   id: 'run-1',
@@ -28,6 +28,15 @@ const seed: LiveRun = {
   ],
 };
 
+// failWS simulates a WebSocket that can't be established → the component falls
+// back to polling. noopWS is an inert stream (no data, no error) for render-only
+// tests so neither WS nor polling fires.
+const failWS: RunSubscriber = (_id, _onData, onError) => {
+  onError();
+  return () => {};
+};
+const noopWS: RunSubscriber = () => () => {};
+
 describe('<LiveRunShards />', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -38,18 +47,38 @@ describe('<LiveRunShards />', () => {
   });
 
   it('renders the seeded shards on first paint', () => {
-    render(<LiveRunShards initial={seed} fetcher={vi.fn()} />);
+    render(<LiveRunShards initial={seed} fetcher={vi.fn()} subscriber={noopWS} />);
     expect(screen.getByTestId('live-run-shards')).toHaveAttribute('data-status', 'running');
     expect(screen.getByTestId('gantt-row-0')).toHaveTextContent('10 tests');
     expect(screen.getByTestId('gantt-row-1')).toHaveTextContent('12 tests');
   });
 
-  it('polls every pollMs while the run is non-terminal', async () => {
+  it('uses the WebSocket subscription to update, without polling', async () => {
+    const fetcher = vi.fn();
+    const wsSubscriber: RunSubscriber = (_id, onData) => {
+      onData({
+        ...seed,
+        shards: [{ ...seed.shards[0], status: 'succeeded', actualDurationMs: 4200 }, seed.shards[1]],
+      });
+      return () => {};
+    };
+    render(<LiveRunShards initial={seed} fetcher={fetcher} subscriber={wsSubscriber} />);
+
+    // The pushed snapshot rendered (row 0 now finished → shows an actual bar).
+    expect(screen.getByTestId('gantt-bar-0')).toBeInTheDocument();
+    // No polling while the subscription is healthy.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(6000);
+    });
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it('falls back to polling every pollMs when the subscription errors', async () => {
     const fetcher = vi.fn().mockResolvedValue({
       ...seed,
       shards: [{ ...seed.shards[0], status: 'succeeded', actualDurationMs: 4200 }, seed.shards[1]],
     });
-    render(<LiveRunShards initial={seed} pollMs={2000} fetcher={fetcher} />);
+    render(<LiveRunShards initial={seed} pollMs={2000} fetcher={fetcher} subscriber={failWS} />);
     expect(fetcher).not.toHaveBeenCalled();
 
     await act(async () => {
@@ -65,10 +94,8 @@ describe('<LiveRunShards />', () => {
   });
 
   it('stops polling once the status reaches terminal', async () => {
-    const fetcher = vi
-      .fn()
-      .mockResolvedValueOnce({ ...seed, status: 'succeeded' });
-    render(<LiveRunShards initial={seed} pollMs={1000} fetcher={fetcher} />);
+    const fetcher = vi.fn().mockResolvedValueOnce({ ...seed, status: 'succeeded' });
+    render(<LiveRunShards initial={seed} pollMs={1000} fetcher={fetcher} subscriber={failWS} />);
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1000);
@@ -84,17 +111,21 @@ describe('<LiveRunShards />', () => {
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
 
-  it('does not start polling at all when the initial run is already terminal', async () => {
+  it('does not start polling or subscribing when the initial run is already terminal', async () => {
     const fetcher = vi.fn();
-    render(<LiveRunShards initial={{ ...seed, status: 'failed' }} pollMs={500} fetcher={fetcher} />);
+    const subscriber = vi.fn(noopWS);
+    render(
+      <LiveRunShards initial={{ ...seed, status: 'failed' }} pollMs={500} fetcher={fetcher} subscriber={subscriber} />,
+    );
     await act(async () => {
       await vi.advanceTimersByTimeAsync(2000);
     });
     expect(fetcher).not.toHaveBeenCalled();
+    expect(subscriber).not.toHaveBeenCalled();
   });
 
   it('shows an empty-state when there are no shards', () => {
-    render(<LiveRunShards initial={{ ...seed, shards: [] }} fetcher={vi.fn()} />);
+    render(<LiveRunShards initial={{ ...seed, shards: [] }} fetcher={vi.fn()} subscriber={noopWS} />);
     expect(screen.getByText('No shards yet.')).toBeInTheDocument();
   });
 
@@ -114,7 +145,7 @@ describe('<LiveRunShards />', () => {
         },
       ],
     };
-    render(<LiveRunShards initial={{ ...finished, status: 'succeeded' }} fetcher={vi.fn()} />);
+    render(<LiveRunShards initial={{ ...finished, status: 'succeeded' }} fetcher={vi.fn()} subscriber={noopWS} />);
 
     // Two distinct testids: a predicted band and the actual bar.
     const pred = screen.getByTestId('gantt-pred-0') as HTMLElement;
@@ -130,7 +161,7 @@ describe('<LiveRunShards />', () => {
   });
 
   it('surfaces the prediction confidence in a shard row when present', () => {
-    render(<LiveRunShards initial={seed} fetcher={vi.fn()} />);
+    render(<LiveRunShards initial={seed} fetcher={vi.fn()} subscriber={noopWS} />);
     // predictionConfidence 0.78 → "conf 78%" rendered in its own testid.
     const conf = screen.getByTestId('gantt-conf-0');
     expect(conf).toHaveTextContent('conf 78%');

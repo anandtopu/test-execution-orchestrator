@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/nats-io/nats.go"
 
 	"github.com/teo-dev/teo/internal/audit"
 	"github.com/teo-dev/teo/internal/auth"
@@ -45,6 +46,8 @@ type Server struct {
 	cookieSecure  bool               // set Secure on session cookies (https UIs)
 	roleResolver  RoleResolver       // maps an OIDC identity to TEO roles
 	runSvc        *runsvc.Service    // shared run-intake logic; nil → built from pool/audit
+	uiNATS        *nats.Conn         // core-NATS conn for GraphQL subscriptions; nil → /graphql/subscriptions 501s
+	uiHub         *Hub               // built in routes() when uiNATS is set
 	mux           *chi.Mux
 }
 
@@ -150,6 +153,19 @@ func WithRoleResolver(r RoleResolver) Option {
 	}
 }
 
+// WithUISubscriptions enables GraphQL WebSocket subscriptions at
+// /graphql/subscriptions, backed by a core-NATS hint bus (FR-706, S-09-02).
+// When nc is nil the option is a no-op and the route returns 501, so an operator
+// who hasn't set TEO_NATS_URL can tell "not configured" from "broken" and the UI
+// falls back to polling.
+func WithUISubscriptions(nc *nats.Conn) Option {
+	return func(s *Server) {
+		if nc != nil {
+			s.uiNATS = nc
+		}
+	}
+}
+
 // WithGitHubWebhook mounts an HMAC-verifying receiver at /webhooks/github.
 // When the option isn't supplied, the route returns 404 — so an operator who
 // hasn't configured TEO_GITHUB_WEBHOOK_SECRET can't accidentally accept
@@ -202,6 +218,10 @@ func (s *Server) routes() {
 	// GraphQL read API for the Web UI (FR-701..706).
 	r.Method("POST", "/graphql", graphqlHandler(s.pool))
 	r.Method("GET", "/graphql/schema", schemaHandler())
+	// GraphQL WebSocket subscriptions (FR-706, S-09-02). Always mounted; 501s
+	// when NATS isn't configured so the route is testable and the UI can detect
+	// "not enabled" and keep polling.
+	r.Method("GET", "/graphql/subscriptions", s.graphqlSubscriptionRoute())
 
 	// GitHub App webhook receiver (FR-901..904). Always mounted; when no
 	// handler is injected we return 503 so callers can distinguish "endpoint
@@ -222,6 +242,21 @@ func githubWebhookRoute(h http.Handler) http.Handler {
 		writeProblem(w, http.StatusServiceUnavailable, "GitHub webhook not configured",
 			"set TEO_GITHUB_WEBHOOK_SECRET to enable")
 	})
+}
+
+// graphqlSubscriptionRoute returns the WebSocket subscription handler when NATS
+// is configured, else a stub that 501s. The hub + subscription-aware schema are
+// built once here (routes() runs once in New()).
+func (s *Server) graphqlSubscriptionRoute() http.Handler {
+	if s.uiNATS == nil {
+		return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			writeProblem(w, http.StatusNotImplemented, "Subscriptions not configured",
+				"set TEO_NATS_URL to enable GraphQL WebSocket subscriptions")
+		})
+	}
+	s.uiHub = NewHub(s.pool, s.uiNATS, s.metrics)
+	schema := buildSchemaWithHub(s.pool, s.uiHub)
+	return graphqlSubscriptionHandler(schema, s.uiHub)
 }
 
 // schemaHandler returns the SDL of the graphql schema. Useful for tooling
@@ -334,6 +369,10 @@ type Mutation {
   rerunFailed(runId: ID!): Run
   quarantineTest(testId: ID!, reason: String): Test
   unquarantineTest(testId: ID!): Test
+}
+
+type Subscription {
+  runChanged(id: ID!): Run
 }
 `))
 	})

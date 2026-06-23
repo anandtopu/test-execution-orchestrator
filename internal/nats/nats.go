@@ -20,7 +20,21 @@ const (
 	StreamResults    = "TEO_RESULTS"
 	SubjTestStarted  = "teo.results.test_started"
 	SubjTestFinished = "teo.results.test_finished"
+
+	// SubjUIRunChanged is a core-NATS (non-JetStream) subject carrying a
+	// best-effort "this run's state changed, re-read it" hint to API gateways
+	// serving GraphQL WebSocket subscriptions (FR-706, S-09-02). It is
+	// deliberately ephemeral and lossy: every API replica core-subscribes, and a
+	// missed hint self-heals because each push re-reads the authoritative run row
+	// from Postgres. It is NOT added to EnsureStreams — core subjects need no
+	// stream, and a persisted UI-hint stream would only accumulate garbage.
+	SubjUIRunChanged = "teo.ui.run_changed"
 )
+
+// UIRunChanged is the body of a SubjUIRunChanged message.
+type UIRunChanged struct {
+	RunID string `json:"run_id"`
+}
 
 // ShardDispatch is the message body for SubjShardsDispatch.
 type ShardDispatch struct {
@@ -91,6 +105,21 @@ func Publish(ctx context.Context, js jetstream.JetStream, subj string, body any)
 	}
 	_, err = js.Publish(ctx, subj, b)
 	return err
+}
+
+// PublishCore sends a JSON-encoded message on subj over core NATS (no
+// JetStream persistence/acks). It is fire-and-forget — intended for ephemeral,
+// self-healing UI hints (SubjUIRunChanged). nc may be nil (NATS not
+// configured), in which case it is a no-op so callers stay best-effort.
+func PublishCore(nc *nats.Conn, subj string, body any) error {
+	if nc == nil {
+		return nil
+	}
+	b, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+	return nc.Publish(subj, b)
 }
 
 // ErrUnavailable is returned when no NATS URL is configured.

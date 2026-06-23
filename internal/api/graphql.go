@@ -51,6 +51,13 @@ func graphqlHandler(pool *pgxpool.Pool) http.Handler {
 // buildSchema declares Run/Shard/FailureCluster/FlakeRecord plus the root
 // Query and Mutation. See E-09 strategy for the field rationale.
 func buildSchema(pool *pgxpool.Pool) graphql.Schema {
+	return buildSchemaWithHub(pool, nil)
+}
+
+// buildSchemaWithHub is buildSchema plus a Subscription root wired to hub. When
+// hub is nil (POST /graphql, schema-shape tests) no Subscription type is added.
+// The WebSocket handler (graphql_ws.go) passes a non-nil hub.
+func buildSchemaWithHub(pool *pgxpool.Pool, hub *Hub) graphql.Schema {
 	// Audit logger for state-changing mutations. Reuses the request pool; Log
 	// is nil-safe when pool is nil (schema-shape unit tests).
 	aud := &audit.Logger{Pool: pool}
@@ -111,6 +118,13 @@ func buildSchema(pool *pgxpool.Pool) graphql.Schema {
 					m, ok := p.Source.(map[string]any)
 					if !ok {
 						return []any{}, nil
+					}
+					// Subscription fanout pre-populates "shards" so a single
+					// read is shared across all subscribers; prefer it when
+					// present (absent on the POST /graphql + query paths, which
+					// fall through to a lazy per-request read).
+					if sh, ok := m["shards"].([]map[string]any); ok {
+						return sh, nil
 					}
 					id, _ := m["id"].(string)
 					if id == "" {
@@ -344,10 +358,38 @@ func buildSchema(pool *pgxpool.Pool) graphql.Schema {
 		},
 	})
 
-	schema, _ := graphql.NewSchema(graphql.SchemaConfig{
+	cfg := graphql.SchemaConfig{
 		Query:    rootQuery,
 		Mutation: rootMutation,
-	})
+	}
+	if hub != nil {
+		cfg.Subscription = graphql.NewObject(graphql.ObjectConfig{
+			Name: "Subscription",
+			Fields: graphql.Fields{
+				// runChanged streams the full Run on every state change. The hub
+				// pushes a snapshot map; graphql-go re-executes the selection set
+				// with that map as the source, so Resolve is identity and the
+				// existing Run subfield resolvers (shards, predictor, ...) apply.
+				"runChanged": &graphql.Field{
+					Type: runType,
+					Args: graphql.FieldConfigArgument{
+						"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+					},
+					Resolve: func(p graphql.ResolveParams) (any, error) {
+						return p.Source, nil
+					},
+					Subscribe: func(p graphql.ResolveParams) (any, error) {
+						id, _ := p.Args["id"].(string)
+						if id == "" {
+							return nil, errInvalidRunID
+						}
+						return hub.Subscribe(p.Context, id)
+					},
+				},
+			},
+		})
+	}
+	schema, _ := graphql.NewSchema(cfg)
 	return schema
 }
 
