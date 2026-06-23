@@ -1,7 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { FlakesScreen } from './Flakes';
 import { adaptFlakes, type GqlFlake } from '@/lib/teo-adapt';
+
+// The detail sheet embeds <QuarantineControl/>, which calls useRouter(); stub
+// next/navigation so the sheet renders under jsdom.
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
+}));
 
 // ui-clusters-flakes: FlakesScreen is prop-driven (no TEO_DATA mock). We feed it
 // adapter output built from GraphQL-shaped rows and assert the table + KPI +

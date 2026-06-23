@@ -319,6 +319,22 @@ type FlakeRecord {
   quarantinedAt: String
   ownerTeam: String
 }
+
+type Test {
+  id: ID!
+  path: String
+  name: String
+  status: String
+  quarantinedAt: String
+  quarantineReason: String
+  ownerTeam: String
+}
+
+type Mutation {
+  rerunFailed(runId: ID!): Run
+  quarantineTest(testId: ID!, reason: String): Test
+  unquarantineTest(testId: ID!): Test
+}
 `))
 	})
 }

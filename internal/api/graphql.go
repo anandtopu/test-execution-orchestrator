@@ -8,6 +8,7 @@ import (
 	"github.com/graphql-go/graphql"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/teo-dev/teo/internal/audit"
 	"github.com/teo-dev/teo/internal/auth"
 	"github.com/teo-dev/teo/internal/cost"
 )
@@ -50,6 +51,9 @@ func graphqlHandler(pool *pgxpool.Pool) http.Handler {
 // buildSchema declares Run/Shard/FailureCluster/FlakeRecord plus the root
 // Query and Mutation. See E-09 strategy for the field rationale.
 func buildSchema(pool *pgxpool.Pool) graphql.Schema {
+	// Audit logger for state-changing mutations. Reuses the request pool; Log
+	// is nil-safe when pool is nil (schema-shape unit tests).
+	aud := &audit.Logger{Pool: pool}
 	shardType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Shard",
 		Fields: graphql.Fields{
@@ -268,6 +272,20 @@ func buildSchema(pool *pgxpool.Pool) graphql.Schema {
 		},
 	})
 
+	// Test is the target of the operator quarantine mutations (S-08-03).
+	testType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Test",
+		Fields: graphql.Fields{
+			"id":               &graphql.Field{Type: graphql.ID},
+			"path":             &graphql.Field{Type: graphql.String},
+			"name":             &graphql.Field{Type: graphql.String},
+			"status":           &graphql.Field{Type: graphql.String},
+			"quarantinedAt":    &graphql.Field{Type: graphql.String, Resolve: mapResolve("quarantined_at")},
+			"quarantineReason": &graphql.Field{Type: graphql.String, Resolve: mapResolve("quarantine_reason")},
+			"ownerTeam":        &graphql.Field{Type: graphql.String, Resolve: mapResolve("owner_team")},
+		},
+	})
+
 	rootMutation := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Mutation",
 		Fields: graphql.Fields{
@@ -285,6 +303,42 @@ func buildSchema(pool *pgxpool.Pool) graphql.Schema {
 						return nil, errInvalidRunID
 					}
 					return rerunFailed(p.Context, pool, runID)
+				},
+			},
+			// quarantineTest / unquarantineTest: operator-initiated manual
+			// quarantine (S-08-03 / T-08-03-01), gated to engineer/admin.
+			"quarantineTest": &graphql.Field{
+				Type: testType,
+				Args: graphql.FieldConfigArgument{
+					"testId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+					"reason": &graphql.ArgumentConfig{Type: graphql.String},
+				},
+				Resolve: func(p graphql.ResolveParams) (any, error) {
+					if err := requireMutationRole(p.Context); err != nil {
+						return nil, err
+					}
+					testID, _ := p.Args["testId"].(string)
+					if testID == "" {
+						return nil, errInvalidTestID
+					}
+					reason, _ := p.Args["reason"].(string)
+					return quarantineTest(p.Context, pool, aud, testID, reason)
+				},
+			},
+			"unquarantineTest": &graphql.Field{
+				Type: testType,
+				Args: graphql.FieldConfigArgument{
+					"testId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+				},
+				Resolve: func(p graphql.ResolveParams) (any, error) {
+					if err := requireMutationRole(p.Context); err != nil {
+						return nil, err
+					}
+					testID, _ := p.Args["testId"].(string)
+					if testID == "" {
+						return nil, errInvalidTestID
+					}
+					return unquarantineTest(p.Context, pool, aud, testID)
 				},
 			},
 		},

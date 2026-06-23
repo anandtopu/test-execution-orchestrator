@@ -8,6 +8,7 @@
 import { useState, useMemo } from 'react';
 import { Chip, StatusBadge, Sparkline, Kpi } from './atoms';
 import { Icon } from './Icons';
+import { QuarantineControl } from './QuarantineControl';
 import { fmt, CAT_COLOR } from '@/lib/teo-format';
 import { type Flake } from '@/lib/teo-data';
 
@@ -295,10 +296,8 @@ function FlakeDetailSheet({ flake, onClose }: { flake: Flake; onClose: () => voi
         <span className="mono muted" style={{ fontSize: 11 }}>
           {flake.file}
         </span>
-        <span style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
-          <button className="btn btn--primary">
-            <Icon.Bug /> Quarantine
-          </button>
+        <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <QuarantineControl testId={flake.id} quarantined={flake.status === 'quarantined'} />
           <button className="btn">Open issue</button>
           <button className="btn">Reassign</button>
           <button className="btn btn--ghost" onClick={onClose}>

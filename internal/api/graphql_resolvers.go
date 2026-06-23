@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"math"
 	"sort"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/teo-dev/teo/internal/audit"
 	"github.com/teo-dev/teo/internal/auth"
 	"github.com/teo-dev/teo/internal/cost"
 )
@@ -677,6 +679,142 @@ func percentile(sorted []float64, p float64) float64 {
 		idx = len(sorted) - 1
 	}
 	return sorted[idx]
+}
+
+// errInvalidTestID is returned by the quarantine mutations when testId is empty.
+var errInvalidTestID = errors.New("testId is required")
+
+// errTestNotFound is returned when no teo.tests row matches the supplied testId.
+var errTestNotFound = errors.New("test not found")
+
+// errCannotQuarantineDeleted guards against quarantining a soft-deleted test.
+var errCannotQuarantineDeleted = errors.New("cannot quarantine a deleted test")
+
+// rowQuerier is satisfied by both *pgxpool.Pool and pgx.Tx, so scanTestRow can
+// read inside or outside a transaction.
+type rowQuerier interface {
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
+// quarantineTest is the operator-initiated quarantine transition (S-08-03,
+// T-08-03-01). It mirrors the auto-quarantine daemon's state changes so manual
+// and automatic paths converge.
+func quarantineTest(ctx context.Context, pool *pgxpool.Pool, aud *audit.Logger, testID, reason string) (map[string]any, error) {
+	return setQuarantine(ctx, pool, aud, testID, true, reason)
+}
+
+// unquarantineTest restores a quarantined test to the active lane (S-08-03,
+// T-08-03-01). It mirrors the magic-link restore endpoint's bookkeeping.
+func unquarantineTest(ctx context.Context, pool *pgxpool.Pool, aud *audit.Logger, testID string) (map[string]any, error) {
+	return setQuarantine(ctx, pool, aud, testID, false, "")
+}
+
+// setQuarantine flips teo.tests.status between active and quarantined under a
+// row lock, mirrors the flake_records bookkeeping the auto-quarantine daemon
+// (quarantine.go) and magic-link restore (unquarantine.go) use, and appends an
+// audit row attributed to the caller's principal. It returns the updated test
+// as a map[string]any for the GraphQL Test resolver. Idempotent: re-running in
+// the same direction is a no-op that still returns the current row.
+func setQuarantine(ctx context.Context, pool *pgxpool.Pool, aud *audit.Logger, testID string, on bool, reason string) (map[string]any, error) {
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	// Lock the row so a concurrent quarantine sweep can't race the transition.
+	var status string
+	switch err := tx.QueryRow(ctx, `SELECT status FROM teo.tests WHERE id = $1 FOR UPDATE`, testID).Scan(&status); {
+	case errors.Is(err, pgx.ErrNoRows):
+		return nil, errTestNotFound
+	case err != nil:
+		return nil, err
+	}
+
+	action := "test.unquarantine"
+	if on {
+		action = "test.quarantine"
+		if status == "deleted" {
+			return nil, errCannotQuarantineDeleted
+		}
+		reason = strings.TrimSpace(reason)
+		if reason == "" {
+			reason = "manual: operator quarantine"
+		}
+		if _, err := tx.Exec(ctx, `
+            UPDATE teo.tests
+            SET status = 'quarantined', quarantined_at = now(), quarantine_reason = $2
+            WHERE id = $1 AND status <> 'deleted'
+        `, testID, reason); err != nil {
+			return nil, err
+		}
+		if _, err := tx.Exec(ctx,
+			`UPDATE teo.flake_records SET quarantined_at = now() WHERE test_id = $1`, testID); err != nil {
+			return nil, err
+		}
+	} else {
+		if _, err := tx.Exec(ctx, `
+            UPDATE teo.tests
+            SET status = 'active', quarantined_at = NULL, quarantine_reason = NULL
+            WHERE id = $1 AND status = 'quarantined'
+        `, testID); err != nil {
+			return nil, err
+		}
+		if _, err := tx.Exec(ctx,
+			`UPDATE teo.flake_records SET quarantined_at = NULL, unquarantined_at = now() WHERE test_id = $1 AND quarantined_at IS NOT NULL`,
+			testID); err != nil {
+			return nil, err
+		}
+	}
+
+	m, err := scanTestRow(ctx, tx, testID)
+	if err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+
+	// Audit after commit so a logging failure can't roll back an applied
+	// transition. Log is nil-safe when the pool is absent (unit tests).
+	meta := map[string]any{"status": m["status"]}
+	if on {
+		meta["reason"] = reason
+	}
+	if err := aud.Log(ctx, audit.Entry{Action: action, TargetType: "test", TargetID: testID, Meta: meta}); err != nil {
+		slog.WarnContext(ctx, "quarantine audit log failed", "test_id", testID, "action", action, "error", err)
+	}
+	return m, nil
+}
+
+// scanTestRow loads the columns the GraphQL Test type resolves, formatting
+// quarantined_at to RFC3339 (nil when NULL) to match this package's other
+// timestamp fields.
+func scanTestRow(ctx context.Context, q rowQuerier, testID string) (map[string]any, error) {
+	var (
+		id, path, name, st string
+		qAt                *time.Time
+		reason, ownerTeam  *string
+	)
+	err := q.QueryRow(ctx, `
+        SELECT id::text, path, name, status, quarantined_at, quarantine_reason, owner_team
+        FROM teo.tests WHERE id = $1
+    `, testID).Scan(&id, &path, &name, &st, &qAt, &reason, &ownerTeam)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, errTestNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	m := map[string]any{
+		"id": id, "path": path, "name": name, "status": st,
+		"quarantine_reason": reason, "owner_team": ownerTeam,
+		"quarantined_at": nil,
+	}
+	if qAt != nil {
+		m["quarantined_at"] = qAt.UTC().Format(time.RFC3339)
+	}
+	return m, nil
 }
 
 func scanToMaps(rows pgx.Rows, columns []string) ([]map[string]any, error) {

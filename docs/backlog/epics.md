@@ -19,7 +19,7 @@ Status legend: ✅ done · 🟡 scaffolded with named follow-up · ⏳ pending �
 | **E-05** | Scheduler (LPT) + heuristic predictor | ✅ | FR-301..306, FR-305 | 2 | Backend |
 | **E-06** | Worker agent + pytest adapter + redactor | ✅ | FR-201..204, FR-401..408 | 2 | Backend |
 | **E-07** | Result pipeline (OTLP, failure clustering) | ✅ | FR-501..505, FR-502 | 3 | Backend |
-| **E-08** | Flake detection (Wilson-interval pipeline) | 🟡 | FR-601..606 | 3 | Backend |
+| **E-08** | Flake detection (Wilson-interval pipeline) | ✅ | FR-601..606 | 3 | Backend |
 | **E-09** | Web UI (Next.js + GraphQL) | ✅ | FR-701..706 | 2-3 | Frontend |
 | **E-10** | GitHub App integration + Checks API | ✅ | FR-901..904 | 3 | Backend |
 | **E-11** | Helm chart + observability + release pipeline | ✅ | FR-1001..1005, NFR-OBS-* | 1, 4 | Platform |
@@ -33,9 +33,9 @@ Status legend: ✅ done · 🟡 scaffolded with named follow-up · ⏳ pending �
 
 ### Follow-ups remaining (post-v1.0)
 
-All 16 epics shipped at v1.0 scope. Two named follow-ups remain open — neither blocked the release:
+All 16 epics shipped at v1.0 scope. Open follow-ups:
 
-- **S-08-03 — operator-initiated manual quarantine (E-08).** 🟡 Functional gap. Auto-quarantine (E-15) and the scheduler non-blocking lane are done, but there is no operator `quarantine`/`unquarantine` GraphQL mutation (T-08-03-01) and no UI button/modal (T-08-03-03). This is the one v1.0-backlog item `progress.md` does not track as a gap. **Tracked for v1.1** — see the S-08-03 status note in [`stories.md`](stories.md#s-08-03-operator-can-quarantine-a-flaky-test).
+- ~~**S-08-03 — operator-initiated manual quarantine (E-08).**~~ ✅ **Done 2026-06-22** — `quarantineTest`/`unquarantineTest` GraphQL mutations (engineer/admin-gated, audit-logged) + `QuarantineControl` UI in the Flakes detail sheet. See the S-08-03 status note in [`stories.md`](stories.md#s-08-03-operator-can-quarantine-a-flaky-test).
 - **S-06-03 — kill-mid-test integration test (E-06).** 🟡 Test-debt only. The SIGTERM/graceful-cancel handler is implemented (`cmd/worker/main.go`); the full kill-worker-mid-test integration test is still to be written.
 
 Deferred-by-decision items (WebSocket subscriptions → v1.1, Jest AST fingerprint → v1.5, plus the ADR-0012 📦 list) are not counted here.

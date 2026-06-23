@@ -119,3 +119,25 @@ export const RerunFailedMutation = /* GraphQL */ `
     }
   }
 `;
+
+// Operator-initiated manual quarantine (S-08-03). Both mutations are gated to
+// engineer/admin server-side and write an audit row.
+export const QuarantineTestMutation = /* GraphQL */ `
+  mutation QuarantineTest($testId: ID!, $reason: String) {
+    quarantineTest(testId: $testId, reason: $reason) {
+      id
+      status
+      quarantinedAt
+    }
+  }
+`;
+
+export const UnquarantineTestMutation = /* GraphQL */ `
+  mutation UnquarantineTest($testId: ID!) {
+    unquarantineTest(testId: $testId) {
+      id
+      status
+      quarantinedAt
+    }
+  }
+`;
