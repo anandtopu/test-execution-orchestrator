@@ -9,6 +9,10 @@
 > **Post-release follow-ups (not blockers):**
 > - The **full cloud restore drill** against staging per [`docs/operations/restore-drill.md`](docs/operations/restore-drill.md) is still deferred — record the outcome in the runbook's history log when run.
 > - `-race` was unavailable on the dev host for the local integration run (no cgo toolchain); CI on Linux runs `-race` per the Makefile.
+>
+> **In flight (2026-06-25, open PRs against `main` @ `321b6d8`):**
+> - **PR #4** `feat(jest)` — Jest AST-signature fingerprint (S-14-02 AC3, v1.5). Closes the last deferred adapter item; all three adapters then populate `tests.ast_signature`. Includes a multi-agent code review + coverage pass that lifted `pkg/adapter/jest` from 61.5% → 83.7% (Execute, node-failure fallback, and the cross-language path-key invariant now pinned). The E-14 row + deferred-note flip live on this branch.
+> - **PR #5** `docs(architecture)` — as-built [diagrams](docs/architecture/diagrams.md), [schema](docs/architecture/schema.md), [ER diagram](docs/architecture/er-diagram.md), and [developer handoff](docs/handoff/DEVELOPER_HANDOFF.md); flags the drifted 2026-04-30 `data-model.md` draft as superseded.
 
 This is the single source of truth for implementation status. Every entry links to the code or doc it tracks. Status legend:
 

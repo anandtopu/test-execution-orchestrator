@@ -1,6 +1,8 @@
 # TEO — Data Model
 
-**Status:** Draft
+> ⚠️ **This is the original design draft (2026-04-30) and has drifted from the applied migrations.** For the **as-built** schema — including migrations 002–006 and the corrected `user_roles` keys — read [`schema.md`](schema.md) and [`er-diagram.md`](er-diagram.md). Kept for design rationale and sizing notes (§5); the migration SQL is the final word on structure.
+
+**Status:** Superseded design draft (see banner above)
 **Date:** 2026-04-30
 
 Two stores: **Postgres** for transactional state (runs, shards, tests, flakes, ownership), **ClickHouse** for high-volume analytical data (span events, durations, flake-stats time series). S3 for cold archive.

@@ -4,23 +4,31 @@ This directory holds the architecture, requirements, ADRs, backlog, and process 
 
 ## Reading order for new contributors
 
-1. [`PRD.md`](../PRD.md) — what we're building and why.
-2. [`progress.md`](../progress.md) — **what's already built** (live status dashboard).
-3. [`adr/0012-mvp-scope-cut.md`](adr/0012-mvp-scope-cut.md) — what's in v1.0 vs deferred.
-4. [`architecture/overview.md`](architecture/overview.md) — system diagram and component summaries.
-5. [`architecture/tech-stack.md`](architecture/tech-stack.md) — every framework choice.
-6. [`requirements/functional.md`](requirements/functional.md) — what the system must do.
-7. [`backlog/epics.md`](backlog/epics.md) — how the work is broken down.
+1. [`handoff/DEVELOPER_HANDOFF.md`](handoff/DEVELOPER_HANDOFF.md) — **start here to get productive** (build, test, navigate, gotchas).
+2. [`PRD.md`](../PRD.md) — what we're building and why.
+3. [`progress.md`](../progress.md) — **what's already built** (live status dashboard).
+4. [`adr/0012-mvp-scope-cut.md`](adr/0012-mvp-scope-cut.md) — what's in v1.0 vs deferred.
+5. [`architecture/overview.md`](architecture/overview.md) — system diagram and component summaries.
+6. [`architecture/diagrams.md`](architecture/diagrams.md) — **as-built** Mermaid diagrams (services, run lifecycle, state machines, deployment).
+7. [`architecture/schema.md`](architecture/schema.md) + [`architecture/er-diagram.md`](architecture/er-diagram.md) — current datastore schema + ER diagram.
+8. [`architecture/tech-stack.md`](architecture/tech-stack.md) — every framework choice.
+9. [`requirements/functional.md`](requirements/functional.md) — what the system must do.
+10. [`backlog/epics.md`](backlog/epics.md) — how the work is broken down.
 
 ## Layout
 
 ```
 docs/
 ├── README.md                        ← you are here
+├── handoff/
+│   └── DEVELOPER_HANDOFF.md         ← onboarding: build/test/navigate/gotchas
 ├── architecture/
-│   ├── overview.md                  ← components, data flow, diagram
+│   ├── overview.md                  ← components, data flow, diagram (the spec)
+│   ├── diagrams.md                  ← as-built Mermaid diagrams (services, lifecycle, state machines, deploy)
+│   ├── schema.md                    ← CURRENT Postgres + ClickHouse + S3 schema (migrations 001..006)
+│   ├── er-diagram.md                ← Mermaid ER diagram (Postgres)
 │   ├── tech-stack.md                ← languages, frameworks, libs
-│   ├── data-model.md                ← Postgres + ClickHouse + S3 schemas
+│   ├── data-model.md                ← original 2026-04-30 design draft (drifted; see schema.md)
 │   ├── api-design.md                ← gRPC + REST + GraphQL contracts
 │   └── deployment.md                ← Helm, CI/CD, environments, DR
 ├── requirements/
