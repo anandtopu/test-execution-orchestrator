@@ -384,7 +384,7 @@ The detailed acceptance criteria per story appear below; statuses above match th
 ### S-14-02: Jest adapter discovers and runs tests
 - **AC1** Discovery via `jest --listTests --json`.
 - **AC2** Worker runs Jest with `--testNamePattern` and `--json --outputFile=` to capture results.
-- **AC3** Stable fingerprint uses file path + describe-stack + test name; AST signature deferred to v1.5 (path+name only at v1.0).
+- **AC3** Stable fingerprint uses file path + describe-stack + test name + AST signature. ✅ **AST signature shipped 2026-06-24 (v1.5):** `pkg/adapter/jest/astsig.go` runs an embedded `@babel/parser` Node helper (resolved from the project under test) that hashes each `it()`/`test()` callback body — stable across reformatting/comment edits, sensitive to logic changes — attached at `Execute` (Jest can't enumerate blocks without running) keyed by the `describe > … > title` report name. Dynamic titles (`it.each`/interpolated) and a missing parser/node degrade to empty signatures (the prior path+name-only behavior). Code: `pkg/adapter/jest/{astsig.go,jest.go}`; tests: `pkg/adapter/jest/astsig_test.go` (parser-backed key-match/stability/dynamic-skip, gated on node + `@babel/parser` via `TEO_JS_PARSER_PATHS`, plus pure plumbing tests).
 - **Links:** FR-106 (partial)
 
 ### S-14-03: Adapter SPI is documented for community contributions

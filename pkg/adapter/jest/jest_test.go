@@ -1,6 +1,7 @@
 package jest
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -76,7 +77,7 @@ func TestParseReportEmitsAssertions(t *testing.T) {
 	}
 	started := time.Date(2026, 5, 4, 10, 0, 0, 0, time.UTC)
 	var got []adapter.Result
-	if err := parseReport(raw, "/work", started, func(r adapter.Result) { got = append(got, r) }); err != nil {
+	if err := parseReport(raw, "/work", started, nil, func(r adapter.Result) { got = append(got, r) }); err != nil {
 		t.Fatal(err)
 	}
 	if len(got) != 3 {
@@ -119,7 +120,7 @@ func TestParseReportEmitsAssertions(t *testing.T) {
 
 func TestParseReportEmptyReportIsNoOp(t *testing.T) {
 	count := 0
-	if err := parseReport([]byte(`{"testResults":[]}`), "/work", time.Now(), func(adapter.Result) { count++ }); err != nil {
+	if err := parseReport([]byte(`{"testResults":[]}`), "/work", time.Now(), nil, func(adapter.Result) { count++ }); err != nil {
 		t.Fatal(err)
 	}
 	if count != 0 {
@@ -128,7 +129,7 @@ func TestParseReportEmptyReportIsNoOp(t *testing.T) {
 }
 
 func TestParseReportRejectsMalformed(t *testing.T) {
-	if err := parseReport([]byte("not json"), "/work", time.Now(), func(adapter.Result) {}); err == nil {
+	if err := parseReport([]byte("not json"), "/work", time.Now(), nil, func(adapter.Result) {}); err == nil {
 		t.Fatal("expected error for non-JSON report")
 	}
 }
@@ -144,5 +145,52 @@ func TestNewAdapterDefaults(t *testing.T) {
 	a.JestBin = "/custom/jest"
 	if a.bin() != "/custom/jest" {
 		t.Errorf("bin() with custom JestBin = %s", a.bin())
+	}
+}
+
+// bin() falls back to "jest" on a zero-value Adapter (New() presets JestBin, so
+// this exercises the empty-field branch that the defaults test never hits).
+func TestBinFallbackOnEmptyJestBin(t *testing.T) {
+	if got := (&Adapter{}).bin(); got != "jest" {
+		t.Errorf("(&Adapter{}).bin() = %q, want jest", got)
+	}
+}
+
+// Execute on an empty test slice is a no-op: it returns nil and never spawns a
+// process or calls the handler.
+func TestExecuteEmptyTestsIsNoOp(t *testing.T) {
+	called := false
+	err := New().Execute(context.Background(), t.TempDir(), nil,
+		adapter.ExecOptions{}, func(adapter.Result) { called = true })
+	if err != nil {
+		t.Fatalf("Execute(empty) = %v, want nil", err)
+	}
+	if called {
+		t.Fatal("handler fired for an empty test slice")
+	}
+}
+
+// When jest can't run (binary absent) no report.json is written, so Execute hits
+// the report-read-failure fallback and errors every requested test. This drives
+// the Execute body without needing a real jest/node toolchain.
+func TestExecuteReportReadFailureErrorsEveryTest(t *testing.T) {
+	a := &Adapter{JestBin: "teo-nonexistent-jest-xyz", NodeBin: "teo-nonexistent-node-xyz"}
+	tests := []model.TestEntry{
+		{Path: "a.test.ts", Name: "<file>"},
+		{Path: "b.test.ts", Name: "<file>"},
+	}
+	var got []adapter.Result
+	err := a.Execute(context.Background(), t.TempDir(), tests,
+		adapter.ExecOptions{}, func(r adapter.Result) { got = append(got, r) })
+	if err != nil {
+		t.Fatalf("Execute = %v, want nil (failures reported per-test, not as an error)", err)
+	}
+	if len(got) != len(tests) {
+		t.Fatalf("got %d results, want %d", len(got), len(tests))
+	}
+	for i, r := range got {
+		if r.Outcome != model.OutcomeErrored {
+			t.Errorf("result[%d] outcome = %s, want errored", i, r.Outcome)
+		}
 	}
 }

@@ -19,10 +19,11 @@ import (
 
 // Adapter implements adapter.Adapter for Jest.
 type Adapter struct {
-	JestBin string // defaults to "npx jest"
+	JestBin string // defaults to "jest"
+	NodeBin string // node binary for AST-signature extraction; defaults to "node"
 }
 
-// New returns a Jest adapter using `npx jest` by default.
+// New returns a Jest adapter using `jest` by default.
 func New() *Adapter { return &Adapter{JestBin: "jest"} }
 
 // Name implements adapter.Adapter.
@@ -119,13 +120,22 @@ func (a *Adapter) Execute(ctx context.Context, workdir string, tests []model.Tes
 		}
 		return nil
 	}
-	return parseReport(rep, workdir, started, onResult)
+
+	// AST signatures fold the test body into the fingerprint (S-14-02 AC3): a
+	// test whose body changes gets a distinct identity. Jest can't enumerate
+	// it()/test() blocks without running, so unlike gotest/pytest the signature
+	// is attached here at execution time rather than at Discover. Best-effort:
+	// an empty map just means tests carry an empty signature (the v1.0 behavior).
+	sigs := a.astSignatures(ctx, workdir, distinctPaths(tests))
+	return parseReport(rep, workdir, started, sigs, onResult)
 }
 
 // parseReport walks a jest --json report and emits one Result per assertion.
-// Returns an error only when the report is structurally invalid; an empty
-// report is a valid (no-op) success.
-func parseReport(rep []byte, workdir string, started time.Time, onResult adapter.ResultHandler) error {
+// sigs (path → name → AST signature, keyed identically to the Name built below)
+// may be nil; a missing entry yields an empty signature. Returns an error only
+// when the report is structurally invalid; an empty report is a valid (no-op)
+// success.
+func parseReport(rep []byte, workdir string, started time.Time, sigs map[string]map[string]string, onResult adapter.ResultHandler) error {
 	var jr jestReport
 	if err := json.Unmarshal(rep, &jr); err != nil {
 		return fmt.Errorf("parse jest report: %w", err)
@@ -135,7 +145,7 @@ func parseReport(rep []byte, workdir string, started time.Time, onResult adapter
 		for _, ar := range file.AssertionResults {
 			name := strings.Join(append(ar.AncestorTitles, ar.Title), " > ")
 			r := adapter.Result{
-				Test:       model.TestEntry{Path: rel, Name: name},
+				Test:       model.TestEntry{Path: rel, Name: name, ASTSignature: sigs[rel][name]},
 				Outcome:    translate(ar.Status),
 				Started:    started,
 				Finished:   started.Add(time.Duration(ar.Duration) * time.Millisecond),

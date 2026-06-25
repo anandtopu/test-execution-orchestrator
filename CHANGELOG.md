@@ -8,6 +8,28 @@ For a finer-grained per-FR / per-epic implementation status, see [`progress.md`]
 
 ## [Unreleased]
 
+### Added — Jest AST-signature fingerprint (S-14-02 AC3, v1.5)
+
+The Jest adapter now folds a normalized hash of each test's body into the test
+fingerprint, matching what the `go test` and `pytest` adapters already do — so a
+Jest test whose body materially changes gets a distinct identity (and fresh flake
+history) rather than silently inheriting the old body's stats, while a rename/move
+preserves history.
+
+`pkg/adapter/jest/astsig.go` runs an embedded Node helper that parses each test
+file with `@babel/parser` (a transitive dependency of `babel-jest`, present in
+virtually every Jest project; resolved from the project under test) and hashes the
+structure + identifiers + literals of each `it()`/`test()` callback body. The hash
+is stable across reformatting and comment edits (neither is in the AST) and changes
+when the test logic changes. Because Jest can't enumerate `it()` blocks without
+running, the signature is attached at `Execute` time in `parseReport`, keyed by the
+same `describe > … > title` string the Jest report yields. Dynamic titles
+(`it.each`, interpolated/computed names) can't be matched to a report name and so
+keep an empty signature; if `@babel/parser` or `node` is unavailable the adapter
+degrades to empty signatures (the prior path+name+params behavior). No new Go or
+npm dependencies. This closes the last v1.5-deferred item from the adapter epic —
+all three reference adapters now populate `ASTSignature`.
+
 ### Added — GraphQL WebSocket subscriptions for live run updates (S-09-02 AC3 / T-09-02-02, FR-706)
 
 The run-detail Gantt now streams live updates over a WebSocket instead of only
