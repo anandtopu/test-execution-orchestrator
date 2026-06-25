@@ -76,7 +76,7 @@ func TestParseReportEmitsAssertions(t *testing.T) {
 	}
 	started := time.Date(2026, 5, 4, 10, 0, 0, 0, time.UTC)
 	var got []adapter.Result
-	if err := parseReport(raw, "/work", started, func(r adapter.Result) { got = append(got, r) }); err != nil {
+	if err := parseReport(raw, "/work", started, nil, func(r adapter.Result) { got = append(got, r) }); err != nil {
 		t.Fatal(err)
 	}
 	if len(got) != 3 {
@@ -119,7 +119,7 @@ func TestParseReportEmitsAssertions(t *testing.T) {
 
 func TestParseReportEmptyReportIsNoOp(t *testing.T) {
 	count := 0
-	if err := parseReport([]byte(`{"testResults":[]}`), "/work", time.Now(), func(adapter.Result) { count++ }); err != nil {
+	if err := parseReport([]byte(`{"testResults":[]}`), "/work", time.Now(), nil, func(adapter.Result) { count++ }); err != nil {
 		t.Fatal(err)
 	}
 	if count != 0 {
@@ -128,7 +128,7 @@ func TestParseReportEmptyReportIsNoOp(t *testing.T) {
 }
 
 func TestParseReportRejectsMalformed(t *testing.T) {
-	if err := parseReport([]byte("not json"), "/work", time.Now(), func(adapter.Result) {}); err == nil {
+	if err := parseReport([]byte("not json"), "/work", time.Now(), nil, func(adapter.Result) {}); err == nil {
 		t.Fatal("expected error for non-JSON report")
 	}
 }
