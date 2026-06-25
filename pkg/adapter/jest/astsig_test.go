@@ -90,6 +90,74 @@ func TestAstSignaturesEmptyPathsReturnsNil(t *testing.T) {
 	}
 }
 
+// When every candidate node binary fails to launch, astSignatures exhausts the
+// loop (cmd.Output error → continue) and returns nil so execution proceeds with
+// empty signatures. Exercises the node-unavailable degradation without a node.
+func TestAstSignaturesNodeFailureReturnsNil(t *testing.T) {
+	a := &Adapter{NodeBin: "teo-nonexistent-node-xyz"}
+	if got := a.astSignatures(context.Background(), t.TempDir(), []string{"x.test.ts"}); got != nil {
+		t.Errorf("astSignatures with unrunnable node = %v, want nil", got)
+	}
+}
+
+// The Node helper keys its output map by the verbatim argv path. parseReport
+// looks signatures up with filepath.Rel(workdir, reportName) — an OS-native
+// (backslash-on-Windows) relative path. This pins that the two agree for a
+// multi-segment path: the Node outer key must equal the OS-native relative path
+// parseReport would compute, or every signature silently goes empty. Guards the
+// one cross-language invariant the separator-free fixtures can't reach.
+func TestAstSignaturesKeyedByOSNativeSubdirPath(t *testing.T) {
+	if _, err := exec.LookPath("node"); err != nil {
+		t.Skip("node not available")
+	}
+	parserPaths := babelParserPaths(t)
+	if parserPaths == "" {
+		t.Skip("@babel/parser not available (web/node_modules not installed)")
+	}
+	t.Setenv("TEO_JS_PARSER_PATHS", parserPaths)
+
+	dir := t.TempDir()
+	subdir := filepath.Join("src", "components")
+	if err := os.MkdirAll(filepath.Join(dir, subdir), 0o750); err != nil {
+		t.Fatal(err)
+	}
+	relPath := filepath.Join(subdir, "Button.test.tsx") // OS-native separators
+	src := "it('renders', () => { expect(1).toBe(1); });\n"
+	if err := os.WriteFile(filepath.Join(dir, relPath), []byte(src), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	out := New().astSignatures(context.Background(), dir, []string{relPath})
+	if out == nil {
+		t.Fatal("astSignatures returned nil (node ran but produced no output?)")
+	}
+	// The outer key must be the exact OS-native relative path...
+	sigs, ok := out[relPath]
+	if !ok {
+		t.Fatalf("output not keyed by OS-native path %q; got keys %v", relPath, keysOf(out))
+	}
+	// ...which is exactly what parseReport computes via filepath.Rel from the
+	// report's absolute file name. If these ever diverge, the lookup misses.
+	wantKey, err := filepath.Rel(dir, filepath.Join(dir, relPath))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if wantKey != relPath {
+		t.Fatalf("filepath.Rel key %q != argv key %q", wantKey, relPath)
+	}
+	if sigs["renders"] == "" {
+		t.Errorf("missing signature for it('renders') under %q; got %v", relPath, sigs)
+	}
+}
+
+func keysOf(m map[string]map[string]string) []string {
+	ks := make([]string, 0, len(m))
+	for k := range m {
+		ks = append(ks, k)
+	}
+	return ks
+}
+
 // babelParserPaths returns an absolute search path for @babel/parser, preferring
 // the repo's web/node_modules (the Go test job may not have it installed). It
 // returns "" when no resolvable parser location is found.

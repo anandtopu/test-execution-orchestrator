@@ -1,6 +1,7 @@
 package jest
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -144,5 +145,52 @@ func TestNewAdapterDefaults(t *testing.T) {
 	a.JestBin = "/custom/jest"
 	if a.bin() != "/custom/jest" {
 		t.Errorf("bin() with custom JestBin = %s", a.bin())
+	}
+}
+
+// bin() falls back to "jest" on a zero-value Adapter (New() presets JestBin, so
+// this exercises the empty-field branch that the defaults test never hits).
+func TestBinFallbackOnEmptyJestBin(t *testing.T) {
+	if got := (&Adapter{}).bin(); got != "jest" {
+		t.Errorf("(&Adapter{}).bin() = %q, want jest", got)
+	}
+}
+
+// Execute on an empty test slice is a no-op: it returns nil and never spawns a
+// process or calls the handler.
+func TestExecuteEmptyTestsIsNoOp(t *testing.T) {
+	called := false
+	err := New().Execute(context.Background(), t.TempDir(), nil,
+		adapter.ExecOptions{}, func(adapter.Result) { called = true })
+	if err != nil {
+		t.Fatalf("Execute(empty) = %v, want nil", err)
+	}
+	if called {
+		t.Fatal("handler fired for an empty test slice")
+	}
+}
+
+// When jest can't run (binary absent) no report.json is written, so Execute hits
+// the report-read-failure fallback and errors every requested test. This drives
+// the Execute body without needing a real jest/node toolchain.
+func TestExecuteReportReadFailureErrorsEveryTest(t *testing.T) {
+	a := &Adapter{JestBin: "teo-nonexistent-jest-xyz", NodeBin: "teo-nonexistent-node-xyz"}
+	tests := []model.TestEntry{
+		{Path: "a.test.ts", Name: "<file>"},
+		{Path: "b.test.ts", Name: "<file>"},
+	}
+	var got []adapter.Result
+	err := a.Execute(context.Background(), t.TempDir(), tests,
+		adapter.ExecOptions{}, func(r adapter.Result) { got = append(got, r) })
+	if err != nil {
+		t.Fatalf("Execute = %v, want nil (failures reported per-test, not as an error)", err)
+	}
+	if len(got) != len(tests) {
+		t.Fatalf("got %d results, want %d", len(got), len(tests))
+	}
+	for i, r := range got {
+		if r.Outcome != model.OutcomeErrored {
+			t.Errorf("result[%d] outcome = %s, want errored", i, r.Outcome)
+		}
 	}
 }
