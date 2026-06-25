@@ -1,6 +1,6 @@
 # TEO — Implementation Progress
 
-**Last updated:** 2026-06-17 (🎉 **v1.0.0 SHIPPED.** Tag `v1.0.0` cut on 2026-06-11; `release.yml` published cosign-signed binaries + Syft SBOMs + the chart-released Helm chart, and the gh-pages chart index now serves `teo 1.0.0`. CI fully green; main HEAD `65de8bc`. All 12 backlog-reconciliation items are closed and the full `-tags=integration` suite ran green under Docker. Prior 2026-05-20 entry: audit found 12 ✅-but-unwired items — all since fixed.)
+**Last updated:** 2026-06-25 (Jest AST-signature fingerprint (v1.5) + as-built architecture/handoff docs merged to `main` @ `f954302` — see the **Landed** note below. · 🎉 **v1.0.0 SHIPPED.** Tag `v1.0.0` cut on 2026-06-11; `release.yml` published cosign-signed binaries + Syft SBOMs + the chart-released Helm chart, and the gh-pages chart index now serves `teo 1.0.0`. CI fully green; main HEAD `65de8bc`. All 12 backlog-reconciliation items are closed and the full `-tags=integration` suite ran green under Docker. Prior 2026-05-20 entry: audit found 12 ✅-but-unwired items — all since fixed.)
 **Build status:** ✅ `go build ./...` clean · ✅ 26 Go unit packages green (incl. `cmd/predictor` healthz-proxy + no-args smoke) · ✅ **full integration suite executed green under Docker (2026-06-10): `go test -tags=integration ./...` → 31 packages ok, 0 fail** (testcontainers Postgres for GraphQL + run-intake REST + Runs gRPC bufconn + run-export + cost resolvers + predictor Heuristic loadStats + leader-election chaos; testcontainers MinIO for the logstore S3 round-trip; testcontainers ClickHouse for the 1M-row OTLP load test) · 6 frontend test files (Vitest, runs in CI) · ✅ 14 predictor-ml pytest cases green (`services/predictor-ml/tests/`, FastAPI TestClient + feature extraction)
 **Reading order:** [PRD](PRD.md) → [Architecture overview](docs/architecture/overview.md) → [ADR-0012 scope](docs/adr/0012-mvp-scope-cut.md) → this file.
 
@@ -10,9 +10,11 @@
 > - The **full cloud restore drill** against staging per [`docs/operations/restore-drill.md`](docs/operations/restore-drill.md) is still deferred — record the outcome in the runbook's history log when run.
 > - `-race` was unavailable on the dev host for the local integration run (no cgo toolchain); CI on Linux runs `-race` per the Makefile.
 >
-> **In flight (2026-06-25, open PRs against `main` @ `321b6d8`):**
-> - **PR #4** `feat(jest)` — Jest AST-signature fingerprint (S-14-02 AC3, v1.5). Closes the last deferred adapter item; all three adapters then populate `tests.ast_signature`. Includes a multi-agent code review + coverage pass that lifted `pkg/adapter/jest` from 61.5% → 83.7% (Execute, node-failure fallback, and the cross-language path-key invariant now pinned). The E-14 row + deferred-note flip live on this branch.
+> **Landed (2026-06-25, merged to `main` @ `f954302`):**
+> - **PR #4** `feat(jest)` — Jest AST-signature fingerprint (S-14-02 AC3, v1.5). **Closes the last deferred adapter item: all three adapters (pytest/gotest/jest) now populate `tests.ast_signature`.** A multi-agent code review + coverage pass lifted `pkg/adapter/jest` from 61.5% → 83.7% (Execute, node-failure fallback, and the cross-language path-key invariant now pinned). See the E-14 row.
 > - **PR #5** `docs(architecture)` — as-built [diagrams](docs/architecture/diagrams.md), [schema](docs/architecture/schema.md), [ER diagram](docs/architecture/er-diagram.md), and [developer handoff](docs/handoff/DEVELOPER_HANDOFF.md); flags the drifted 2026-04-30 `data-model.md` draft as superseded.
+>
+> With these merged, the **v1.0 / v1.1 / v1.5 backlog is fully closed**. The only remaining work is non-actionable here: the AWS-blocked restore drill §1–§7, and the ADR-0012 📦 deferred-by-decision items.
 
 This is the single source of truth for implementation status. Every entry links to the code or doc it tracks. Status legend:
 
