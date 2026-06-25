@@ -23,7 +23,7 @@ type Adapter struct {
 	NodeBin string // node binary for AST-signature extraction; defaults to "node"
 }
 
-// New returns a Jest adapter using `npx jest` by default.
+// New returns a Jest adapter using `jest` by default.
 func New() *Adapter { return &Adapter{JestBin: "jest"} }
 
 // Name implements adapter.Adapter.
