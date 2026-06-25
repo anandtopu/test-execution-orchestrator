@@ -8,6 +8,16 @@ For a finer-grained per-FR / per-epic implementation status, see [`progress.md`]
 
 ## [Unreleased]
 
+### Security — bump `golang.org/x/net` to v0.55.0 (6 HIGH CVEs)
+
+Upgraded the indirect dependency `golang.org/x/net` from v0.54.0 to v0.55.0,
+closing six HIGH-severity advisories that Trivy flagged on the published service
+images: CVE-2026-25680 (DoS in HTML parsing), CVE-2026-25681 / -27136 / -42502 /
+-42506 (XSS via `html.Render` of parsed HTML), and CVE-2026-39821 (IDNA
+`ToASCII`/`ToUnicode` accepting Punycode that decodes to an ASCII-only label).
+Dependency-only change — no TEO source touched; `go build ./...` and the full
+unit suite stay green. Restores a green Trivy image scan in CI.
+
 ### Added — Jest AST-signature fingerprint (S-14-02 AC3, v1.5)
 
 The Jest adapter now folds a normalized hash of each test's body into the test
