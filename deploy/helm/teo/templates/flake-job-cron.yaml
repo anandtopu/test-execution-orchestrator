@@ -216,3 +216,44 @@ spec:
                 - name: TEO_MODEL_BUCKET
                   value: "teo-artifacts"
 {{- end }}
+{{- if .Values.llmHints.enabled }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Release.Name }}-llm-hints
+spec:
+  schedule: {{ .Values.llmHints.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: llm-hints
+              image: {{ include "teo.image" (dict "Values" .Values "Chart" .Chart "repo" "result-pipeline" "imageTag" "") }}
+              args:
+                - "llm-hints"
+                {{- if .Values.llmHints.restale }}
+                - "--restale"
+                {{- end }}
+                {{- if .Values.llmHints.maxClusters }}
+                - "--max"
+                - {{ .Values.llmHints.maxClusters | quote }}
+                {{- end }}
+              env:
+                - name: TEO_POSTGRES_DSN
+                  valueFrom: { secretKeyRef: { name: {{ .Release.Name }}-postgres-creds, key: dsn } }
+                - name: TEO_LLM_HINTS_ENABLED
+                  value: "1"
+                - name: TEO_LLM_HINTS_MODEL
+                  value: {{ .Values.llmHints.model | quote }}
+                - name: ANTHROPIC_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ required "llmHints.apiKeySecretName is required when llmHints.enabled" .Values.llmHints.apiKeySecretName }}
+                      key: {{ .Values.llmHints.apiKeySecretKey | default "api-key" }}
+{{- end }}

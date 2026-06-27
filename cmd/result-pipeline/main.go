@@ -10,6 +10,9 @@
 //	result-pipeline backfill-clusters re-cluster historical failures that the
 //	                                  live OTLP path left unlinked (requires
 //	                                  both Postgres and ClickHouse)
+//	result-pipeline llm-hints        generate LLM root-cause hints for failure
+//	                                  clusters (ADR-0021; opt-in via
+//	                                  TEO_LLM_HINTS_ENABLED + ANTHROPIC_API_KEY)
 package main
 
 import (
@@ -33,6 +36,7 @@ import (
 	"github.com/teo-dev/teo/internal/digest"
 	"github.com/teo-dev/teo/internal/flake"
 	"github.com/teo-dev/teo/internal/github"
+	"github.com/teo-dev/teo/internal/llmhints"
 	"github.com/teo-dev/teo/internal/metrics"
 	"github.com/teo-dev/teo/internal/quarantine"
 	"github.com/teo-dev/teo/internal/resultpipeline"
@@ -80,6 +84,8 @@ func main() {
 		runUnquarantineProposals(ctx, pool, logger)
 	case "backfill-clusters":
 		runBackfillClusters(ctx, cfg, pool, logger)
+	case "llm-hints":
+		runLLMHints(ctx, pool, logger)
 	default:
 		logger.Error("unknown subcommand", "name", subcommand)
 		os.Exit(2)
@@ -202,6 +208,47 @@ func runBackfillClusters(ctx context.Context, cfg config.Common, pool *pgxpool.P
 	}
 	if _, err := b.Run(ctx); err != nil {
 		logger.Error("backfill-clusters failed", "err", err)
+		os.Exit(1)
+	}
+}
+
+// runLLMHints generates LLM root-cause hints for failure clusters (ADR-0021).
+// Opt-in: a no-op (exit 0) unless TEO_LLM_HINTS_ENABLED is truthy. Best-effort
+// and idempotent — only NULL-hint clusters are touched unless --restale.
+//
+//	result-pipeline llm-hints [--restale] [--dry-run] [--max N] [--batch N]
+func runLLMHints(ctx context.Context, pool *pgxpool.Pool, logger *slog.Logger) {
+	fs := flag.NewFlagSet("llm-hints", flag.ContinueOnError)
+	restale := fs.Bool("restale", false, "re-summarize clusters that already have a hint (use after a prompt/model change)")
+	dryRun := fs.Bool("dry-run", false, "summarize but do not persist hints")
+	maxClusters := fs.Int("max", 0, "cap clusters processed this pass (0 = package default)")
+	batch := fs.Int("batch", 0, "clusters per summarizer batch (0 = package default)")
+	if err := fs.Parse(os.Args[2:]); err != nil {
+		logger.Error("llm-hints flag parse failed", "err", err)
+		os.Exit(2)
+	}
+
+	if !llmhints.Enabled() {
+		logger.Warn("llm-hints disabled; set TEO_LLM_HINTS_ENABLED=1 to enable (ADR-0021, opt-in)")
+		return
+	}
+	client, ok := llmhints.NewClientFromEnv(logger)
+	if !ok {
+		logger.Error("llm-hints enabled but ANTHROPIC_API_KEY is not set")
+		os.Exit(1)
+	}
+
+	r := &llmhints.Runner{
+		Clusters:    llmhints.PGClusterSource{Pool: pool},
+		Summarizer:  client,
+		Logger:      logger,
+		Restale:     *restale,
+		DryRun:      *dryRun,
+		MaxClusters: *maxClusters,
+		BatchSize:   *batch,
+	}
+	if _, err := r.Run(ctx); err != nil {
+		logger.Error("llm-hints failed", "err", err)
 		os.Exit(1)
 	}
 }

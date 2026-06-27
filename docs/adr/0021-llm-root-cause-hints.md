@@ -1,6 +1,6 @@
 # ADR-0021: LLM-generated root-cause hints for failure clusters
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-06-26
 
 ## Context
@@ -35,8 +35,13 @@ The load-bearing concern is **data egress**: a hint requires sending failure mes
 **−** Redaction false-negatives are possible — a novel secret format could pass the regex set. We accept the same residual risk ADR-0016 accepts for logs, and the feature is off by default.
 **−** Hints are advisory and can be wrong. They are labelled as generated and carry a confidence; they never gate quarantine, scheduling, or any control-plane decision.
 
-## Implementation note
-Status flips to **Accepted** when PR A (migration 007 + `internal/llmhints` + the `llm-hints` CLI/Helm wiring, unit-testable offline with a stubbed SDK transport) lands; PR B adds the three display surfaces. The new `anthropic-sdk-go` dependency is Apache-2.0 and clears `make licenses`.
+## Implementation note (PR A)
+
+The engine ships over **raw `net/http`** against the synchronous Messages API (`POST /v1/messages`), **not** the `anthropic-sdk-go` SDK or the Message Batches API named in the Decision — a deliberate, documented divergence that mirrors ADR-0019 (whose predictor `MLClient` likewise chose raw HTTP over its decided gRPC contract for a low-QPS, single-call-site external service). Rationale: it adds **no new dependency** (no `go.sum` churn, nothing for `make licenses` to clear, builds and tests fully offline), matches the established external-service pattern in `internal/predictor/mlclient.go`, and the opt-in default plus graceful no-hint degradation make the wire format non-load-bearing. The nightly cron summarizes one cluster per request; the **Message Batches API remains the retained optimization** for when cluster volume makes the per-request cost matter.
+
+For the same robustness reasons the response is parsed leniently (first-`{`-to-last-`}` extraction) from a JSON-only system prompt rather than constrained with `output_config.format`; **structured outputs are a documented future hardening**. None of this reopens the Decision — the seam (`Summarizer`) is unchanged, so swapping in the SDK + Batches + structured outputs later is an internal change to `client.go` with no migration or schema impact.
+
+Delivered in PR A: migration 007, the `internal/llmhints` package (`Runner` + `Summarizer`/`ClusterSource` seams, the raw-HTTP `Client` with redaction-before-egress, the Postgres `PGClusterSource`), the `result-pipeline llm-hints` CLI subcommand, the default-off Helm CronJob, and offline unit tests (stubbed `Summarizer`/source for the Runner; `httptest` for the Client, asserting secrets are redacted before egress). PR B adds the three display surfaces.
 
 ## Alternatives considered
 - **Synchronous Messages API, on-demand per cluster.** Rejected for the default path: higher per-call cost and no batching benefit for a nightly sweep. Retained as a possible future on-demand button.

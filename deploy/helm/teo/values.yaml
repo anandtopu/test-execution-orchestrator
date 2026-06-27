@@ -250,6 +250,17 @@ backfillClusters:
   enabled: false
   schedule: "30 2 * * *"
   since: "720h"   # bound the scan to ~30d (matches span_events TTL); "" = all history
+# LLM root-cause hints (ADR-0021). OFF by default: when enabled, this sends
+# redacted failure messages + stack traces to an external LLM API. Requires a
+# secret holding the Anthropic API key (key `api-key` by default).
+llmHints:
+  enabled: false
+  schedule: "0 3 * * *"
+  model: "claude-opus-4-8"
+  maxClusters: 500        # 0/"" = package default
+  restale: false          # true re-summarizes already-hinted clusters
+  apiKeySecretName: ""    # e.g. "teo-anthropic"; required when enabled
+  apiKeySecretKey: "api-key"
 quarantine:
   enabled: true
   schedule: "*/15 * * * *"
