@@ -8,6 +8,35 @@ For a finer-grained per-FR / per-epic implementation status, see [`progress.md`]
 
 ## [Unreleased]
 
+### Added — LLM root-cause hints for failure clusters (ADR-0021)
+
+Each failure cluster can now carry a short, LLM-generated root-cause hint,
+surfaced beside the representative stack trace in the GitHub Check summary, the
+`FailureCluster` GraphQL type, and the `/clusters` UI detail pane. This is the
+first item reversed out of the ADR-0012 deferral list and pulled into v1.x.
+
+The new `internal/llmhints` package mirrors the predictor integration: a `Runner`
+behind `Summarizer`/`ClusterSource` seams (so the orchestration is unit-tested
+with stubs and no network), a raw-`net/http` `Client` against the Claude Messages
+API (default `claude-opus-4-8`), and a Postgres `PGClusterSource` whose
+`SaveHint` is NULL-guarded for idempotency (a re-run never re-summarizes or
+re-bills an already-hinted cluster). It runs as the opt-in `result-pipeline
+llm-hints` CLI subcommand and a default-off Helm CronJob, gated on
+`TEO_LLM_HINTS_ENABLED` + `ANTHROPIC_API_KEY`. Migration 007 adds the nullable
+`teo.failure_clusters.{root_cause_hint,hint_category,hint_confidence,hint_generated_at}`
+columns; every read surface degrades to an em-dash when a hint is absent (feature
+off, cron not yet run, or generation failed), so behavior is unchanged when
+disabled.
+
+Privacy: `internal/redact` scrubs the representative message + stack trace
+**before** any API call, extending the ADR-0016 redaction boundary to the hint
+path, and the feature is off by default because it sends (redacted) failure data
+to an external API. Implementation note (per ADR-0021): the engine ships over raw
+`net/http` and the synchronous Messages API rather than the `anthropic-sdk-go`
+SDK + Message Batches API — **no new dependency**, builds and tests offline,
+mirroring ADR-0019's `MLClient` choice; the SDK + Batches + structured outputs are
+retained as a future optimization behind the unchanged `Summarizer` seam.
+
 ### Security — bump `golang.org/x/net` to v0.55.0 (6 HIGH CVEs)
 
 Upgraded the indirect dependency `golang.org/x/net` from v0.54.0 to v0.55.0,
