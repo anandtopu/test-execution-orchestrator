@@ -79,3 +79,31 @@ func TestBuildClusterMarkdownHandlesEmptyMessage(t *testing.T) {
 		t.Errorf("expected fallback message; got %s", got)
 	}
 }
+
+func TestBuildClusterMarkdownRendersHintWhenPresent(t *testing.T) {
+	got := buildClusterMarkdown([]ClusterSummary{{
+		Message: "boom", Stack: "x", Occurrences: 1,
+		Hint: "assertion compares against a stale fixture", HintCategory: "assertion",
+	}})
+	for _, want := range []string{"Likely cause", "(assertion)", "stale fixture"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("markdown missing %q\n%s", want, got)
+		}
+	}
+}
+
+func TestBuildClusterMarkdownOmitsHintWhenAbsent(t *testing.T) {
+	got := buildClusterMarkdown([]ClusterSummary{{Message: "boom", Stack: "x", Occurrences: 1}})
+	if strings.Contains(got, "Likely cause") {
+		t.Errorf("no hint line should render when Hint is empty\n%s", got)
+	}
+}
+
+func TestBuildClusterMarkdownHintFallsBackToUnknownCategory(t *testing.T) {
+	got := buildClusterMarkdown([]ClusterSummary{{
+		Message: "boom", Stack: "x", Occurrences: 1, Hint: "something broke",
+	}})
+	if !strings.Contains(got, "(unknown)") {
+		t.Errorf("empty category should render as unknown\n%s", got)
+	}
+}

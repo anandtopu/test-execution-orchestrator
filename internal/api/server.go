@@ -337,6 +337,9 @@ type FailureCluster {
   category: String
   stackFingerprint: String
   affectedRuns: Int
+  rootCauseHint: String
+  hintCategory: String
+  hintConfidence: Float
 }
 
 type FlakeRecord {

@@ -398,6 +398,34 @@ function ClusterDetail({
         </div>
       </div>
       <div className="cluster-detail__body">
+        {cluster.rootCauseHint ? (
+          <div
+            className="cluster-detail__hint"
+            style={{
+              display: 'flex',
+              gap: 8,
+              padding: '10px 12px',
+              marginBottom: 12,
+              borderRadius: 8,
+              background: 'var(--accent-soft, #f3efe6)',
+              border: '1px solid var(--border, #e2dccd)',
+            }}
+          >
+            <span aria-hidden style={{ flex: '0 0 auto' }}>
+              💡
+            </span>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 12, marginBottom: 2 }}>
+                Likely cause
+                {cluster.hintCategory ? <span className="muted"> · {cluster.hintCategory}</span> : null}
+                {typeof cluster.hintConfidence === 'number' ? (
+                  <span className="muted"> · {Math.round(cluster.hintConfidence * 100)}% conf</span>
+                ) : null}
+              </div>
+              <div style={{ fontSize: 13 }}>{cluster.rootCauseHint}</div>
+            </div>
+          </div>
+        ) : null}
         <div className="stat-grid">
           <div className="stat-cell">
             <div className="stat-cell__label">Occurrences</div>

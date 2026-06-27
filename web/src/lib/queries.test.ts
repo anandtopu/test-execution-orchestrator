@@ -53,7 +53,7 @@ describe('GraphQL queries', () => {
     for (const f of ['x', 'y', 'r']) {
       expect(FailureClustersQuery).toMatch(new RegExp(`(^|\\n)\\s*${f}\\s*(\\n|$)`));
     }
-    for (const f of ['category', 'stackFingerprint', 'affectedRuns']) {
+    for (const f of ['category', 'stackFingerprint', 'affectedRuns', 'rootCauseHint', 'hintCategory', 'hintConfidence']) {
       expect(FailureClustersQuery).toContain(f);
     }
   });

@@ -197,6 +197,11 @@ func buildSchemaWithHub(pool *pgxpool.Pool, hub *Hub) graphql.Schema {
 			"category":         &graphql.Field{Type: graphql.String},
 			"stackFingerprint": &graphql.Field{Type: graphql.String, Resolve: mapResolve("stack_fingerprint")},
 			"affectedRuns":     &graphql.Field{Type: graphql.Int, Resolve: mapResolve("affected_runs")},
+			// ADR-0021 LLM root-cause hint. Null until the opt-in llm-hints cron
+			// summarizes the cluster; every consumer degrades to null/em-dash.
+			"rootCauseHint":  &graphql.Field{Type: graphql.String, Resolve: mapResolve("root_cause_hint")},
+			"hintCategory":   &graphql.Field{Type: graphql.String, Resolve: mapResolve("hint_category")},
+			"hintConfidence": &graphql.Field{Type: graphql.Float, Resolve: mapResolve("hint_confidence")},
 		},
 	})
 	flakeType := graphql.NewObject(graphql.ObjectConfig{

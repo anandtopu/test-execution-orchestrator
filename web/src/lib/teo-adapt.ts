@@ -42,6 +42,10 @@ export interface GqlCluster {
   category?: string | null;
   stackFingerprint?: string | null;
   affectedRuns?: number | null;
+  // ADR-0021 LLM root-cause hint. Null until the opt-in llm-hints cron runs.
+  rootCauseHint?: string | null;
+  hintCategory?: string | null;
+  hintConfidence?: number | null;
 }
 
 export interface GqlFlake {
@@ -182,6 +186,10 @@ export function adaptClusters(rows: GqlCluster[] | null | undefined): Cluster[] 
       affectedRunIds: [],
       related: [],
       stack,
+      // ADR-0021 hint passthrough; null/undefined when the feature hasn't run.
+      rootCauseHint: c.rootCauseHint ?? null,
+      hintCategory: c.hintCategory ?? null,
+      hintConfidence: c.hintConfidence ?? null,
     };
   });
 }

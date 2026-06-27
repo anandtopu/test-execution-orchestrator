@@ -74,6 +74,9 @@ export const FailureClustersQuery = /* GraphQL */ `
       category
       stackFingerprint
       affectedRuns
+      rootCauseHint
+      hintCategory
+      hintConfidence
     }
   }
 `;
