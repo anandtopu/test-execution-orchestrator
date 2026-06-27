@@ -96,6 +96,11 @@ export interface Cluster {
   affectedRunIds: string[];
   related: string[];
   stack: string[];
+  // ADR-0021 LLM root-cause hint. Null when the opt-in llm-hints cron hasn't
+  // summarized this cluster; the detail pane omits the callout when null.
+  rootCauseHint?: string | null;
+  hintCategory?: string | null;
+  hintConfidence?: number | null;
 }
 
 export interface FlakeOwner {

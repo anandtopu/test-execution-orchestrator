@@ -101,7 +101,7 @@ func TestFailureClusterTypeExposesFields(t *testing.T) {
 	if !ok || ct == nil {
 		t.Fatal("FailureCluster type not found")
 	}
-	for _, f := range []string{"id", "representativeMessage", "x", "y", "r", "category", "stackFingerprint", "affectedRuns"} {
+	for _, f := range []string{"id", "representativeMessage", "x", "y", "r", "category", "stackFingerprint", "affectedRuns", "rootCauseHint", "hintCategory", "hintConfidence"} {
 		if ct.Fields()[f] == nil {
 			t.Errorf("FailureCluster.%s missing", f)
 		}

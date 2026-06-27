@@ -60,6 +60,7 @@ func queryFailureClusters(ctx context.Context, pool *pgxpool.Pool) ([]map[string
 	rows, err := pool.Query(ctx, `
         SELECT fc.id::text, fc.representative_message, fc.representative_stack,
                fc.occurrences, fc.first_seen, fc.last_seen, fc.stack_fingerprint,
+               fc.root_cause_hint, fc.hint_category, fc.hint_confidence::float8,
                (SELECT count(DISTINCT s.run_id)
                   FROM teo.test_executions te
                   JOIN teo.shards s ON s.id = te.shard_id
@@ -74,7 +75,8 @@ func queryFailureClusters(ctx context.Context, pool *pgxpool.Pool) ([]map[string
 	defer rows.Close()
 	out, err := scanToMaps(rows, []string{
 		"id", "representative_message", "representative_stack", "occurrences",
-		"first_seen", "last_seen", "stack_fingerprint", "affected_runs",
+		"first_seen", "last_seen", "stack_fingerprint",
+		"root_cause_hint", "hint_category", "hint_confidence", "affected_runs",
 	})
 	if err != nil {
 		return nil, err

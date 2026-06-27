@@ -170,6 +170,28 @@ describe('adaptClusters', () => {
     expect(c.related).toEqual([]);
   });
 
+  it('passes through the ADR-0021 root-cause hint when present', () => {
+    const [c] = adaptClusters([
+      {
+        id: 'c1',
+        representativeMessage: 'boom',
+        rootCauseHint: 'compares against a stale fixture',
+        hintCategory: 'assertion',
+        hintConfidence: 0.82,
+      },
+    ]);
+    expect(c.rootCauseHint).toBe('compares against a stale fixture');
+    expect(c.hintCategory).toBe('assertion');
+    expect(c.hintConfidence).toBe(0.82);
+  });
+
+  it('defaults the hint fields to null when the backend omits them', () => {
+    const [c] = adaptClusters([{ id: 'c1', representativeMessage: 'boom' }]);
+    expect(c.rootCauseHint).toBeNull();
+    expect(c.hintCategory).toBeNull();
+    expect(c.hintConfidence).toBeNull();
+  });
+
   it('derives x/y/r and category when the backend omits them', () => {
     const rows: GqlCluster[] = [
       {

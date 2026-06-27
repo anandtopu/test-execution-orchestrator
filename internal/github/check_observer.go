@@ -199,19 +199,25 @@ func (o *CheckObserver) shardCounts(ctx context.Context, runID string) shardCoun
 	return c
 }
 
-// ClusterSummary is one row of the top-N failure-cluster table.
+// ClusterSummary is one row of the top-N failure-cluster table. Hint/HintCategory
+// carry the optional ADR-0021 LLM root-cause hint (empty when unset).
 type ClusterSummary struct {
-	Message     string
-	Stack       string
-	Occurrences int64
+	Message      string
+	Stack        string
+	Occurrences  int64
+	Hint         string
+	HintCategory string
 }
 
 // topClusters returns the top-N failure clusters touched by this run, ranked
-// by occurrence count then recency.
+// by occurrence count then recency. The hint columns are functionally dependent
+// on fc.id (the PK in GROUP BY), so they need no extra GROUP BY entry.
 func (o *CheckObserver) topClusters(ctx context.Context, runID string, n int) []ClusterSummary {
 	rows, err := o.Pool.Query(ctx, `
         SELECT fc.representative_message,
                fc.representative_stack,
+               COALESCE(fc.root_cause_hint, '') AS root_cause_hint,
+               COALESCE(fc.hint_category, '')   AS hint_category,
                count(*) AS occurrences_in_run
         FROM teo.test_executions te
         JOIN teo.shards s ON s.id = te.shard_id
@@ -228,7 +234,7 @@ func (o *CheckObserver) topClusters(ctx context.Context, runID string, n int) []
 	var out []ClusterSummary
 	for rows.Next() {
 		var c ClusterSummary
-		if err := rows.Scan(&c.Message, &c.Stack, &c.Occurrences); err != nil {
+		if err := rows.Scan(&c.Message, &c.Stack, &c.Hint, &c.HintCategory, &c.Occurrences); err != nil {
 			continue
 		}
 		out = append(out, c)
@@ -251,6 +257,15 @@ func buildClusterMarkdown(clusters []ClusterSummary) string {
 			msg = "(no message)"
 		}
 		fmt.Fprintf(&b, "> %s\n\n", msg)
+		// Optional ADR-0021 LLM root-cause hint, rendered only when present so a
+		// cluster without a hint (feature off / generation failed) is unchanged.
+		if c.Hint != "" {
+			cat := c.HintCategory
+			if cat == "" {
+				cat = "unknown"
+			}
+			fmt.Fprintf(&b, "> 💡 **Likely cause** (%s): %s\n\n", cat, c.Hint)
+		}
 		stack := c.Stack
 		if len(stack) > 1024 {
 			stack = stack[:1024] + "\n…(truncated)"
